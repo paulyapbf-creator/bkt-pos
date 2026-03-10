@@ -4,28 +4,22 @@ const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
 const STATUS_LABEL = { pending: 'Pending', cooking: 'Cooking', preparing: 'Cooking', ready: 'Ready', served: 'Served' };
 
-// Old KDS uses 'preparing'; normalise to 'cooking' for CSS classes
+// Normalise legacy 'preparing' → 'cooking'
 function normSt(st) { return st === 'preparing' ? 'cooking' : (st || 'pending'); }
 
 let activeTab = 'kitchen'; // 'kitchen' | 'served'
-let kdsWS = null;
-let renderTimer = null;
-
-function scheduleRender() {
-  clearTimeout(renderTimer);
-  renderTimer = setTimeout(() => renderKDS(), 120);
-}
+let kdsWS     = null;
+let localBills = null; // local cache updated directly from WS messages
 
 // ─── Data source ─────────────────────────────────────────────────────────────
 
-async function loadBills() {
+async function fetchBills() {
   if (location.host) {
     try {
       const res = await fetch('/api/bills', { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (e) {}
   }
-  // Fallback: localStorage (file:// mode)
   try { return JSON.parse(localStorage.getItem(ACTIVE_BILLS_KEY) || '{}'); }
   catch (e) { return {}; }
 }
@@ -38,9 +32,37 @@ function connectKdsWS() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
     kdsWS.onopen = () => kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
-    kdsWS.onmessage = () => scheduleRender();
-    kdsWS.onclose  = () => { kdsWS = null; setTimeout(connectKdsWS, 3000); };
-    kdsWS.onerror  = () => kdsWS && kdsWS.close();
+    kdsWS.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (!localBills) { renderKDS(); return; }
+
+        switch (msg.type) {
+          case 'item:statusChanged':
+            if (localBills[msg.table]) {
+              const item = localBills[msg.table].items.find(i => i.id === msg.itemId);
+              if (item) {
+                item.status = msg.status;
+                if (msg.item && msg.item.readyAt) item.readyAt = msg.item.readyAt;
+              }
+            }
+            renderKDS();
+            break;
+          case 'order:new':
+          case 'order:updated':
+            if (msg.bill) localBills[msg.table] = msg.bill;
+            renderKDS();
+            break;
+          case 'bill:cleared':
+            if (msg.table === '*') localBills = {};
+            else delete localBills[msg.table];
+            renderKDS();
+            break;
+        }
+      } catch { renderKDS(); }
+    };
+    kdsWS.onclose = () => { kdsWS = null; setTimeout(connectKdsWS, 3000); };
+    kdsWS.onerror = () => kdsWS && kdsWS.close();
   } catch (e) { setTimeout(connectKdsWS, 5000); }
 }
 
@@ -110,7 +132,8 @@ function renderCard(bill, table) {
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 async function renderKDS() {
-  const bills  = await loadBills();
+  if (!localBills) localBills = await fetchBills();
+  const bills = localBills;
   const tables = Object.keys(bills).sort((a, b) => bills[a].startedAt - bills[b].startedAt);
 
   const kitchenTables = tables.filter(t =>
@@ -208,8 +231,8 @@ function init() {
     if (e.key === 'Escape') window.location.href = 'index.html';
   });
 
-  // Poll every 2 s as reliable fallback
-  setInterval(() => renderKDS(), 2000);
+  // Poll every 5s: refresh local cache from server and re-render
+  setInterval(async () => { localBills = await fetchBills(); renderKDS(); }, 5000);
 }
 
 document.addEventListener('DOMContentLoaded', init);
