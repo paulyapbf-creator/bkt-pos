@@ -162,10 +162,6 @@ function renderGrid() {
               ${allDone           ? `<span class="kds-cnt kds-cnt--served">All served</span>` : ''}
             </div>
             <div class="kds-bulk-btns">
-              ${hasPending
-                ? `<button class="kds-bulk-btn kds-bulk--cook" data-action="cook" data-table="${table}">All Cook</button>` : ''}
-              ${!hasPending && hasActive
-                ? `<button class="kds-bulk-btn kds-bulk--ready" data-action="ready" data-table="${table}">All Ready</button>` : ''}
               ${allReady
                 ? `<button class="kds-bulk-btn kds-bulk--serve" data-action="serve" data-table="${table}">Serve All</button>` : ''}
             </div>
@@ -210,8 +206,6 @@ function renderGrid() {
   grid.querySelectorAll('.kds-bulk-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      if (btn.dataset.action === 'cook')  bulkSetStatus(btn.dataset.table, 'pending', 'cooking');
-      if (btn.dataset.action === 'ready') bulkSetStatus(btn.dataset.table, 'cooking', 'ready');
       if (btn.dataset.action === 'serve') markAllServed(btn.dataset.table);
     });
   });
