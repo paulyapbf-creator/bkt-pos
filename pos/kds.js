@@ -9,13 +9,19 @@ function normSt(st) { return st === 'preparing' ? 'cooking' : (st || 'pending');
 
 let activeTab = 'kitchen'; // 'kitchen' | 'served'
 let kdsWS = null;
+let renderTimer = null;
+
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => renderKDS(), 120);
+}
 
 // ─── Data source ─────────────────────────────────────────────────────────────
 
 async function loadBills() {
   if (location.host) {
     try {
-      const res = await fetch('/api/bills');
+      const res = await fetch('/api/bills', { cache: 'no-store' });
       if (res.ok) return await res.json();
     } catch (e) {}
   }
@@ -32,7 +38,7 @@ function connectKdsWS() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
     kdsWS.onopen = () => kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
-    kdsWS.onmessage = () => renderKDS();
+    kdsWS.onmessage = () => scheduleRender();
     kdsWS.onclose  = () => { kdsWS = null; setTimeout(connectKdsWS, 3000); };
     kdsWS.onerror  = () => kdsWS && kdsWS.close();
   } catch (e) { setTimeout(connectKdsWS, 5000); }
@@ -194,7 +200,7 @@ function init() {
   // Fallback for file:// mode
   const bktChannel = typeof BroadcastChannel !== 'undefined'
     ? new BroadcastChannel('bkt_pos') : null;
-  if (bktChannel) bktChannel.onmessage = () => renderKDS();
+  if (bktChannel) bktChannel.onmessage = () => scheduleRender();
   window.addEventListener('storage', e => { if (e.key === ACTIVE_BILLS_KEY) renderKDS(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderKDS(); });
 
