@@ -279,8 +279,8 @@ body {
 }
 .kds-btn--pending   { background: #e67e22; color: #fff; }
 .kds-btn--pending:hover { background: #ca6f1e; }
-.kds-btn--preparing { background: var(--green); color: #fff; }
-.kds-btn--preparing:hover { background: #219a52; }
+.kds-btn--cooking { background: var(--green); color: #fff; }
+.kds-btn--cooking:hover { background: #219a52; }
 .kds-btn--ready     { background: #95a5a6; color: #fff; }
 .kds-btn--ready:hover { background: #7f8c8d; }
 .kds-served-label   { font-size: 12px; color: #bbb; font-style: italic; white-space: nowrap; }

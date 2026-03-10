@@ -1,7 +1,7 @@
 'use strict';
 
 const API_BASE = '';
-const NEXT_BTN = { pending: '🍳 Cook', preparing: '✓ Ready', ready: '🍽 Served' };
+const NEXT_BTN = { pending: '🍳 Cook', cooking: '✓ Ready', ready: '🍽 Served' };
 let ws = null;
 let bills = {};
 let kdsHistory = [];
@@ -136,11 +136,11 @@ function renderGrid() {
     const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
 
     // Status counts
-    const cnt = { pending: 0, preparing: 0, ready: 0, served: 0 };
-    bill.items.forEach(i => cnt[i.status || 'pending']++);
+    const cnt = { pending: 0, cooking: 0, ready: 0, served: 0 };
+    bill.items.forEach(i => { const st = i.status || 'pending'; cnt[st === 'preparing' ? 'cooking' : st] = (cnt[st === 'preparing' ? 'cooking' : st] || 0) + 1; });
     const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
     const hasPending = cnt.pending > 0;
-    const hasActive = cnt.pending + cnt.preparing > 0;
+    const hasActive = cnt.pending + cnt.cooking > 0;
     const allDone = cnt.served === bill.items.length;
 
     return `
@@ -157,7 +157,7 @@ function renderGrid() {
           <div class="kds-head-right">
             <div class="kds-status-counts">
               ${cnt.pending > 0   ? `<span class="kds-cnt kds-cnt--pending">${cnt.pending} pending</span>` : ''}
-              ${cnt.preparing > 0 ? `<span class="kds-cnt kds-cnt--cooking">${cnt.preparing} cooking</span>` : ''}
+              ${cnt.cooking > 0 ? `<span class="kds-cnt kds-cnt--cooking">${cnt.cooking} cooking</span>` : ''}
               ${cnt.ready > 0     ? `<span class="kds-cnt kds-cnt--ready">${cnt.ready} ready</span>` : ''}
               ${allDone           ? `<span class="kds-cnt kds-cnt--served">All served</span>` : ''}
             </div>
@@ -210,8 +210,8 @@ function renderGrid() {
   grid.querySelectorAll('.kds-bulk-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      if (btn.dataset.action === 'cook')  bulkSetStatus(btn.dataset.table, 'pending', 'preparing');
-      if (btn.dataset.action === 'ready') bulkSetStatus(btn.dataset.table, 'preparing', 'ready');
+      if (btn.dataset.action === 'cook')  bulkSetStatus(btn.dataset.table, 'pending', 'cooking');
+      if (btn.dataset.action === 'ready') bulkSetStatus(btn.dataset.table, 'cooking', 'ready');
       if (btn.dataset.action === 'serve') markAllServed(btn.dataset.table);
     });
   });
@@ -263,7 +263,7 @@ function cycleItemStatus(table, itemId) {
   const item = bill.items.find(i => i.id === itemId);
   if (!item) return;
 
-  const cycle = { pending: 'preparing', preparing: 'ready', ready: 'served' };
+  const cycle = { pending: 'cooking', cooking: 'ready', ready: 'served' };
   const next = cycle[item.status || 'pending'];
   if (!next) return;
 
