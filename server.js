@@ -13,7 +13,6 @@ const wss    = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
-app.get('/kds.html', (req, res) => res.redirect('/kds/'));
 app.use('/kds', express.static(path.join(__dirname, 'public')));
 // Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
 const { existsSync } = require('fs');
