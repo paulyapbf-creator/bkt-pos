@@ -14,7 +14,12 @@ const wss    = new WebSocket.Server({ server });
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use('/kds', express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, '..', 'pos')));
+// Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
+const { existsSync } = require('fs');
+const posPath = existsSync(path.join(__dirname, 'pos'))
+  ? path.join(__dirname, 'pos')
+  : path.join(__dirname, '..', 'pos');
+app.use(express.static(posPath));
 
 // ─── Storage layer ────────────────────────────────────────────────────────────
 // File-based when no MONGODB_URI (local / Android).

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Kitchen Display — BKT House</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page kds-page">
+
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="index.html" class="back-link">← <span class="nav-txt">POS</span></a>
+      <span id="app-title">👨‍🍳 <span class="app-txt">Kitchen Display</span></span>
+      <span id="kds-count" class="active-count-badge hidden"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="esc-hint">Esc to exit</span>
+      <button id="refresh-btn" class="nav-link refresh-btn">↺ Refresh</button>
+    </div>
+  </header>
+
+  <div class="kds-tab-bar">
+    <button id="tab-kitchen" class="kds-tab kds-tab--active" data-tab="kitchen">
+      🍳 In Kitchen <span id="tab-kitchen-count" class="kds-tab-badge hidden"></span>
+    </button>
+    <button id="tab-served" class="kds-tab" data-tab="served">
+      ✓ All Served <span id="tab-served-count" class="kds-tab-badge hidden"></span>
+    </button>
+    <span id="last-updated" class="last-updated"></span>
+  </div>
+  <div id="kds-wrap"></div>
+
+  <script src="menuDefaults.js"></script>
+  <script src="kds.js"></script>
+</body>
+</html>

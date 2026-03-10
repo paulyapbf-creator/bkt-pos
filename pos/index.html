@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>POS — BKT House</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <span id="app-title">🍲 <span class="app-txt">BKT House</span></span>
+    <div id="header-right">
+      <button id="history-btn" class="nav-link" title="Order History">🕐 <span class="nav-txt">History</span></button>
+      <a href="orders.html" class="nav-link" title="Active Orders">📋 <span class="nav-txt">Orders</span></a>
+      <a href="kds.html" class="nav-link" title="Kitchen Display">👨‍🍳 <span class="nav-txt">Kitchen</span></a>
+      <a href="items.html" class="nav-link" title="Item Master">☰ <span class="nav-txt">Items</span></a>
+      <a href="items.html?tab=maintenance" class="nav-link" title="Maintenance">🔧 <span class="nav-txt">Maint.</span></a>
+      <button id="pay-bills-btn" class="pay-bills-btn" title="Pay Bills">💰 <span class="nav-txt">Pay</span></button>
+    </div>
+  </header>
+
+  <!-- ── Split layout ── -->
+  <div id="main-layout">
+
+    <!-- Left: Cart panel -->
+    <div id="cart-panel">
+      <div id="cp-head">
+        <button id="table-select-btn" class="table-select-btn tbl-btn-no-table">Select Table <span class="tbl-arrow">▾</span></button>
+        <div id="cp-head-top">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="cp-title">Order</span>
+            <span id="cp-item-count" class="cp-item-count"></span>
+          </div>
+          <button id="cp-clear-btn" class="cp-clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <div id="cp-body"></div>
+
+      <div id="cp-foot">
+        <div class="cp-total-row">
+          <span class="cp-total-label">Subtotal</span>
+          <span id="cp-total">RM 0.00</span>
+        </div>
+        <button id="send-btn" class="send-btn" disabled>Send to Kitchen</button>
+      </div>
+    </div>
+
+    <!-- Right: Menu panel -->
+    <div id="menu-panel">
+      <div id="search-wrap">
+        <input type="search" id="search-input" placeholder="🔍  Search…" autocomplete="off">
+      </div>
+      <div id="category-bar"></div>
+      <div id="menu-area">
+        <div id="menu-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-layout -->
+
+  <!-- ── Table picker modal ── -->
+  <div id="table-picker-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet table-picker-sheet">
+      <div class="sheet-header">
+        <div class="sheet-title">Select Table</div>
+        <button class="close-btn" id="table-picker-close" aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body" id="table-picker-body"></div>
+    </div>
+  </div>
+
+  <!-- ── Modifier modal ── -->
+  <div id="modifier-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <div class="sheet-header">
+        <div>
+          <div id="modal-name-zh" class="sheet-title"></div>
+          <div id="modal-name-en" class="sheet-subtitle"></div>
+        </div>
+        <button class="close-btn" id="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body" id="modal-body"></div>
+      <div class="sheet-footer">
+        <span id="modal-price" class="footer-price"></span>
+        <button id="modal-add-btn" class="add-btn">Add to Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Billing / Payment modal ── -->
+  <div id="payment-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet pay-sheet">
+      <div class="sheet-header">
+        <div>
+          <div id="pay-modal-title" class="sheet-title">Unpaid Bills</div>
+          <div id="pay-subtitle" class="sheet-subtitle"></div>
+        </div>
+        <button class="close-btn" id="pay-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body" id="pay-body"></div>
+      <div class="sheet-footer pay-footer">
+        <button id="pay-back-btn" class="secondary-btn hidden">← Back</button>
+        <button id="pay-confirm-btn" class="send-btn hidden">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── History modal ── -->
+  <div id="history-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet hist-sheet">
+      <div class="sheet-header">
+        <div>
+          <div class="sheet-title">Order History</div>
+          <div class="sheet-subtitle hist-filter-row">
+            Table: <select id="hist-table-filter"></select>
+          </div>
+        </div>
+        <button class="close-btn" id="hist-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="sheet-body" id="history-body"></div>
+    </div>
+  </div>
+
+  <!-- ── Toast ── -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="menuDefaults.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Item Master — BKT House</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page">
+
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="index.html" class="back-link">← POS</a>
+      <span id="app-title">📋 Item Master</span>
+    </div>
+    <button id="add-item-btn" class="add-btn" style="padding:8px 18px;font-size:14px;">+ Add Item</button>
+  </header>
+
+  <!-- ── Admin tabs ── -->
+  <div id="admin-tabs">
+    <button class="admin-tab active" data-tab="items">📋 Items</button>
+    <button class="admin-tab" data-tab="settings">💳 Payment Settings</button>
+    <button class="admin-tab" data-tab="maintenance">🔧 Maintenance</button>
+  </div>
+
+  <!-- ── Items panel ── -->
+  <div id="panel-items">
+  <div id="im-toolbar">
+    <input type="search" id="im-search" placeholder="🔍  Search name, category…" autocomplete="off">
+    <span id="im-count"></span>
+  </div>
+
+  <div id="im-table-wrap">
+    <table id="im-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Item</th>
+          <th class="th-price">Base Price</th>
+          <th class="th-center">Status</th>
+          <th class="th-center">Pop.</th>
+          <th class="th-center">Modifiers</th>
+          <th class="th-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="im-tbody"></tbody>
+    </table>
+  </div>
+
+  </div><!-- /panel-items -->
+
+  <!-- ── Payment Settings panel ── -->
+  <div id="panel-settings" class="hidden">
+    <div id="settings-wrap">
+      <h2 class="settings-title">General Settings</h2>
+
+      <div class="settings-field">
+        <label>Shop Name (printed on order slip)</label>
+        <input type="text" id="s-shop-name" placeholder="BKT House" maxlength="40">
+      </div>
+
+      <h2 class="settings-title" style="margin-top:24px;">Payment QR Settings</h2>
+      <p class="settings-hint">Paste the URL of your merchant QR code image (PNG/JPG). The image will be displayed full-size on the payment screen.</p>
+
+      <div class="settings-field">
+        <label>Touch &amp; Go eWallet — QR Image URL</label>
+        <input type="url" id="s-tng-url" placeholder="https://…">
+        <div class="qr-preview-wrap">
+          <img id="s-tng-preview" class="qr-preview hidden" alt="T&G QR Preview">
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <label>DuitNow QR — Image URL</label>
+        <input type="url" id="s-duitnow-url" placeholder="https://…">
+        <div class="qr-preview-wrap">
+          <img id="s-duitnow-preview" class="qr-preview hidden" alt="DuitNow QR Preview">
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="s-save-btn" class="add-btn" style="padding:10px 28px;">Save Settings</button>
+        <span id="s-saved-msg" class="s-saved-msg hidden">✓ Saved</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Maintenance panel ── -->
+  <div id="panel-maintenance" class="hidden">
+    <div id="maintenance-wrap">
+      <h2 class="settings-title">Maintenance</h2>
+      <p class="settings-hint">Irreversible actions — a confirmation is required before each operation.</p>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">🗑️ Clear All Sales History</div>
+          <div class="maint-card-desc">Permanently deletes all completed order records from the history log. Active orders in the kitchen are not affected.</div>
+        </div>
+        <button id="maint-clear-history-btn" class="maint-danger-btn">Clear Sales History</button>
+      </div>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">🍳 Clear KDS Data</div>
+          <div class="maint-card-desc">Resets all kitchen item statuses back to Pending. Table assignments and order items are kept — only the cooking progress is cleared.</div>
+        </div>
+        <button id="maint-clear-kds-btn" class="maint-danger-btn">Clear KDS Data</button>
+      </div>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">🪑 Clear Table Data</div>
+          <div class="maint-card-desc">Removes all active table assignments and their orders. Tables will appear as free/empty. Use this to reset all tables at the end of a session.</div>
+        </div>
+        <button id="maint-clear-tables-btn" class="maint-danger-btn">Clear Table Data</button>
+      </div>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">📋 Clear Order Table</div>
+          <div class="maint-card-desc">Clears all records shown on the Active Orders screen. Resets the order list to empty without affecting sales history or kitchen display settings.</div>
+        </div>
+        <button id="maint-clear-orders-btn" class="maint-danger-btn">Clear Order Table</button>
+      </div>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">💳 Clear Payment Data</div>
+          <div class="maint-card-desc">Removes saved payment QR settings (Touch &amp; Go and DuitNow URLs). The payment screen will show no QR until new settings are saved.</div>
+        </div>
+        <button id="maint-clear-payment-btn" class="maint-danger-btn">Clear Payment Data</button>
+      </div>
+
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">🪑 Release Table Seating</div>
+          <div class="maint-card-desc">Select specific occupied tables to release. The selected tables will be freed without affecting other active orders.</div>
+        </div>
+        <button id="maint-release-seating-btn" class="maint-danger-btn">Release Seating</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confirmation modal ── -->
+  <div id="maint-confirm-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet maint-confirm-sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="maint-confirm-title">Confirm Action</div>
+        <button class="close-btn" id="maint-confirm-close">✕</button>
+      </div>
+      <div class="sheet-body">
+        <p id="maint-confirm-msg" class="maint-confirm-msg"></p>
+        <div id="maint-table-picker" class="maint-table-picker hidden"></div>
+        <p class="maint-confirm-warn">⚠️ This action cannot be undone.</p>
+      </div>
+      <div class="sheet-footer" style="justify-content:flex-end;gap:10px;">
+        <button id="maint-confirm-cancel" class="secondary-btn" style="flex:unset;padding:12px 24px;">Cancel</button>
+        <button id="maint-confirm-ok" class="maint-danger-btn" style="min-width:140px;">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Item add/edit modal ── -->
+  <div id="im-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet im-sheet">
+      <div class="sheet-header">
+        <div class="sheet-title" id="im-modal-title">Add Item</div>
+        <button class="close-btn" id="im-modal-close">✕</button>
+      </div>
+
+      <div class="sheet-body im-form-body">
+        <div class="im-form-grid">
+          <div class="form-field">
+            <label>Name (EN) <span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="e.g. Bak Kut Teh">
+          </div>
+          <div class="form-field">
+            <label>Name (ZH) <span class="req">*</span></label>
+            <input type="text" id="f-namezh" placeholder="e.g. 肉骨茶">
+          </div>
+          <div class="form-field">
+            <label>Category <span class="req">*</span></label>
+            <select id="f-category">
+              <option value="mains">Main Dishes</option>
+              <option value="addons">Add-ons</option>
+              <option value="vegetables">Vegetables</option>
+              <option value="noodles">Noodles</option>
+              <option value="beverages">Beverages</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Base Price (RM) <span class="req">*</span></label>
+            <input type="number" id="f-price" min="0" step="0.5" placeholder="0.00">
+          </div>
+          <div class="form-field full-col">
+            <label>Description (EN)</label>
+            <input type="text" id="f-desc" placeholder="Short description">
+          </div>
+          <div class="form-field full-col">
+            <label>Description (ZH)</label>
+            <input type="text" id="f-desczh" placeholder="中文描述">
+          </div>
+          <div class="form-field full-col form-checks">
+            <label class="check-label"><input type="checkbox" id="f-popular"> Mark as Popular ⭐</label>
+            <label class="check-label"><input type="checkbox" id="f-available" checked> Available (show on POS)</label>
+          </div>
+        </div>
+
+        <div class="section-divider">
+          <span>Modifier Groups</span>
+          <button type="button" id="add-grp-btn" class="text-btn">+ Add Group</button>
+        </div>
+        <div id="mod-groups-wrap"></div>
+      </div>
+
+      <div class="sheet-footer" style="justify-content:flex-end;gap:10px;">
+        <button id="im-cancel-btn" class="secondary-btn" style="flex:unset;padding:12px 24px;">Cancel</button>
+        <button id="im-save-btn"   class="add-btn"       style="flex:unset;padding:12px 28px;">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="menuDefaults.js"></script>
+  <script src="items.js"></script>
+</body>
+</html>
