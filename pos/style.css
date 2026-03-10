@@ -1843,6 +1843,16 @@ body {
 .maint-danger-btn:hover { background: #a93226; }
 .maint-danger-btn:active { background: #922b21; }
 
+.maint-card--reset { border-left-color: #27ae60; }
+.maint-reset-btn {
+  background: #27ae60; color: #fff; border: none;
+  padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; touch-action: manipulation;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.maint-reset-btn:hover  { background: #219a52; }
+.maint-reset-btn:active { background: #1e8449; }
+
 .maint-confirm-sheet { max-width: 480px; }
 .maint-confirm-msg  { font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 10px; }
 .maint-confirm-warn { font-size: 13px; color: var(--red); font-weight: 600; margin-top: 12px; }

@@ -230,6 +230,13 @@ app.delete('/api/bills/:table', async (req, res) => {
   res.json({ ok: true });
 });
 
+app.delete('/api/bills', async (req, res) => {
+  const bills = await store.getAllBills();
+  await Promise.all(Object.keys(bills).map(t => store.deleteBill(t)));
+  broadcast(['pos', 'kds'], { type: 'bill:cleared', table: '*' });
+  res.json({ ok: true });
+});
+
 app.patch('/api/bills/:table/items/:itemId/status', async (req, res) => {
   const { table, itemId } = req.params;
   const { status } = req.body;

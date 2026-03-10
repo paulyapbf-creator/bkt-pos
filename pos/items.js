@@ -345,162 +345,46 @@ function initSettings() {
 }
 
 function initMaintenance() {
-  const modal       = document.getElementById('maint-confirm-modal');
-  const titleEl     = document.getElementById('maint-confirm-title');
-  const msgEl       = document.getElementById('maint-confirm-msg');
-  const pickerEl    = document.getElementById('maint-table-picker');
-  const okBtn       = document.getElementById('maint-confirm-ok');
-  const cancelBtn   = document.getElementById('maint-confirm-cancel');
-  const closeBtn    = document.getElementById('maint-confirm-close');
-  let pendingAction = null;
-
-  function openConfirm(title, msg, action) {
-    titleEl.textContent = title;
-    msgEl.textContent   = msg;
-    pickerEl.innerHTML  = '';
-    pickerEl.classList.add('hidden');
-    pendingAction = action;
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function openSeatingPicker(title, msg) {
-    const bills  = JSON.parse(localStorage.getItem('bkt_active_bills') || '{}');
-    const tables = Object.keys(bills).sort();
-
-    titleEl.textContent = title;
-    msgEl.textContent   = tables.length ? msg : 'No tables are currently occupied.';
-    pickerEl.classList.remove('hidden');
-
-    if (tables.length === 0) {
-      pickerEl.innerHTML = '';
-      okBtn.classList.add('hidden');
-    } else {
-      pickerEl.innerHTML = tables.map(t =>
-        `<button class="maint-tbl-btn" data-table="${t}">${t}</button>`
-      ).join('');
-      pickerEl.querySelectorAll('.maint-tbl-btn').forEach(btn => {
-        btn.addEventListener('click', () => btn.classList.toggle('maint-tbl-btn--selected'));
-      });
-      okBtn.classList.remove('hidden');
-    }
-
-    pendingAction = () => {
-      const selected = [...pickerEl.querySelectorAll('.maint-tbl-btn--selected')]
-        .map(b => b.dataset.table);
-      if (selected.length === 0) return;
-      const bills = JSON.parse(localStorage.getItem('bkt_active_bills') || '{}');
-      selected.forEach(t => delete bills[t]);
-      localStorage.setItem('bkt_active_bills', JSON.stringify(bills));
-      const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
-      if (ch) { ch.postMessage({ type: 'bill:cleared', table: '*' }); ch.close(); }
-      showMaintToast(`✓ Released: ${selected.join(', ')}`);
-    };
-
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  }
+  const modal     = document.getElementById('maint-confirm-modal');
+  const msgEl     = document.getElementById('maint-confirm-msg');
+  const okBtn     = document.getElementById('maint-confirm-ok');
+  const cancelBtn = document.getElementById('maint-confirm-cancel');
+  const closeBtn  = document.getElementById('maint-confirm-close');
 
   function closeConfirm() {
     modal.classList.add('hidden');
     document.body.style.overflow = '';
-    pickerEl.innerHTML = '';
-    pickerEl.classList.add('hidden');
-    okBtn.classList.remove('hidden');
-    pendingAction = null;
   }
-
-  okBtn.addEventListener('click', () => {
-    if (pendingAction) pendingAction();
-    closeConfirm();
-  });
 
   cancelBtn.addEventListener('click', closeConfirm);
   closeBtn.addEventListener('click',  closeConfirm);
   modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
 
-  // ── Clear Sales History ───────────────────────────────────────────────────
-  document.getElementById('maint-clear-history-btn').addEventListener('click', () => {
-    openConfirm(
-      'Clear Sales History',
-      'This will permanently delete all completed order records. Active kitchen orders will not be affected.',
-      () => {
-        localStorage.removeItem('bkt_order_history');
-        try { fetch(`${API_BASE}/api/history`, { method: 'DELETE' }); } catch (_) {}
-        showMaintToast('✓ Sales history cleared');
-      }
-    );
-  });
+  // ── Reset & Go Live ───────────────────────────────────────────────────────
+  document.getElementById('maint-reset-live-btn').addEventListener('click', () => {
+    document.getElementById('maint-confirm-title').textContent = '🚀 Reset & Go Live';
+    msgEl.textContent = 'This will clear all active orders, kitchen data, sales history and KDS history. Menu items and payment settings will be kept.';
+    document.getElementById('maint-table-picker').classList.add('hidden');
+    okBtn.textContent = 'Yes, Reset & Go Live';
 
-  // ── Clear KDS Data (reset item statuses to pending) ──────────────────────
-  document.getElementById('maint-clear-kds-btn').addEventListener('click', () => {
-    openConfirm(
-      'Clear KDS Data',
-      'All kitchen item statuses will be reset to Pending. Table assignments and order items are preserved.',
-      () => {
-        try {
-          const bills = JSON.parse(localStorage.getItem('bkt_active_bills') || '{}');
-          Object.values(bills).forEach(bill => {
-            bill.items.forEach(item => { item.status = 'pending'; });
-          });
-          localStorage.setItem('bkt_active_bills', JSON.stringify(bills));
-        } catch (_) {}
-        const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
-        if (ch) { ch.postMessage({ type: 'order:updated', table: '*' }); ch.close(); }
-        showMaintToast('✓ KDS statuses reset to Pending');
-      }
-    );
-  });
+    okBtn.onclick = async () => {
+      closeConfirm();
+      try {
+        await Promise.all([
+          fetch(`${API_BASE}/api/bills`,       { method: 'DELETE' }),
+          fetch(`${API_BASE}/api/history`,     { method: 'DELETE' }),
+          fetch(`${API_BASE}/api/kds-history`, { method: 'DELETE' }),
+        ]);
+      } catch (_) {}
+      localStorage.removeItem('bkt_active_bills');
+      localStorage.removeItem('bkt_order_history');
+      const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
+      if (ch) { ch.postMessage({ type: 'bill:cleared', table: '*' }); ch.close(); }
+      showMaintToast('✓ System reset — ready to go live!');
+    };
 
-  // ── Clear Order Table (active orders screen) ─────────────────────────────
-  document.getElementById('maint-clear-orders-btn').addEventListener('click', () => {
-    openConfirm(
-      'Clear Order Table',
-      'All records on the Active Orders screen will be removed. This cannot be undone.',
-      () => {
-        localStorage.removeItem('bkt_active_bills');
-        try { fetch(`${API_BASE}/api/bills`, { method: 'DELETE' }); } catch (_) {}
-        const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
-        if (ch) { ch.postMessage({ type: 'bill:cleared', table: '*' }); ch.close(); }
-        showMaintToast('✓ Order table cleared');
-      }
-    );
-  });
-
-  // ── Clear Table Data (remove all active table assignments) ────────────────
-  document.getElementById('maint-clear-tables-btn').addEventListener('click', () => {
-    openConfirm(
-      'Clear Table Data',
-      'All active table assignments and their orders will be permanently removed. Tables will appear as free and empty.',
-      () => {
-        localStorage.removeItem('bkt_active_bills');
-        try { fetch(`${API_BASE}/api/bills`, { method: 'DELETE' }); } catch (_) {}
-        const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
-        if (ch) { ch.postMessage({ type: 'bill:cleared', table: '*' }); ch.close(); }
-        showMaintToast('✓ All table data cleared');
-      }
-    );
-  });
-
-  // ── Clear Payment Data ────────────────────────────────────────────────────
-  document.getElementById('maint-clear-payment-btn').addEventListener('click', () => {
-    openConfirm(
-      'Clear Payment Data',
-      'Saved QR payment settings (Touch & Go and DuitNow URLs) will be permanently removed.',
-      () => {
-        localStorage.removeItem('bkt_settings');
-        try { fetch(`${API_BASE}/api/settings`, { method: 'DELETE' }); } catch (_) {}
-        showMaintToast('✓ Payment data cleared');
-      }
-    );
-  });
-
-  // ── Release Table Seating ─────────────────────────────────────────────────
-  document.getElementById('maint-release-seating-btn').addEventListener('click', () => {
-    openSeatingPicker(
-      'Release Table Seating',
-      'Tap the tables you want to release, then confirm.'
-    );
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
   });
 }
 

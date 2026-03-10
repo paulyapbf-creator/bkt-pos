@@ -89,54 +89,14 @@
   <div id="panel-maintenance" class="hidden">
     <div id="maintenance-wrap">
       <h2 class="settings-title">Maintenance</h2>
-      <p class="settings-hint">Irreversible actions — a confirmation is required before each operation.</p>
+      <p class="settings-hint">Use before going live or at the start of a new day to ensure a clean slate.</p>
 
-      <div class="maint-card">
+      <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
-          <div class="maint-card-title">🗑️ Clear All Sales History</div>
-          <div class="maint-card-desc">Permanently deletes all completed order records from the history log. Active orders in the kitchen are not affected.</div>
+          <div class="maint-card-title">🚀 Reset &amp; Go Live</div>
+          <div class="maint-card-desc">Clears all active orders, kitchen data, sales history and KDS history. Menu items and payment settings are kept. Use this to start fresh before going live.</div>
         </div>
-        <button id="maint-clear-history-btn" class="maint-danger-btn">Clear Sales History</button>
-      </div>
-
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">🍳 Clear KDS Data</div>
-          <div class="maint-card-desc">Resets all kitchen item statuses back to Pending. Table assignments and order items are kept — only the cooking progress is cleared.</div>
-        </div>
-        <button id="maint-clear-kds-btn" class="maint-danger-btn">Clear KDS Data</button>
-      </div>
-
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">🪑 Clear Table Data</div>
-          <div class="maint-card-desc">Removes all active table assignments and their orders. Tables will appear as free/empty. Use this to reset all tables at the end of a session.</div>
-        </div>
-        <button id="maint-clear-tables-btn" class="maint-danger-btn">Clear Table Data</button>
-      </div>
-
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">📋 Clear Order Table</div>
-          <div class="maint-card-desc">Clears all records shown on the Active Orders screen. Resets the order list to empty without affecting sales history or kitchen display settings.</div>
-        </div>
-        <button id="maint-clear-orders-btn" class="maint-danger-btn">Clear Order Table</button>
-      </div>
-
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">💳 Clear Payment Data</div>
-          <div class="maint-card-desc">Removes saved payment QR settings (Touch &amp; Go and DuitNow URLs). The payment screen will show no QR until new settings are saved.</div>
-        </div>
-        <button id="maint-clear-payment-btn" class="maint-danger-btn">Clear Payment Data</button>
-      </div>
-
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">🪑 Release Table Seating</div>
-          <div class="maint-card-desc">Select specific occupied tables to release. The selected tables will be freed without affecting other active orders.</div>
-        </div>
-        <button id="maint-release-seating-btn" class="maint-danger-btn">Release Seating</button>
+        <button id="maint-reset-live-btn" class="maint-reset-btn">Reset &amp; Go Live</button>
       </div>
     </div>
   </div>
