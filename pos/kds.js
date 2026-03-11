@@ -7,9 +7,10 @@ const STATUS_LABEL = { pending: 'Pending', cooking: 'Cooking', preparing: 'Cooki
 // Normalise legacy 'preparing' → 'cooking'
 function normSt(st) { return (st === 'preparing' || st === 'pending') ? 'cooking' : (st || 'cooking'); }
 
-let activeTab = 'kitchen'; // 'kitchen' | 'served'
-let kdsWS     = null;
+let activeTab  = 'kitchen'; // 'kitchen' | 'served'
+let kdsWS      = null;
 let localBills = null; // local cache updated directly from WS messages
+let kdsHistory = [];   // served orders — mirrors /api/kds-history
 
 // ─── Data source ─────────────────────────────────────────────────────────────
 
@@ -24,6 +25,15 @@ async function fetchBills() {
   catch (e) { return {}; }
 }
 
+async function fetchHistory() {
+  if (!location.host) return [];
+  try {
+    const res = await fetch('/api/kds-history', { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (e) {}
+  return [];
+}
+
 // ─── WebSocket (server mode only) ────────────────────────────────────────────
 
 function connectKdsWS() {
@@ -31,10 +41,11 @@ function connectKdsWS() {
   try {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
-    kdsWS.onopen = () => {
+    kdsWS.onopen = async () => {
       kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
       // Full refresh on every (re)connect to catch any missed messages
       localBills = null;
+      kdsHistory = await fetchHistory();
       renderKDS();
     };
     kdsWS.onmessage = (e) => {
@@ -61,7 +72,8 @@ function connectKdsWS() {
           case 'bill:cleared':
             if (msg.table === '*') localBills = {};
             else delete localBills[msg.table];
-            renderKDS();
+            // A bill was archived — refresh history to show the new entry
+            fetchHistory().then(h => { kdsHistory = h; renderKDS(); });
             break;
         }
       } catch { renderKDS(); }
@@ -133,66 +145,94 @@ function renderCard(bill, table) {
     </div>`;
 }
 
+function renderHistoryCard(order) {
+  const servedTime = new Date(order.servedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+  const servedDate = new Date(order.servedAt).toLocaleDateString('en-MY', { day: '2-digit', month: 'short' });
+  const totalMs    = order.servedAt - order.startedAt;
+  const totalMins  = Math.floor(totalMs / 60000);
+  const totalStr   = totalMins > 0 ? `${totalMins}m` : '<1m';
+
+  return `
+    <div class="kds-card kds-card--done">
+      <div class="kds-card-head">
+        <div class="kds-head-left">
+          <span class="kds-table-badge">${order.table}</span>
+          <div class="kds-head-meta">
+            <span class="elapsed-badge elapsed--fresh">${servedDate} ${servedTime}</span>
+            <span class="kds-time">Total: ${totalStr}</span>
+          </div>
+        </div>
+        <div class="kds-head-right">
+          <span class="kds-cnt kds-cnt--served">All served</span>
+        </div>
+      </div>
+      <div class="kds-items-list">
+        ${order.items.map(item => `
+          <div class="kds-item kds-item--served">
+            <div class="kds-item-info">
+              <span class="kds-item-zh">${item.nameZh}</span>
+              <span class="kds-item-en">${item.name}</span>
+            </div>
+            <div class="kds-item-right">
+              <span class="kds-item-qty">×${item.quantity}</span>
+              <span class="kds-status-label kds-status--served">Served</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 async function renderKDS() {
   if (!localBills) localBills = await fetchBills();
+
   const bills = localBills;
   const tables = Object.keys(bills).sort((a, b) => bills[a].startedAt - bills[b].startedAt);
-
   const kitchenTables = tables.filter(t =>
     bills[t].items.some(i => (i.status || 'cooking') !== 'served'));
 
-  const servedTables = tables.filter(t =>
-    bills[t].items.length > 0 &&
-    bills[t].items.every(i => (i.status || 'cooking') === 'served'));
-
+  // Active order count badge
   const badge = document.getElementById('kds-count');
-  if (kitchenTables.length > 0) {
-    badge.textContent = kitchenTables.length;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
-  }
+  badge.textContent = kitchenTables.length;
+  badge.classList.toggle('hidden', kitchenTables.length === 0);
 
+  // Tab count badges
   const ktCount  = document.getElementById('tab-kitchen-count');
   const srvCount = document.getElementById('tab-served-count');
-  if (kitchenTables.length > 0) {
-    ktCount.textContent = kitchenTables.length;
-    ktCount.classList.remove('hidden');
-  } else {
-    ktCount.classList.add('hidden');
-  }
-  if (servedTables.length > 0) {
-    srvCount.textContent = servedTables.length;
-    srvCount.classList.remove('hidden');
-  } else {
-    srvCount.classList.add('hidden');
-  }
+  ktCount.textContent  = kitchenTables.length;
+  ktCount.classList.toggle('hidden', kitchenTables.length === 0);
+  srvCount.textContent = kdsHistory.length;
+  srvCount.classList.toggle('hidden', kdsHistory.length === 0);
 
   document.getElementById('last-updated').textContent =
     `Updated ${new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
   const wrap = document.getElementById('kds-wrap');
-  const displayTables = activeTab === 'kitchen' ? kitchenTables : servedTables;
 
-  if (displayTables.length === 0) {
-    const msg = activeTab === 'kitchen'
-      ? { icon: '👨‍🍳', title: 'No Active Orders',       sub: 'Orders sent from POS will appear here.' }
-      : { icon: '✓',   title: 'No Fully Served Orders', sub: 'Tables where every item is served will appear here.' };
-    wrap.innerHTML = `
-      <div class="orders-empty">
-        <div class="orders-empty-icon">${msg.icon}</div>
-        <div class="orders-empty-title">${msg.title}</div>
-        <div class="orders-empty-sub">${msg.sub}</div>
-      </div>`;
-    return;
+  if (activeTab === 'kitchen') {
+    if (kitchenTables.length === 0) {
+      wrap.innerHTML = `
+        <div class="orders-empty">
+          <div class="orders-empty-icon">👨‍🍳</div>
+          <div class="orders-empty-title">No Active Orders</div>
+          <div class="orders-empty-sub">Orders sent from POS will appear here.</div>
+        </div>`;
+    } else {
+      wrap.innerHTML = `<div class="kds-section-grid">${kitchenTables.map(t => renderCard(bills[t], t)).join('')}</div>`;
+    }
+  } else {
+    if (kdsHistory.length === 0) {
+      wrap.innerHTML = `
+        <div class="orders-empty">
+          <div class="orders-empty-icon">✓</div>
+          <div class="orders-empty-title">No Served Orders</div>
+          <div class="orders-empty-sub">Completed orders will appear here.</div>
+        </div>`;
+    } else {
+      wrap.innerHTML = `<div class="kds-section-grid">${kdsHistory.map(renderHistoryCard).join('')}</div>`;
+    }
   }
-
-  wrap.innerHTML = `
-    <div class="kds-section-grid">
-      ${displayTables.map(t => renderCard(bills[t], t)).join('')}
-    </div>`;
 }
 
 function setTab(tab) {
@@ -205,7 +245,8 @@ function setTab(tab) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-function init() {
+async function init() {
+  kdsHistory = await fetchHistory();
   renderKDS();
 
   document.querySelectorAll('.kds-tab').forEach(btn => {
@@ -213,7 +254,7 @@ function init() {
   });
 
   document.getElementById('refresh-btn').addEventListener('click', async () => {
-    localBills = await fetchBills();
+    [localBills, kdsHistory] = await Promise.all([fetchBills(), fetchHistory()]);
     await renderKDS();
     const btn = document.getElementById('refresh-btn');
     btn.textContent = '✓ Done';
