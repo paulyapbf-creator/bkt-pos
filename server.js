@@ -141,6 +141,21 @@ function broadcast(targets, message) {
   );
 }
 
+async function archiveIfAllServed(table, bill) {
+  if (!bill.items.every(i => i.status === 'served')) return;
+  const servedAt = Date.now();
+  await store.addKdsHistory({
+    table,
+    servedAt,
+    startedAt: bill.startedAt,
+    items: bill.items.map(({ id, name, nameZh, quantity, sentAt, readyAt }) => ({
+      id, name, nameZh, quantity, sentAt, readyAt: readyAt || servedAt,
+    })),
+  });
+  await store.deleteBill(table);
+  broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
+}
+
 wss.on('connection', (ws) => {
   ws.role = null;
 
@@ -171,6 +186,8 @@ wss.on('connection', (ws) => {
 
       const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
       if (allReady) broadcast(['pos'], { type: 'table:allReady', table: msg.table });
+
+      await archiveIfAllServed(msg.table, bill);
     }
   });
 
@@ -255,6 +272,8 @@ app.patch('/api/bills/:table/items/:itemId/status', async (req, res) => {
   if (allReady) broadcast(['pos'], { type: 'table:allReady', table });
 
   res.json(item);
+
+  await archiveIfAllServed(table, bill);
 });
 
 // ─── REST API: KDS History ────────────────────────────────────────────────────

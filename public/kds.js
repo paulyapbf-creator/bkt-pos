@@ -67,9 +67,11 @@ function handleWSMessage(msg) {
       break;
 
     case 'bill:cleared':
-      delete bills[msg.table];
+      if (bills[msg.table]) {
+        delete bills[msg.table];
+        showToast(`${msg.table} served`);
+      }
       renderGrid();
-      showToast(`${msg.table} cleared`);
       break;
   }
 }
@@ -326,50 +328,23 @@ async function markAllServed(table) {
 
   const servedAt = Date.now();
 
-  // Persist served status via REST API (saves to server + broadcasts to all clients)
-  // Also send via WS for instant real-time propagation
-  await Promise.all(bill.items.map(async item => {
-    if (!item.readyAt) item.readyAt = servedAt; // fill readyAt for items not yet marked ready
-    item.status = 'served'; // optimistic local update
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'item:statusChange', table, itemId: item.id, status: 'served' }));
-    }
-    try {
-      await fetch(`/api/bills/${encodeURIComponent(table)}/items/${encodeURIComponent(item.id)}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'served' }),
-      });
-    } catch (e) {}
-  }));
-
-  const historyEntry = {
-    table,
-    servedAt,
-    startedAt: bill.startedAt,
-    items: bill.items.map(item => ({
-      id: item.id,
-      name: item.name,
-      nameZh: item.nameZh,
-      quantity: item.quantity,
-      sentAt: item.sentAt,
-      readyAt: item.readyAt,
-    })),
-  };
-
-  try {
-    await fetch(`${API_BASE}/api/kds-history`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(historyEntry),
-    });
-  } catch (e) {
-    console.error('Failed to save KDS history:', e);
-  }
-
+  // Optimistic local update for instant UI feedback
+  bill.items.forEach(item => {
+    if (!item.readyAt) item.readyAt = servedAt;
+    item.status = 'served';
+  });
   delete bills[table];
   renderGrid();
   showToast(`${table} served!`);
+
+  // Persist each item as served — server auto-archives bill and broadcasts bill:cleared
+  await Promise.all(bill.items.map(item =>
+    fetch(`/api/bills/${encodeURIComponent(table)}/items/${encodeURIComponent(item.id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'served' }),
+    }).catch(() => {})
+  ));
 }
 
 // ─── KDS History ─────────────────────────────────────────────────────────────
