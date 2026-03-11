@@ -9,8 +9,20 @@ function normSt(st) { return (st === 'preparing' || st === 'pending') ? 'cooking
 
 let activeTab  = 'kitchen'; // 'kitchen' | 'served'
 let kdsWS      = null;
-let localBills = null; // local cache updated directly from WS messages
-let kdsHistory = [];   // served orders — mirrors /api/kds-history
+let localBills = null;
+let kdsHistory = [];
+
+// ─── Fetch helpers ────────────────────────────────────────────────────────────
+
+async function refresh() {
+  localBills = await fetchBills();
+  renderKDS();
+}
+
+async function refreshAll() {
+  [localBills, kdsHistory] = await Promise.all([fetchBills(), fetchHistory()]);
+  renderKDS();
+}
 
 // ─── Data source ─────────────────────────────────────────────────────────────
 
@@ -41,46 +53,21 @@ function connectKdsWS() {
   try {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
-    kdsWS.onopen = async () => {
+    kdsWS.onopen = () => {
       kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
-      // Full refresh on every (re)connect to catch any missed messages
-      localBills = null;
-      kdsHistory = await fetchHistory();
-      renderKDS();
+      refresh(); // Full refresh on every (re)connect
     };
     kdsWS.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        if (!localBills) { renderKDS(); return; }
-
-        switch (msg.type) {
-          case 'item:statusChanged':
-            if (localBills[msg.table]) {
-              const item = localBills[msg.table].items.find(i => i.id === msg.itemId);
-              if (item) {
-                item.status = msg.status;
-                if (msg.item && msg.item.readyAt) item.readyAt = msg.item.readyAt;
-              }
-            }
-            renderKDS();
-            break;
-          case 'order:new':
-          case 'order:updated':
-            if (msg.bill) localBills[msg.table] = msg.bill;
-            renderKDS();
-            break;
-          case 'bill:cleared':
-            if (msg.table === '*') localBills = {};
-            else delete localBills[msg.table];
-            renderKDS(); // Update kitchen tab immediately
-            // Refresh history to show the new entry
-            fetchHistory().then(h => {
-              if (h.length > 0 || msg.table === '*') kdsHistory = h;
-              renderKDS();
-            });
-            break;
+        // Always fetch fresh data from the server — no local state juggling.
+        // WS is used only as a "something changed" signal.
+        if (msg.type === 'bill:cleared') {
+          refreshAll(); // need both bills + history
+        } else {
+          refresh();    // bills only
         }
-      } catch { renderKDS(); }
+      } catch { refresh(); }
     };
     kdsWS.onclose = () => { kdsWS = null; setTimeout(connectKdsWS, 3000); };
     kdsWS.onerror = () => kdsWS && kdsWS.close();
@@ -281,14 +268,12 @@ async function init() {
     if (e.key === 'Escape') window.location.href = 'index.html';
   });
 
-  // Poll every 5s ONLY when WebSocket is disconnected (fallback)
-  // When WS is live, it handles all updates — polling would race with WS and overwrite updates
-  setInterval(async () => {
-    if (!kdsWS || kdsWS.readyState !== WebSocket.OPEN) {
-      [localBills, kdsHistory] = await Promise.all([fetchBills(), fetchHistory()]);
-      renderKDS();
-    }
+  // Poll every 5s when WS is down, every 15s always — guarantees data stays
+  // in sync even if a WS message is missed or the connection drops silently
+  setInterval(() => {
+    if (!kdsWS || kdsWS.readyState !== WebSocket.OPEN) refreshAll();
   }, 5000);
+  setInterval(refreshAll, 15000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

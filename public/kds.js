@@ -43,39 +43,27 @@ function setConnStatus(online) {
 }
 
 function handleWSMessage(msg) {
+  // UI feedback first (instant), then fetch authoritative data from server.
+  // Never update local state from WS — always re-fetch to stay consistent.
   switch (msg.type) {
     case 'order:new':
-      bills[msg.table] = msg.bill;
-      renderGrid();
-      flashCard(msg.table);
       playBeep();
       showToast(`New order: ${msg.table}`);
+      loadBills().then(() => { renderGrid(); flashCard(msg.table); });
       break;
 
     case 'order:updated':
-      bills[msg.table] = msg.bill;
-      renderGrid();
-      flashCard(msg.table);
       showToast(`Order updated: ${msg.table}`);
+      loadBills().then(() => { renderGrid(); flashCard(msg.table); });
       break;
 
     case 'item:statusChanged':
-      if (bills[msg.table]) {
-        const item = bills[msg.table].items.find(i => i.id === msg.itemId);
-        if (item) {
-          item.status = msg.status;
-          if (msg.item.readyAt) item.readyAt = msg.item.readyAt;
-        }
-        renderGrid();
-      }
+      loadBills().then(() => renderGrid());
       break;
 
     case 'bill:cleared':
-      if (bills[msg.table]) {
-        delete bills[msg.table];
-        showToast(`${msg.table} served`);
-      }
-      loadKdsHistory().then(() => {
+      if (bills[msg.table]) showToast(`${msg.table} served`);
+      Promise.all([loadBills(), loadKdsHistory()]).then(() => {
         if (activeTab === 'served') renderHistoryPanel();
         else renderGrid();
       });
@@ -520,6 +508,20 @@ async function init() {
   renderGrid();
   connectWS();
   elapsedInterval = setInterval(updateElapsed, 30000);
+
+  // Poll every 5s when WS is down, every 15s always as a safety net
+  setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      Promise.all([loadBills(), loadKdsHistory()]).then(() => {
+        if (activeTab === 'served') renderHistoryPanel(); else renderGrid();
+      });
+    }
+  }, 5000);
+  setInterval(() => {
+    Promise.all([loadBills(), loadKdsHistory()]).then(() => {
+      if (activeTab === 'served') renderHistoryPanel(); else renderGrid();
+    });
+  }, 15000);
 
   document.addEventListener('click', () => {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
