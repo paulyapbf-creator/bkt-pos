@@ -161,7 +161,7 @@ function renderGrid() {
               ${allDone         ? `<span class="kds-cnt kds-cnt--served">All served</span>` : ''}
             </div>
             <div class="kds-bulk-btns">
-              ${allReady
+              ${!allDone
                 ? `<button class="kds-bulk-btn kds-bulk--serve" data-action="serve" data-table="${table}">Serve All</button>` : ''}
             </div>
           </div>
