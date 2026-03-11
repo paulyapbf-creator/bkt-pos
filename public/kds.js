@@ -119,12 +119,6 @@ function renderGrid() {
     countBadge.classList.add('hidden');
   }
 
-  // Show/hide global Serve All button
-  const serveAllBtn = document.getElementById('kds-serve-all-btn');
-  if (serveAllBtn) {
-    serveAllBtn.classList.toggle('hidden', activeTables.length === 0);
-  }
-
   // Update last-updated timestamp
   document.getElementById('kds-last-updated').textContent =
     `Last updated: ${new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;

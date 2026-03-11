@@ -218,9 +218,9 @@ app.post('/api/bills/:table/items', async (req, res) => {
   const table = req.params.table;
   let bill = await store.getBill(table);
 
-  // If existing bill is fully done (all items ready or served), archive it and start fresh
-  if (bill && bill.items.length > 0 &&
-      bill.items.every(i => i.status === 'ready' || i.status === 'served')) {
+  // POST = new ordering round — archive any existing bill first so new items
+  // always start clean with cooking status (no stale ready/cooking items)
+  if (bill && bill.items.length > 0) {
     await archiveBill(table, bill);
     bill = null;
   }
