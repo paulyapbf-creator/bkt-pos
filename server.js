@@ -195,7 +195,7 @@ app.post('/api/bills/:table/items', async (req, res) => {
   if (!bill) bill = { startedAt: Date.now(), items: [] };
 
   const enhanced = (req.body.items || []).map(item => ({
-    ...item, status: 'pending', sentAt: Date.now(), readyAt: null,
+    ...item, status: 'cooking', sentAt: Date.now(), readyAt: null,
   }));
   bill.items.push(...enhanced);
   await store.saveBill(table, bill);
@@ -214,7 +214,7 @@ app.put('/api/bills/:table', async (req, res) => {
     const prev = existingMap[item.id];
     return prev
       ? { ...item, status: prev.status, sentAt: prev.sentAt, readyAt: prev.readyAt }
-      : { ...item, status: 'pending', sentAt: Date.now(), readyAt: null };
+      : { ...item, status: 'cooking', sentAt: Date.now(), readyAt: null };
   });
 
   const bill = { startedAt: existing?.startedAt || Date.now(), items };

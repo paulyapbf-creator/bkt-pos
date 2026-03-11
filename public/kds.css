@@ -114,6 +114,15 @@ body {
 
 .kds-header-btn--danger.hidden { display: none; }
 
+.kds-header-btn--serve {
+  background: rgba(39,174,96,0.3);
+  border-color: var(--green);
+}
+.kds-header-btn--serve:hover {
+  background: var(--green);
+}
+.kds-header-btn--serve.hidden { display: none; }
+
 .kds-conn {
   font-size: 20px;
   transition: color 0.3s;

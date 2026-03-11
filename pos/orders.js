@@ -2,8 +2,8 @@
 
 const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
-const STATUS_LABELS   = { pending: 'Pending', cooking: 'Cooking', ready: 'Ready', served: 'Served' };
-const STATUS_SEQUENCE = ['pending', 'cooking', 'ready', 'served'];
+const STATUS_LABELS   = { cooking: 'Cooking', ready: 'Ready', served: 'Served' };
+const STATUS_SEQUENCE = ['cooking', 'ready', 'served'];
 
 function loadActiveBills() {
   try { const r = localStorage.getItem(ACTIVE_BILLS_KEY); return r ? JSON.parse(r) : {}; }
@@ -45,7 +45,7 @@ async function updateItemStatus(table, itemId) {
   if (!bills[table]) return;
   const item = bills[table].items.find(i => i.id === itemId);
   if (!item) return;
-  const idx = STATUS_SEQUENCE.indexOf(item.status || 'pending');
+  const idx = STATUS_SEQUENCE.indexOf(item.status || 'cooking');
   if (idx >= STATUS_SEQUENCE.length - 1) return;
   const newStatus = STATUS_SEQUENCE[idx + 1];
 
@@ -121,7 +121,7 @@ function renderOrders() {
 
         <div class="order-items-list">
           ${bill.items.map(item => {
-            const st = item.status || 'pending';
+            const st = item.status || 'cooking';
             const canAdvance = st !== 'served';
             return `
               <div class="oi-row">

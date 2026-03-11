@@ -5,7 +5,7 @@ const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 const STATUS_LABEL = { pending: 'Pending', cooking: 'Cooking', preparing: 'Cooking', ready: 'Ready', served: 'Served' };
 
 // Normalise legacy 'preparing' → 'cooking'
-function normSt(st) { return st === 'preparing' ? 'cooking' : (st || 'pending'); }
+function normSt(st) { return (st === 'preparing' || st === 'pending') ? 'cooking' : (st || 'cooking'); }
 
 let activeTab = 'kitchen'; // 'kitchen' | 'served'
 let kdsWS     = null;
@@ -84,8 +84,8 @@ function renderCard(bill, table) {
   const timeStr = new Date(bill.startedAt)
     .toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
 
-  const cnt = { pending: 0, cooking: 0, ready: 0, served: 0 };
-  items.forEach(i => cnt[normSt(i.status)]++);
+  const cnt = { cooking: 0, ready: 0, served: 0 };
+  items.forEach(i => { const st = normSt(i.status); cnt[st] = (cnt[st] || 0) + 1; });
   const allServed = cnt.served === items.length;
 
   return `
@@ -100,7 +100,6 @@ function renderCard(bill, table) {
         </div>
         <div class="kds-head-right">
           <div class="kds-status-counts">
-            ${cnt.pending > 0 ? `<span class="kds-cnt kds-cnt--pending">${cnt.pending} pending</span>` : ''}
             ${cnt.cooking > 0 ? `<span class="kds-cnt kds-cnt--cooking">${cnt.cooking} cooking</span>` : ''}
             ${cnt.ready   > 0 ? `<span class="kds-cnt kds-cnt--ready">${cnt.ready} ready</span>`   : ''}
             ${allServed        ? `<span class="kds-cnt kds-cnt--served">All served</span>`          : ''}
@@ -137,11 +136,11 @@ async function renderKDS() {
   const tables = Object.keys(bills).sort((a, b) => bills[a].startedAt - bills[b].startedAt);
 
   const kitchenTables = tables.filter(t =>
-    bills[t].items.some(i => (i.status || 'pending') !== 'served'));
+    bills[t].items.some(i => (i.status || 'cooking') !== 'served'));
 
   const servedTables = tables.filter(t =>
     bills[t].items.length > 0 &&
-    bills[t].items.every(i => (i.status || 'pending') === 'served'));
+    bills[t].items.every(i => (i.status || 'cooking') === 'served'));
 
   const badge = document.getElementById('kds-count');
   if (kitchenTables.length > 0) {

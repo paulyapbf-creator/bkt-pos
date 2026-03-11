@@ -163,7 +163,7 @@ function billRow(oi, existingStatus) {
     nameZh: oi.menuItem.nameZh, name: oi.menuItem.name,
     quantity: oi.quantity, unitPrice: oi.unitPrice, subtotal: oi.subtotal,
     selectedModifiers: oi.selectedModifiers, notes: oi.notes,
-    status: existingStatus || 'pending',
+    status: existingStatus || 'cooking',
   };
 }
 

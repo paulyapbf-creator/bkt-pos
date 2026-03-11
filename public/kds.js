@@ -1,7 +1,7 @@
 'use strict';
 
 const API_BASE = '';
-const NEXT_BTN = { pending: '🍳 Cook', cooking: '✓ Ready', ready: '🍽 Served' };
+const NEXT_BTN = { cooking: '✓ Ready', ready: '🍽 Served' };
 let ws = null;
 let bills = {};
 let kdsHistory = [];
@@ -108,13 +108,19 @@ function renderGrid() {
 
   // Update active table count badge
   const activeTables = tables.filter(t =>
-    bills[t].items.some(i => (i.status || 'pending') !== 'served'));
+    bills[t].items.some(i => (i.status || 'cooking') !== 'served'));
   const countBadge = document.getElementById('kds-count');
   if (activeTables.length > 0) {
     countBadge.textContent = activeTables.length;
     countBadge.classList.remove('hidden');
   } else {
     countBadge.classList.add('hidden');
+  }
+
+  // Show/hide global Serve All button
+  const serveAllBtn = document.getElementById('kds-serve-all-btn');
+  if (serveAllBtn) {
+    serveAllBtn.classList.toggle('hidden', activeTables.length === 0);
   }
 
   // Update last-updated timestamp
@@ -136,11 +142,9 @@ function renderGrid() {
     const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
 
     // Status counts
-    const cnt = { pending: 0, cooking: 0, ready: 0, served: 0 };
-    bill.items.forEach(i => { const st = i.status || 'pending'; cnt[st === 'preparing' ? 'cooking' : st] = (cnt[st === 'preparing' ? 'cooking' : st] || 0) + 1; });
+    const cnt = { cooking: 0, ready: 0, served: 0 };
+    bill.items.forEach(i => { const st = (i.status === 'preparing' || i.status === 'pending' || !i.status) ? 'cooking' : i.status; cnt[st] = (cnt[st] || 0) + 1; });
     const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
-    const hasPending = cnt.pending > 0;
-    const hasActive = cnt.pending + cnt.cooking > 0;
     const allDone = cnt.served === bill.items.length;
 
     return `
@@ -156,10 +160,9 @@ function renderGrid() {
           </div>
           <div class="kds-head-right">
             <div class="kds-status-counts">
-              ${cnt.pending > 0   ? `<span class="kds-cnt kds-cnt--pending">${cnt.pending} pending</span>` : ''}
               ${cnt.cooking > 0 ? `<span class="kds-cnt kds-cnt--cooking">${cnt.cooking} cooking</span>` : ''}
-              ${cnt.ready > 0     ? `<span class="kds-cnt kds-cnt--ready">${cnt.ready} ready</span>` : ''}
-              ${allDone           ? `<span class="kds-cnt kds-cnt--served">All served</span>` : ''}
+              ${cnt.ready > 0   ? `<span class="kds-cnt kds-cnt--ready">${cnt.ready} ready</span>` : ''}
+              ${allDone         ? `<span class="kds-cnt kds-cnt--served">All served</span>` : ''}
             </div>
             <div class="kds-bulk-btns">
               ${allReady
@@ -170,7 +173,7 @@ function renderGrid() {
 
         <div class="kds-items-list">
           ${bill.items.map(item => {
-            const st = item.status || 'pending';
+            const st = item.status || 'cooking';
             const next = NEXT_BTN[st];
             return `
               <div class="kds-item kds-item--${st}">
@@ -214,15 +217,16 @@ function renderGrid() {
 }
 
 function updatePendingCount() {
-  let pending = 0;
+  let cooking = 0;
   Object.values(bills).forEach(bill => {
     bill.items.forEach(item => {
-      if (item.status === 'pending' || !item.status) pending += item.quantity;
+      const st = item.status === 'preparing' || item.status === 'pending' || !item.status ? 'cooking' : item.status;
+      if (st === 'cooking') cooking += item.quantity;
     });
   });
   const el = document.getElementById('kds-pending-count');
-  el.textContent = `${pending} pending`;
-  el.classList.toggle('zero', pending === 0);
+  el.textContent = `${cooking} cooking`;
+  el.classList.toggle('zero', cooking === 0);
 }
 
 function updateElapsed() {
@@ -257,8 +261,8 @@ function cycleItemStatus(table, itemId) {
   const item = bill.items.find(i => i.id === itemId);
   if (!item) return;
 
-  const cycle = { pending: 'cooking', cooking: 'ready', ready: 'served' };
-  const next = cycle[item.status || 'pending'];
+  const cycle = { cooking: 'ready', ready: 'served' };
+  const next = cycle[item.status || 'cooking'];
   if (!next) return;
 
   // Send via WebSocket for real-time broadcast
@@ -287,7 +291,7 @@ function bulkSetStatus(table, fromStatus, toStatus) {
   if (!bill) return;
 
   bill.items.forEach(item => {
-    if (item.status === fromStatus || (!item.status && fromStatus === 'pending')) {
+    if (item.status === fromStatus || (!item.status && fromStatus === 'cooking')) {
       item.status = toStatus;
       if (toStatus === 'ready') item.readyAt = Date.now();
 
@@ -305,6 +309,17 @@ function bulkSetStatus(table, fromStatus, toStatus) {
   renderGrid();
 }
 
+async function serveAllOrders() {
+  const tables = Object.keys(bills).filter(t =>
+    bills[t].items.some(i => (i.status || 'cooking') !== 'served')
+  );
+  if (tables.length === 0) return;
+  if (!confirm(`Serve all ${tables.length} open order(s)?`)) return;
+  for (const table of tables) {
+    await markAllServed(table);
+  }
+}
+
 async function markAllServed(table) {
   const bill = bills[table];
   if (!bill) return;
@@ -314,6 +329,7 @@ async function markAllServed(table) {
   // Persist served status via REST API (saves to server + broadcasts to all clients)
   // Also send via WS for instant real-time propagation
   await Promise.all(bill.items.map(async item => {
+    if (!item.readyAt) item.readyAt = servedAt; // fill readyAt for items not yet marked ready
     item.status = 'served'; // optimistic local update
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'item:statusChange', table, itemId: item.id, status: 'served' }));
