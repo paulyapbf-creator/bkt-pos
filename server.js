@@ -297,10 +297,12 @@ async function start() {
       }
     }
     const mode = process.env.MONGODB_URI ? 'MongoDB (cloud)' : 'File (local)';
+    const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+    const baseUrl = railwayDomain ? `https://${railwayDomain}` : `http://${localIP}:${PORT}`;
     console.log(`\nPOS Server running  [${mode}]`);
-    console.log(`  This device  →  http://localhost:${PORT}`);
-    console.log(`  KDS device   →  http://${localIP}:${PORT}/kds.html`);
-    console.log(`  Old KDS      →  http://${localIP}:${PORT}/kds/\n`);
+    console.log(`  POS            →  ${baseUrl}`);
+    console.log(`  Kitchen Status →  ${baseUrl}/kds.html`);
+    console.log(`  Kitchen Display→  ${baseUrl}/kds/\n`);
   });
 }
 
