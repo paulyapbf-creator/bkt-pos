@@ -141,8 +141,7 @@ function broadcast(targets, message) {
   );
 }
 
-async function archiveIfAllServed(table, bill) {
-  if (!bill.items.every(i => i.status === 'served')) return;
+async function archiveBill(table, bill) {
   const servedAt = Date.now();
   await store.addKdsHistory({
     table,
@@ -154,6 +153,15 @@ async function archiveIfAllServed(table, bill) {
   });
   await store.deleteBill(table);
   broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
+}
+
+async function archiveIfAllServed(table, bill) {
+  if (!bill.items.every(i => i.status === 'served')) return;
+  // Re-read from store to guard against race with concurrent requests
+  // (e.g. a new order was added between the initial check and now)
+  const current = await store.getBill(table);
+  if (!current || !current.items.every(i => i.status === 'served')) return;
+  await archiveBill(table, current);
 }
 
 wss.on('connection', (ws) => {
@@ -209,6 +217,14 @@ app.get('/api/bills/:table', async (req, res) => {
 app.post('/api/bills/:table/items', async (req, res) => {
   const table = req.params.table;
   let bill = await store.getBill(table);
+
+  // If existing bill is fully done (all items ready or served), archive it and start fresh
+  if (bill && bill.items.length > 0 &&
+      bill.items.every(i => i.status === 'ready' || i.status === 'served')) {
+    await archiveBill(table, bill);
+    bill = null;
+  }
+
   if (!bill) bill = { startedAt: Date.now(), items: [] };
 
   const enhanced = (req.body.items || []).map(item => ({
