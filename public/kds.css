@@ -130,12 +130,65 @@ body {
 .kds-conn.online  { color: #4ade80; }
 .kds-conn.offline { color: #f87171; }
 
+/* ── Tab bar ──────────────────────────────────────────────────────────────── */
+.kds-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 0;
+  background: var(--header);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: sticky;
+  top: 56px;
+  z-index: 10;
+}
+
+.kds-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background: rgba(255,255,255,0.06);
+  color: #aaa;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s, color 0.15s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.kds-tab:hover { background: rgba(255,255,255,0.1); color: #ddd; }
+
+.kds-tab--active {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border-bottom-color: var(--red);
+}
+
+.kds-tab-badge {
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.kds-tab-badge.hidden { display: none; }
+
 /* ── Last updated ─────────────────────────────────────────────────────────── */
 .kds-last-updated {
-  text-align: center;
-  font-size: 12px;
-  color: var(--muted);
-  padding: 6px 0;
+  margin-left: auto;
+  font-size: 11px;
+  color: #666;
+  padding: 0 0 8px;
+  white-space: nowrap;
 }
 
 /* ── Grid ─────────────────────────────────────────────────────────────────── */

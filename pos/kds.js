@@ -72,8 +72,12 @@ function connectKdsWS() {
           case 'bill:cleared':
             if (msg.table === '*') localBills = {};
             else delete localBills[msg.table];
-            // A bill was archived — refresh history to show the new entry
-            fetchHistory().then(h => { kdsHistory = h; renderKDS(); });
+            renderKDS(); // Update kitchen tab immediately
+            // Refresh history to show the new entry
+            fetchHistory().then(h => {
+              if (h.length > 0 || msg.table === '*') kdsHistory = h;
+              renderKDS();
+            });
             break;
         }
       } catch { renderKDS(); }
@@ -167,14 +171,14 @@ function renderHistoryCard(order) {
         </div>
       </div>
       <div class="kds-items-list">
-        ${order.items.map(item => `
+        ${(order.items || []).map(item => `
           <div class="kds-item kds-item--served">
             <div class="kds-item-info">
-              <span class="kds-item-zh">${item.nameZh}</span>
-              <span class="kds-item-en">${item.name}</span>
+              <span class="kds-item-zh">${item.nameZh || ''}</span>
+              <span class="kds-item-en">${item.name || ''}</span>
             </div>
             <div class="kds-item-right">
-              <span class="kds-item-qty">×${item.quantity}</span>
+              <span class="kds-item-qty">×${item.quantity || 1}</span>
               <span class="kds-status-label kds-status--served">Served</span>
             </div>
           </div>`).join('')}
@@ -230,7 +234,8 @@ async function renderKDS() {
           <div class="orders-empty-sub">Completed orders will appear here.</div>
         </div>`;
     } else {
-      wrap.innerHTML = `<div class="kds-section-grid">${kdsHistory.map(renderHistoryCard).join('')}</div>`;
+      const cards = kdsHistory.map(o => { try { return renderHistoryCard(o); } catch { return ''; } });
+      wrap.innerHTML = `<div class="kds-section-grid">${cards.join('')}</div>`;
     }
   }
 }
@@ -280,7 +285,7 @@ async function init() {
   // When WS is live, it handles all updates — polling would race with WS and overwrite updates
   setInterval(async () => {
     if (!kdsWS || kdsWS.readyState !== WebSocket.OPEN) {
-      localBills = await fetchBills();
+      [localBills, kdsHistory] = await Promise.all([fetchBills(), fetchHistory()]);
       renderKDS();
     }
   }, 5000);

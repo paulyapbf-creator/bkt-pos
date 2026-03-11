@@ -292,6 +292,24 @@ app.patch('/api/bills/:table/items/:itemId/status', async (req, res) => {
   await archiveIfAllServed(table, bill);
 });
 
+// Atomic serve-all: marks every item served and archives in one DB operation.
+// Avoids the concurrent-PATCH race condition where Promise.all overwrites cause
+// archiveIfAllServed to never see all items as served.
+app.post('/api/bills/:table/serve', async (req, res) => {
+  const table = req.params.table;
+  const bill = await store.getBill(table);
+  if (!bill) return res.status(404).json({ error: 'No bill' });
+
+  const now = Date.now();
+  bill.items.forEach(item => {
+    item.status = 'served';
+    if (!item.readyAt) item.readyAt = now;
+  });
+
+  await archiveBill(table, bill); // deletes bill, adds to kds-history, broadcasts bill:cleared
+  res.json({ ok: true });
+});
+
 // ─── REST API: KDS History ────────────────────────────────────────────────────
 
 app.get('/api/kds-history',    async (req, res) => res.json(await store.getKdsHistory()));

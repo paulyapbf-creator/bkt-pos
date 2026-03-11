@@ -6,7 +6,7 @@ const NEXT_BTN     = { cooking: 'Mark Ready', ready: 'Serve' };
 let ws = null;
 let bills = {};
 let kdsHistory = [];
-let historyVisible = false;
+let activeTab = 'kitchen';
 let elapsedInterval = null;
 
 // ─── WebSocket ───────────────────────────────────────────────────────────────
@@ -15,9 +15,12 @@ function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}`);
 
-  ws.onopen = () => {
+  ws.onopen = async () => {
     ws.send(JSON.stringify({ type: 'register', role: 'kds' }));
     setConnStatus(true);
+    // Reload bills to catch any orders missed while disconnected
+    await loadBills();
+    renderGrid();
   };
 
   ws.onclose = () => {
@@ -72,7 +75,10 @@ function handleWSMessage(msg) {
         delete bills[msg.table];
         showToast(`${msg.table} served`);
       }
-      renderGrid();
+      loadKdsHistory().then(() => {
+        if (activeTab === 'served') renderHistoryPanel();
+        else renderGrid();
+      });
       break;
   }
 }
@@ -102,8 +108,21 @@ function elapsed(ts) {
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 
+function updateTabCounts() {
+  const activeTables = Object.keys(bills).filter(t =>
+    bills[t].items.some(i => (i.status || 'cooking') !== 'served'));
+  const ktCount = document.getElementById('tab-kitchen-count');
+  ktCount.textContent = activeTables.length;
+  ktCount.classList.toggle('hidden', activeTables.length === 0);
+
+  const srvCount = document.getElementById('tab-served-count');
+  srvCount.textContent = kdsHistory.length;
+  srvCount.classList.toggle('hidden', kdsHistory.length === 0);
+}
+
 function renderGrid() {
-  if (historyVisible) return;
+  updateTabCounts();
+  if (activeTab !== 'kitchen') return;
 
   const grid = document.getElementById('kds-grid');
   const empty = document.getElementById('kds-empty');
@@ -322,25 +341,13 @@ async function markAllServed(table) {
   const bill = bills[table];
   if (!bill) return;
 
-  const servedAt = Date.now();
-
-  // Optimistic local update for instant UI feedback
-  bill.items.forEach(item => {
-    if (!item.readyAt) item.readyAt = servedAt;
-    item.status = 'served';
-  });
+  // Optimistic: remove from UI immediately
   delete bills[table];
   renderGrid();
   showToast(`${table} served!`);
 
-  // Persist each item as served — server auto-archives bill and broadcasts bill:cleared
-  await Promise.all(bill.items.map(item =>
-    fetch(`/api/bills/${encodeURIComponent(table)}/items/${encodeURIComponent(item.id)}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'served' }),
-    }).catch(() => {})
-  ));
+  // Single atomic call — marks all items served and archives in one DB write
+  await fetch(`/api/bills/${encodeURIComponent(table)}/serve`, { method: 'POST' }).catch(() => {});
 }
 
 // ─── KDS History ─────────────────────────────────────────────────────────────
@@ -355,27 +362,28 @@ async function loadKdsHistory() {
   }
 }
 
-function toggleHistoryView() {
-  historyVisible = !historyVisible;
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.kds-tab').forEach(btn => {
+    btn.classList.toggle('kds-tab--active', btn.dataset.tab === tab);
+  });
+
   const grid = document.getElementById('kds-grid');
   const empty = document.getElementById('kds-empty');
   const panel = document.getElementById('kds-history-panel');
-  const btn = document.getElementById('kds-history-btn');
   const clearBtn = document.getElementById('kds-clear-history-btn');
 
-  if (historyVisible) {
+  if (tab === 'kitchen') {
+    panel.classList.add('hidden');
+    clearBtn.classList.add('hidden');
+    grid.classList.remove('hidden');
+    renderGrid();
+  } else {
     grid.classList.add('hidden');
     empty.classList.add('hidden');
     panel.classList.remove('hidden');
-    btn.classList.add('active');
     clearBtn.classList.remove('hidden');
     loadKdsHistory().then(() => renderHistoryPanel());
-  } else {
-    panel.classList.add('hidden');
-    grid.classList.remove('hidden');
-    btn.classList.remove('active');
-    clearBtn.classList.add('hidden');
-    renderGrid();
   }
 }
 
@@ -409,6 +417,7 @@ function prepTimeClass(ms) {
 }
 
 function renderHistoryPanel() {
+  updateTabCounts();
   const panel = document.getElementById('kds-history-panel');
 
   if (kdsHistory.length === 0) {
@@ -447,7 +456,7 @@ function renderHistoryPanel() {
           </div>
         </div>
         <div class="kds-items-list">
-          ${order.items.map(item => {
+          ${(order.items || []).map(item => {
             const prep = (item.readyAt && item.sentAt) ? item.readyAt - item.sentAt : null;
             const total = (order.servedAt && item.sentAt) ? order.servedAt - item.sentAt : null;
             return `
@@ -507,6 +516,7 @@ function showToast(message) {
 
 async function init() {
   await loadBills();
+  await loadKdsHistory();
   renderGrid();
   connectWS();
   elapsedInterval = setInterval(updateElapsed, 30000);
