@@ -31,7 +31,12 @@ function connectKdsWS() {
   try {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
-    kdsWS.onopen = () => kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
+    kdsWS.onopen = () => {
+      kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
+      // Full refresh on every (re)connect to catch any missed messages
+      localBills = null;
+      renderKDS();
+    };
     kdsWS.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
@@ -230,8 +235,14 @@ function init() {
     if (e.key === 'Escape') window.location.href = 'index.html';
   });
 
-  // Poll every 5s: refresh local cache from server and re-render
-  setInterval(async () => { localBills = await fetchBills(); renderKDS(); }, 5000);
+  // Poll every 5s ONLY when WebSocket is disconnected (fallback)
+  // When WS is live, it handles all updates — polling would race with WS and overwrite updates
+  setInterval(async () => {
+    if (!kdsWS || kdsWS.readyState !== WebSocket.OPEN) {
+      localBills = await fetchBills();
+      renderKDS();
+    }
+  }, 5000);
 }
 
 document.addEventListener('DOMContentLoaded', init);
