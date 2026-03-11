@@ -132,6 +132,20 @@ function createMongoStore() {
 
 const clients = { pos: new Set(), kds: new Set() };
 
+// ─── Per-table mutation queue ─────────────────────────────────────────────────
+// All bill reads/writes for the same table are serialised through this queue.
+// Without it, concurrent status changes each read the same stale bill and
+// overwrite each other — so archiveIfAllServed never sees all items as served.
+const tableQueues = new Map();
+
+function queueTableUpdate(table, fn) {
+  const prev = tableQueues.get(table) || Promise.resolve();
+  const next = prev.then(fn).catch(e => console.error(`[queue:${table}]`, e.message));
+  tableQueues.set(table, next);
+  next.finally(() => { if (tableQueues.get(table) === next) tableQueues.delete(table); });
+  return next;
+}
+
 function broadcast(targets, message) {
   const payload = JSON.stringify(message);
   targets.forEach(role =>
@@ -178,24 +192,26 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'item:statusChange') {
-      const bill = await store.getBill(msg.table);
-      if (!bill) return;
-      const item = bill.items.find(i => i.id === msg.itemId);
-      if (!item) return;
+      queueTableUpdate(msg.table, async () => {
+        const bill = await store.getBill(msg.table);
+        if (!bill) return;
+        const item = bill.items.find(i => i.id === msg.itemId);
+        if (!item) return;
 
-      item.status = msg.status;
-      if (msg.status === 'ready') item.readyAt = Date.now();
-      await store.saveBill(msg.table, bill);
+        item.status = msg.status;
+        if (msg.status === 'ready') item.readyAt = Date.now();
+        await store.saveBill(msg.table, bill);
 
-      broadcast(['pos', 'kds'], {
-        type: 'item:statusChanged', table: msg.table,
-        itemId: msg.itemId, status: msg.status, item,
+        broadcast(['pos', 'kds'], {
+          type: 'item:statusChanged', table: msg.table,
+          itemId: msg.itemId, status: msg.status, item,
+        });
+
+        const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
+        if (allReady) broadcast(['pos'], { type: 'table:allReady', table: msg.table });
+
+        await archiveIfAllServed(msg.table, bill);
       });
-
-      const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
-      if (allReady) broadcast(['pos'], { type: 'table:allReady', table: msg.table });
-
-      await archiveIfAllServed(msg.table, bill);
     }
   });
 
@@ -270,44 +286,48 @@ app.delete('/api/bills', async (req, res) => {
   res.json({ ok: true });
 });
 
-app.patch('/api/bills/:table/items/:itemId/status', async (req, res) => {
+app.patch('/api/bills/:table/items/:itemId/status', (req, res) => {
   const { table, itemId } = req.params;
   const { status } = req.body;
-  const bill = await store.getBill(table);
-  if (!bill) return res.status(404).json({ error: 'No bill for this table' });
-  const item = bill.items.find(i => i.id === itemId);
-  if (!item) return res.status(404).json({ error: 'Item not found' });
+  queueTableUpdate(table, async () => {
+    const bill = await store.getBill(table);
+    if (!bill) { res.status(404).json({ error: 'No bill for this table' }); return; }
+    const item = bill.items.find(i => i.id === itemId);
+    if (!item) { res.status(404).json({ error: 'Item not found' }); return; }
 
-  item.status = status;
-  if (status === 'ready') item.readyAt = Date.now();
-  await store.saveBill(table, bill);
+    item.status = status;
+    if (status === 'ready') item.readyAt = Date.now();
+    await store.saveBill(table, bill);
 
-  broadcast(['pos', 'kds'], { type: 'item:statusChanged', table, itemId, status, item });
+    broadcast(['pos', 'kds'], { type: 'item:statusChanged', table, itemId, status, item });
 
-  const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
-  if (allReady) broadcast(['pos'], { type: 'table:allReady', table });
+    const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
+    if (allReady) broadcast(['pos'], { type: 'table:allReady', table });
 
-  res.json(item);
+    res.json(item);
 
-  await archiveIfAllServed(table, bill);
+    await archiveIfAllServed(table, bill);
+  });
 });
 
 // Atomic serve-all: marks every item served and archives in one DB operation.
 // Avoids the concurrent-PATCH race condition where Promise.all overwrites cause
 // archiveIfAllServed to never see all items as served.
-app.post('/api/bills/:table/serve', async (req, res) => {
+app.post('/api/bills/:table/serve', (req, res) => {
   const table = req.params.table;
-  const bill = await store.getBill(table);
-  if (!bill) return res.status(404).json({ error: 'No bill' });
+  queueTableUpdate(table, async () => {
+    const bill = await store.getBill(table);
+    if (!bill) { res.status(404).json({ error: 'No bill' }); return; }
 
-  const now = Date.now();
-  bill.items.forEach(item => {
-    item.status = 'served';
-    if (!item.readyAt) item.readyAt = now;
+    const now = Date.now();
+    bill.items.forEach(item => {
+      item.status = 'served';
+      if (!item.readyAt) item.readyAt = now;
+    });
+
+    await archiveBill(table, bill); // deletes bill, adds to kds-history, broadcasts bill:cleared
+    res.json({ ok: true });
   });
-
-  await archiveBill(table, bill); // deletes bill, adds to kds-history, broadcasts bill:cleared
-  res.json({ ok: true });
 });
 
 // ─── REST API: KDS History ────────────────────────────────────────────────────
