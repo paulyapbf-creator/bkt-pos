@@ -61,8 +61,17 @@ function handleWSMessage(msg) {
       loadBills().then(() => renderGrid());
       break;
 
+    case 'bill:allServed':
+      // Kitchen has served all items. Bill stays active for payment in POS.
+      showToast(`${msg.table} all served — awaiting payment`);
+      Promise.all([loadBills(), loadKdsHistory()]).then(() => {
+        if (activeTab === 'served') renderHistoryPanel();
+        else renderGrid();
+      });
+      break;
+
     case 'bill:cleared':
-      if (bills[msg.table]) showToast(`${msg.table} served`);
+      if (bills[msg.table]) showToast(`${msg.table} cleared`);
       Promise.all([loadBills(), loadKdsHistory()]).then(() => {
         if (activeTab === 'served') renderHistoryPanel();
         else renderGrid();
@@ -131,7 +140,13 @@ function renderGrid() {
   document.getElementById('kds-last-updated').textContent =
     `Last updated: ${new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
-  if (tables.length === 0) {
+  // Only show tables that still have items needing kitchen attention.
+  // Fully-served tables stay in 'bills' (awaiting POS payment) but don't
+  // belong in the kitchen view.
+  const pendingTables = tables.filter(t =>
+    bills[t].items.some(i => (i.status || 'cooking') !== 'served'));
+
+  if (pendingTables.length === 0) {
     grid.innerHTML = '';
     empty.classList.remove('hidden');
     updatePendingCount();
@@ -140,7 +155,7 @@ function renderGrid() {
 
   empty.classList.add('hidden');
 
-  grid.innerHTML = tables.map(table => {
+  grid.innerHTML = pendingTables.map(table => {
     const bill = bills[table];
     const { text: elapsedText, level } = elapsed(bill.startedAt);
     const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
@@ -284,11 +299,6 @@ function cycleItemStatus(table, itemId) {
   item.status = next;
   if (next === 'ready') item.readyAt = Date.now();
   renderGrid();
-
-  // Auto-serve single-item orders once ready
-  if (next === 'ready' && bill.items.length === 1) {
-    markAllServed(table);
-  }
 }
 
 function bulkSetStatus(table, fromStatus, toStatus) {
@@ -329,12 +339,13 @@ async function markAllServed(table) {
   const bill = bills[table];
   if (!bill) return;
 
-  // Optimistic: remove from UI immediately
-  delete bills[table];
+  // Optimistic: mark all items served locally so the card disappears from
+  // "In Kitchen" immediately (it will appear in "All Served" after reload).
+  bill.items.forEach(i => { i.status = 'served'; if (!i.readyAt) i.readyAt = Date.now(); });
   renderGrid();
-  showToast(`${table} served!`);
+  showToast(`${table} served! Awaiting payment.`);
 
-  // Single atomic call — marks all items served and archives in one DB write
+  // Server: mark served + record kds-history. Bill stays alive for POS payment.
   await fetch(`/api/bills/${encodeURIComponent(table)}/serve`, { method: 'POST' }).catch(() => {});
 }
 

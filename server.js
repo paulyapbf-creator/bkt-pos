@@ -155,7 +155,9 @@ function broadcast(targets, message) {
   );
 }
 
-async function archiveBill(table, bill) {
+// saveKdsHistory: record kitchen service without deleting the bill.
+// The bill stays alive so the POS can still collect payment.
+async function saveKdsHistory(table, bill) {
   const servedAt = Date.now();
   await store.addKdsHistory({
     table,
@@ -165,6 +167,14 @@ async function archiveBill(table, bill) {
       id, name, nameZh, quantity, sentAt, readyAt: readyAt || servedAt,
     })),
   });
+  broadcast(['pos', 'kds'], { type: 'bill:allServed', table });
+}
+
+// archiveBill: full close — save kds-history + DELETE bill + broadcast cleared.
+// Only used when starting a new ordering round for a table that still has
+// unserved items (so the old partial order isn't left dangling).
+async function archiveBill(table, bill) {
+  await saveKdsHistory(table, bill);
   await store.deleteBill(table);
   broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
 }
@@ -172,10 +182,10 @@ async function archiveBill(table, bill) {
 async function archiveIfAllServed(table, bill) {
   if (!bill.items.every(i => i.status === 'served')) return;
   // Re-read from store to guard against race with concurrent requests
-  // (e.g. a new order was added between the initial check and now)
   const current = await store.getBill(table);
   if (!current || !current.items.every(i => i.status === 'served')) return;
-  await archiveBill(table, current);
+  // Record to kds-history but keep bill active for payment collection
+  await saveKdsHistory(table, current);
 }
 
 wss.on('connection', (ws) => {
@@ -234,10 +244,16 @@ app.post('/api/bills/:table/items', async (req, res) => {
   const table = req.params.table;
   let bill = await store.getBill(table);
 
-  // POST = new ordering round — archive any existing bill first so new items
-  // always start clean with cooking status (no stale ready/cooking items)
+  // POST = new ordering round — close out any existing bill before starting fresh.
+  // If all items are already served the bill is already in kds-history; just
+  // delete it.  If it has unserved items, archive it (saves to kds-history first).
   if (bill && bill.items.length > 0) {
-    await archiveBill(table, bill);
+    if (bill.items.every(i => i.status === 'served')) {
+      await store.deleteBill(table);
+      broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
+    } else {
+      await archiveBill(table, bill);
+    }
     bill = null;
   }
 
@@ -325,7 +341,10 @@ app.post('/api/bills/:table/serve', (req, res) => {
       if (!item.readyAt) item.readyAt = now;
     });
 
-    await archiveBill(table, bill); // deletes bill, adds to kds-history, broadcasts bill:cleared
+    // Save served statuses to DB, record to kds-history, but keep bill alive
+    // so the POS can still collect payment.
+    await store.saveBill(table, bill);
+    await saveKdsHistory(table, bill); // records kds-history + broadcasts bill:allServed
     res.json({ ok: true });
   });
 });
@@ -363,9 +382,8 @@ async function cleanupStaleBills() {
     for (const [table, bill] of Object.entries(bills)) {
       if (!bill.items || bill.items.length === 0) {
         await store.deleteBill(table);
-      } else if (bill.items.every(i => i.status === 'served')) {
-        await archiveBill(table, bill);
       }
+      // Served bills are kept — they await payment collection in the POS.
     }
     console.log('Stale bill cleanup complete');
   } catch (e) {

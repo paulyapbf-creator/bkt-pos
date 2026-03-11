@@ -84,6 +84,17 @@ function handleWSMessage(msg) {
       syncBillsToStorage();
       break;
 
+    case 'bill:allServed':
+      // Kitchen served all items. Bill stays active — update statuses so the
+      // POS reflects the served state and can still collect payment.
+      if (billsCache[msg.table]) {
+        billsCache[msg.table].items.forEach(i => { i.status = 'served'; });
+        syncBillsToStorage();
+        updateTableBtn();
+      }
+      showToast(`✅ All items served · ${msg.table} — ready for payment`);
+      break;
+
     case 'bill:cleared':
       delete billsCache[msg.table];
       syncBillsToStorage();
