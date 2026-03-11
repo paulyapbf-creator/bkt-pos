@@ -208,13 +208,13 @@ function init() {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
   });
 
-  document.getElementById('refresh-btn').addEventListener('click', () => {
-    renderKDS().then(() => {
-      const btn = document.getElementById('refresh-btn');
-      btn.textContent = '✓ Done';
-      btn.classList.add('refreshed');
-      setTimeout(() => { btn.textContent = '↺ Refresh'; btn.classList.remove('refreshed'); }, 1500);
-    });
+  document.getElementById('refresh-btn').addEventListener('click', async () => {
+    localBills = await fetchBills();
+    await renderKDS();
+    const btn = document.getElementById('refresh-btn');
+    btn.textContent = '✓ Done';
+    btn.classList.add('refreshed');
+    setTimeout(() => { btn.textContent = '↺ Refresh'; btn.classList.remove('refreshed'); }, 1500);
   });
 
   // WebSocket: instant updates from server
@@ -223,7 +223,7 @@ function init() {
   // Fallback for file:// mode
   const bktChannel = typeof BroadcastChannel !== 'undefined'
     ? new BroadcastChannel('bkt_pos') : null;
-  if (bktChannel) bktChannel.onmessage = () => scheduleRender();
+  if (bktChannel) bktChannel.onmessage = () => { localBills = null; renderKDS(); };
   window.addEventListener('storage', e => { if (e.key === ACTIVE_BILLS_KEY) renderKDS(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderKDS(); });
 
