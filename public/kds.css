@@ -294,6 +294,18 @@ body {
 .kds-btn--ready:hover { background: #7f8c8d; }
 .kds-served-label   { font-size: 12px; color: #bbb; font-style: italic; white-space: nowrap; }
 
+/* ── Per-item status chip ─────────────────────────────────────────────────── */
+.kds-status-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.kds-status-chip--cooking { background: #fdebd0; color: #d35400; }
+.kds-status-chip--ready   { background: #d5f5e3; color: #1e8449; }
+.kds-status-chip--served  { background: #eee;    color: #aaa; }
+
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 .kds-empty {
   display: flex;

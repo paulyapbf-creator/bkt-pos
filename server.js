@@ -319,9 +319,26 @@ app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); 
 
 let store; // assigned in start()
 
+async function cleanupStaleBills() {
+  try {
+    const bills = await store.getAllBills();
+    for (const [table, bill] of Object.entries(bills)) {
+      if (!bill.items || bill.items.length === 0) {
+        await store.deleteBill(table);
+      } else if (bill.items.every(i => i.status === 'served')) {
+        await archiveBill(table, bill);
+      }
+    }
+    console.log('Stale bill cleanup complete');
+  } catch (e) {
+    console.error('Stale bill cleanup error:', e.message);
+  }
+}
+
 async function start() {
   store = process.env.MONGODB_URI ? createMongoStore() : createFileStore();
   await store.connect();
+  await cleanupStaleBills();
 
   server.listen(PORT, '0.0.0.0', () => {
     const { networkInterfaces } = require('os');

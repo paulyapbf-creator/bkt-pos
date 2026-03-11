@@ -1,7 +1,8 @@
 'use strict';
 
 const API_BASE = '';
-const NEXT_BTN = { cooking: '✓ Ready', ready: '🍽 Served' };
+const STATUS_LABEL = { cooking: 'Cooking', ready: 'Ready', served: 'Served' };
+const NEXT_BTN     = { cooking: 'Mark Ready', ready: 'Serve' };
 let ws = null;
 let bills = {};
 let kdsHistory = [];
@@ -182,6 +183,7 @@ function renderGrid() {
                 </div>
                 <div class="kds-item-right">
                   <span class="kds-item-qty">×${item.quantity}</span>
+                  <span class="kds-status-chip kds-status-chip--${st}">${STATUS_LABEL[st] || st}</span>
                   ${next
                     ? `<button class="kds-action-btn kds-btn--${st}" data-table="${table}" data-id="${item.id}">${next}</button>`
                     : `<span class="kds-served-label">✓ Served</span>`}
