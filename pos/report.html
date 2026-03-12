@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Reports — BKT House</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <span id="app-title"><a href="/" class="back-link">← <span class="app-txt">BKT House</span></a></span>
+    <div id="header-right">
+      <span class="report-page-title">📊 Reports</span>
+      <button id="print-btn" class="nav-link" onclick="window.print()">🖨️ <span class="nav-txt">Print</span></button>
+    </div>
+  </header>
+
+  <!-- ── Date filter bar ── -->
+  <div id="report-filter-bar">
+    <div class="filter-presets">
+      <button class="preset-btn active" data-preset="today">Today</button>
+      <button class="preset-btn" data-preset="yesterday">Yesterday</button>
+      <button class="preset-btn" data-preset="week">This Week</button>
+      <button class="preset-btn" data-preset="month">This Month</button>
+      <button class="preset-btn" data-preset="custom">Custom</button>
+    </div>
+    <div class="filter-dates hidden" id="custom-dates">
+      <input type="date" id="date-from">
+      <span class="date-sep">to</span>
+      <input type="date" id="date-to">
+      <button id="apply-custom-btn" class="apply-btn">Apply</button>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ── -->
+  <div id="report-tabs">
+    <button class="report-tab active" data-tab="summary">Sales Summary</button>
+    <button class="report-tab" data-tab="detail">Sales Detail</button>
+    <button class="report-tab" data-tab="collection">Collection</button>
+    <button class="report-tab" data-tab="items">Item Sales</button>
+  </div>
+
+  <!-- ── Report panels ── -->
+  <div id="report-content">
+    <div id="panel-summary" class="report-panel active"></div>
+    <div id="panel-detail" class="report-panel"></div>
+    <div id="panel-collection" class="report-panel"></div>
+    <div id="panel-items" class="report-panel"></div>
+  </div>
+
+  <script src="report.js"></script>
+</body>
+</html>
