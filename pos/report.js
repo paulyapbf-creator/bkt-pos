@@ -113,7 +113,7 @@ function renderDetail() {
         ? `<span class="detail-mods">(${it.modifiers.map(m => m.name || m).join(', ')})</span>` : '';
       return `<div class="detail-item-row">
         <span>${it.nameZh || it.name} ${mods}</span>
-        <span class="num">×${it.quantity} &nbsp; ${fmtRM((it.price || 0) * (it.quantity || 1))}</span>
+        <span class="num">×${it.quantity} &nbsp; ${fmtRM(it.subtotal || (it.unitPrice || it.price || 0) * (it.quantity || 1))}</span>
       </div>`;
     }).join('');
 
@@ -121,7 +121,7 @@ function renderDetail() {
       <div class="detail-header">
         <span class="detail-table">${o.table || '—'}</span>
         <span class="detail-time">${fmtDateTime(o.timestamp)}</span>
-        <span class="detail-method badge-${(o.paymentMethod || 'cash').toLowerCase()}">${o.paymentMethod || 'Cash'}</span>
+        <span class="detail-method badge-${(o.paymentMethod || 'cash').toLowerCase()}">${({cash:'Cash',tng:'TNG',duitnow:'DuitNow'})[( o.paymentMethod||'cash').toLowerCase()] || o.paymentMethod}</span>
         <span class="detail-total">${fmtRM(o.total || 0)}</span>
       </div>
       <div class="detail-items">${itemRows}</div>
@@ -139,11 +139,13 @@ function renderCollection() {
     return;
   }
 
+  const methodLabels = { cash: 'Cash', tng: 'TNG', duitnow: 'DuitNow' };
   const byMethod = {};
   let grandTotal = 0;
   orders.forEach(o => {
-    const m = o.paymentMethod || 'Cash';
-    if (!byMethod[m]) byMethod[m] = { total: 0, count: 0 };
+    const raw = (o.paymentMethod || 'cash').toLowerCase();
+    const m = methodLabels[raw] || raw;
+    if (!byMethod[m]) byMethod[m] = { total: 0, count: 0, key: raw };
     byMethod[m].total += o.total || 0;
     byMethod[m].count++;
     grandTotal += o.total || 0;
@@ -157,7 +159,7 @@ function renderCollection() {
     const pct = grandTotal > 0 ? (d.total / grandTotal) * 100 : 0;
     return `<div class="collection-row">
       <div class="collection-label">
-        <span class="badge-${m.toLowerCase()}">${m}</span>
+        <span class="badge-${d.key}">${m}</span>
         <span class="collection-count">${d.count} orders</span>
       </div>
       <div class="collection-bar-wrap">
@@ -196,7 +198,7 @@ function renderItems() {
       const key = it.name || it.nameZh || 'Unknown';
       if (!byItem[key]) byItem[key] = { name: key, nameZh: it.nameZh || '', qty: 0, revenue: 0 };
       const qty = it.quantity || 1;
-      const rev = (it.price || 0) * qty;
+      const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
       byItem[key].qty += qty;
       byItem[key].revenue += rev;
       totalQty += qty;
