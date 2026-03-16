@@ -389,31 +389,145 @@ app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); 
 
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
-app.post('/api/print', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+const iconv = require('iconv-lite');
+const net   = require('net');
+
+const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, FS_BYTE = 0x1C, LF_BYTE = 0x0A;
+
+function buildEscPos(job) {
+  const parts = [];
+  const push  = (...b) => parts.push(Buffer.from(b));
+  const raw   = (buf)  => parts.push(buf);
+  const text  = (s)    => raw(iconv.encode(s, 'gbk'));
+  const lf    = ()     => push(LF_BYTE);
+  const line  = (s)    => { text(s); lf(); };
+  const dash  = (w)    => { text('-'.repeat(w || 32)); lf(); };
+  const lr    = (l, r, w) => {
+    w = w || 32;
+    // Calculate byte-width for alignment (CJK chars = 2 columns)
+    const lw = [...l].reduce((s, c) => s + (c.charCodeAt(0) > 0x7F ? 2 : 1), 0);
+    const rw = [...r].reduce((s, c) => s + (c.charCodeAt(0) > 0x7F ? 2 : 1), 0);
+    const pad = Math.max(1, w - lw - rw);
+    text(l + ' '.repeat(pad) + r); lf();
+  };
+
+  // Init + enable Chinese mode
+  push(ESC_BYTE, 0x40);             // ESC @ — init
+  push(FS_BYTE, 0x26);              // FS &  — select Chinese chars
+
+  const center = () => push(ESC_BYTE, 0x61, 1);
+  const left   = () => push(ESC_BYTE, 0x61, 0);
+  const bold   = (on) => push(ESC_BYTE, 0x45, on ? 1 : 0);
+  const dbl    = () => push(GS_BYTE, 0x21, 0x11);
+  const norm   = () => push(GS_BYTE, 0x21, 0x00);
+  const feed   = (n) => push(ESC_BYTE, 0x64, n);
+  const cut    = () => push(GS_BYTE, 0x56, 1);
+
+  if (job.type === 'test') {
+    center(); dbl(); line('TEST PRINT'); norm(); lf();
+    line('Printer is working!');
+    line(`IP: ${job.printerIp || '?'}`);
+    line(`Port: ${job.printerPort || 9100}`);
+    line(new Date().toLocaleString());
+    feed(3); cut();
+
+  } else if (job.type === 'orderSlip') {
+    const d = job.data;
+    center(); dbl(); line(d.shopName || 'BKT House'); norm();
+    line('Order Slip');
+    dash(32);
+    left();
+    lr('Table', d.table);
+    lr('Date', d.dateStr);
+    lr('Time', d.timeStr);
+    center(); bold(true); line(d.isUpdate ? '[ ORDER UPDATE ]' : '[ NEW ORDER ]'); bold(false);
+    dash(32);
+    left();
+    (d.items || []).forEach(item => {
+      bold(true); lr(`${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`); bold(false);
+      if (item.nameEn) line(`   ${item.nameEn}`);
+      if (item.mods)   line(`   [${item.mods}]`);
+      if (item.notes)  line(`   * ${item.notes}`);
+    });
+    dash(32);
+    bold(true); lr('TOTAL', `RM${d.total}`); bold(false);
+    center(); lf(); line('-- Thank you --');
+    feed(3); cut();
+
+  } else if (job.type === 'receipt') {
+    const d = job.data;
+    center(); dbl(); line(d.shopName || 'BKT House'); norm();
+    line('Official Receipt');
+    bold(true); line('RECEIPT'); bold(false);
+    dash(32);
+    left();
+    lr('Receipt No', d.receiptNo);
+    lr('Table', d.table);
+    lr('Date', d.dateStr);
+    lr('Time', d.timeStr);
+    dash(32);
+    (d.items || []).forEach(item => {
+      bold(true); lr(`${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`); bold(false);
+      if (item.nameEn) line(`   ${item.nameEn}`);
+      if (item.mods)   line(`   [${item.mods}]`);
+      if (item.notes)  line(`   * ${item.notes}`);
+    });
+    dash(32);
+    lr('Subtotal', `RM${d.total}`);
+    bold(true); lr('TOTAL', `RM${d.total}`); bold(false);
+    dash(32);
+    lr('Payment', d.payLabel);
+    lf();
+    center(); line('Thank you for dining with us!');
+    line('Please come again :)');
+    feed(3); cut();
+  }
+
+  return Buffer.concat(parts);
+}
+
+function sendTcpData(ip, port, data) {
+  return new Promise((resolve, reject) => {
+    const sock = net.createConnection(port, ip, () => {
+      sock.end(data, resolve);
+    });
+    sock.setTimeout(5000);
+    sock.on('timeout', () => { sock.destroy(); reject(new Error('timeout')); });
+    sock.on('error', reject);
+  });
+}
+
+app.post('/api/print', async (req, res) => {
   try {
-    const settings = await store.getSettings();
-    const printerIp   = req.query.ip   || settings.printerIp;
-    const printerPort = parseInt(req.query.port || settings.printerPort, 10) || 9100;
+    const settings    = await store.getSettings();
+    const printerIp   = settings.printerIp;
+    const printerPort = parseInt(settings.printerPort, 10) || 9100;
 
     if (!printerIp) return res.status(400).json({ error: 'No printer IP configured' });
 
-    // req.body is a Buffer (raw ESC/POS data)
-    const data = Buffer.isBuffer(req.body) ? req.body
-               : Buffer.from(req.body, typeof req.body === 'string' ? 'base64' : undefined);
+    const job = req.body;
+    job.printerIp   = job.printerIp || printerIp;
+    job.printerPort = job.printerPort || printerPort;
 
-    const net = require('net');
-    await new Promise((resolve, reject) => {
-      const sock = net.createConnection(printerPort, printerIp, () => {
-        sock.end(data, resolve);
-      });
-      sock.setTimeout(5000);
-      sock.on('timeout', () => { sock.destroy(); reject(new Error('timeout')); });
-      sock.on('error', reject);
-    });
+    const escpos = buildEscPos(job);
 
-    res.json({ ok: true });
+    // Try sending to printer
+    let sent = false;
+    try {
+      await sendTcpData(printerIp, printerPort, escpos);
+      sent = true;
+    } catch (_) {}
+
+    // Return built ESC/POS so frontend can use relay fallback
+    const escposB64 = escpos.toString('base64');
+
+    if (sent) {
+      res.json({ ok: true, escpos: escposB64 });
+    } else {
+      res.status(502).json({ error: 'TCP send failed', escpos: escposB64 });
+    }
   } catch (e) {
-    res.status(502).json({ error: `Print failed: ${e.message}` });
+    res.status(500).json({ error: `Print failed: ${e.message}` });
   }
 });
 

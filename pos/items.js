@@ -365,54 +365,34 @@ function initSettings() {
     // Save current settings first so the server can read them
     saveSettings(gatherSettings());
 
-    // Build a simple ESC/POS test page
-    const ESC = 0x1B, GS = 0x1D, LF = 0x0A;
-    const enc = new TextEncoder();
-    const parts = [];
-    const push = (...b) => parts.push(new Uint8Array(b));
-    const text = (s) => parts.push(enc.encode(s));
-
-    push(ESC, 0x40);           // init
-    push(ESC, 0x61, 1);        // center
-    push(GS, 0x21, 0x11);      // double size
-    text('TEST PRINT'); push(LF);
-    push(GS, 0x21, 0x00);      // normal
-    push(LF);
-    text('Printer is working!'); push(LF);
-    text(`IP: ${ip}`); push(LF);
-    text(`Port: ${printerPortInput.value.trim() || '9100'}`); push(LF);
-    text(new Date().toLocaleString()); push(LF);
-    push(ESC, 0x64, 3);        // feed
-    push(GS, 0x56, 1);         // partial cut
-
-    let total = 0;
-    for (const p of parts) total += p.length;
-    const buf = new Uint8Array(total);
-    let off = 0;
-    for (const p of parts) { buf.set(p, off); off += p.length; }
-
     testMsg.textContent = 'Sending...';
 
-    // Try server endpoint
+    // Send JSON test job to server (server builds ESC/POS with GBK)
     let ok = false;
+    let escposB64 = null;
     try {
       const res = await fetch(`${API_BASE}/api/print`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: buf,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'test',
+          printerIp: ip,
+          printerPort: parseInt(printerPortInput.value, 10) || 9100,
+        }),
       });
+      const result = await res.json();
+      if (result.escpos) escposB64 = result.escpos;
       if (res.ok) ok = true;
     } catch (_) {}
 
-    // Try relay
-    if (!ok) {
+    // Try relay with server-built bytes
+    if (!ok && escposB64) {
       const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
       try {
-        const b64 = btoa(String.fromCharCode(...buf));
         const res = await fetch(`${relay}/print`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ printerIp: ip, printerPort: parseInt(printerPortInput.value, 10) || 9100, data: b64 }),
+          body: JSON.stringify({ printerIp: ip, printerPort: parseInt(printerPortInput.value, 10) || 9100, data: escposB64 }),
         });
         if (res.ok) ok = true;
       } catch (_) {}
