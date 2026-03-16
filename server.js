@@ -387,6 +387,36 @@ app.get('/api/settings',    async (req, res) => res.json(await store.getSettings
 app.put('/api/settings',    async (req, res) => { await store.saveSettings(req.body); res.json({ ok: true }); });
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
 
+// ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
+
+app.post('/api/print', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  try {
+    const settings = await store.getSettings();
+    const printerIp   = req.query.ip   || settings.printerIp;
+    const printerPort = parseInt(req.query.port || settings.printerPort, 10) || 9100;
+
+    if (!printerIp) return res.status(400).json({ error: 'No printer IP configured' });
+
+    // req.body is a Buffer (raw ESC/POS data)
+    const data = Buffer.isBuffer(req.body) ? req.body
+               : Buffer.from(req.body, typeof req.body === 'string' ? 'base64' : undefined);
+
+    const net = require('net');
+    await new Promise((resolve, reject) => {
+      const sock = net.createConnection(printerPort, printerIp, () => {
+        sock.end(data, resolve);
+      });
+      sock.setTimeout(5000);
+      sock.on('timeout', () => { sock.destroy(); reject(new Error('timeout')); });
+      sock.on('error', reject);
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(502).json({ error: `Print failed: ${e.message}` });
+  }
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 let store; // assigned in start()

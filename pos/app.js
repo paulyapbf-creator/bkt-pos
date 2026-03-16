@@ -823,9 +823,182 @@ function showToast(message) {
   setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.classList.add('hidden'), 280); }, 2200);
 }
 
+// ─── ESC/POS THERMAL PRINTER ──────────────────────────────────────────────────
+
+const ESC = 0x1B, GS = 0x1D, LF = 0x0A;
+
+function escposEncoder() {
+  const chunks = [];
+  const push = (...bytes) => chunks.push(new Uint8Array(bytes));
+  const text = (s) => chunks.push(new TextEncoder().encode(s));
+  return {
+    init()         { push(ESC, 0x40); return this; },               // ESC @
+    center()       { push(ESC, 0x61, 1); return this; },            // ESC a 1
+    left()         { push(ESC, 0x61, 0); return this; },            // ESC a 0
+    bold(on)       { push(ESC, 0x45, on ? 1 : 0); return this; },   // ESC E n
+    doubleSize()   { push(GS, 0x21, 0x11); return this; },          // GS ! 0x11
+    normalSize()   { push(GS, 0x21, 0x00); return this; },          // GS ! 0x00
+    lf()           { push(LF); return this; },
+    feed(n)        { push(ESC, 0x64, n); return this; },             // ESC d n
+    cut()          { push(GS, 0x56, 1); return this; },              // GS V 1 partial cut
+    text(s)        { text(s); return this; },
+    line(s)        { text(s); push(LF); return this; },
+    dashLine(w)    { text('-'.repeat(w || 32)); push(LF); return this; },
+    leftRight(l, r, w) {
+      w = w || 32;
+      const pad = w - l.length - r.length;
+      text(l + (pad > 0 ? ' '.repeat(pad) : ' ') + r); push(LF);
+      return this;
+    },
+    build() {
+      let len = 0;
+      for (const c of chunks) len += c.length;
+      const buf = new Uint8Array(len);
+      let off = 0;
+      for (const c of chunks) { buf.set(c, off); off += c.length; }
+      return buf;
+    },
+  };
+}
+
+function generateOrderSlipEscPos(table, items, isUpdate) {
+  const total    = items.reduce((s, i) => s + i.subtotal, 0);
+  const now      = new Date();
+  const dateStr  = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr  = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const settings = loadSettings();
+  const shopName = settings.shopName || 'BKT House';
+
+  const e = escposEncoder().init();
+  e.center().doubleSize().line(shopName).normalSize();
+  e.line('Order Slip');
+  e.dashLine(32);
+  e.left();
+  e.leftRight('Table', table);
+  e.leftRight('Date', dateStr);
+  e.leftRight('Time', timeStr);
+  e.center().bold(true).line(isUpdate ? '[ ORDER UPDATE ]' : '[ NEW ORDER ]').bold(false);
+  e.dashLine(32);
+  e.left();
+
+  items.forEach(item => {
+    const nameZh = item.menuItem?.nameZh || item.nameZh || '';
+    const nameEn = item.menuItem?.name   || item.name   || '';
+    const price  = `RM${item.subtotal.toFixed(2)}`;
+    e.bold(true).leftRight(`${item.quantity}x ${nameZh}`, price).bold(false);
+    if (nameEn) e.line(`   ${nameEn}`);
+    const mods = (item.selectedModifiers || []).map(m => m.optionLabel).join(', ');
+    if (mods) e.line(`   [${mods}]`);
+    const notes = item.notes ? item.notes.trim() : '';
+    if (notes) e.line(`   * ${notes}`);
+  });
+
+  e.dashLine(32);
+  e.bold(true).leftRight('TOTAL', `RM${total.toFixed(2)}`).bold(false);
+  e.center().lf().line('-- Thank you --');
+  e.feed(3).cut();
+  return e.build();
+}
+
+function generateReceiptEscPos(table, items, total, method, orderId) {
+  const now       = new Date();
+  const dateStr   = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr   = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const settings  = loadSettings();
+  const shopName  = settings.shopName || 'BKT House';
+  const receiptNo = orderId || `RCP-${Date.now()}`;
+  const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
+  const payLabel  = methodLabel[method] || method;
+
+  const e = escposEncoder().init();
+  e.center().doubleSize().line(shopName).normalSize();
+  e.line('Official Receipt');
+  e.bold(true).line('RECEIPT').bold(false);
+  e.dashLine(32);
+  e.left();
+  e.leftRight('Receipt No', receiptNo);
+  e.leftRight('Table', table);
+  e.leftRight('Date', dateStr);
+  e.leftRight('Time', timeStr);
+  e.dashLine(32);
+
+  items.forEach(item => {
+    const mods  = (item.selectedModifiers || []).map(m => m.optionLabel).join(', ');
+    const notes = item.notes ? item.notes.trim() : '';
+    const price = `RM${item.subtotal.toFixed(2)}`;
+    e.bold(true).leftRight(`${item.quantity}x ${item.nameZh || ''}`, price).bold(false);
+    if (item.name) e.line(`   ${item.name}`);
+    if (mods) e.line(`   [${mods}]`);
+    if (notes) e.line(`   * ${notes}`);
+  });
+
+  e.dashLine(32);
+  e.leftRight('Subtotal', `RM${total.toFixed(2)}`);
+  e.bold(true).leftRight('TOTAL', `RM${total.toFixed(2)}`).bold(false);
+  e.dashLine(32);
+  e.leftRight('Payment', payLabel);
+  e.lf();
+  e.center().line('Thank you for dining with us!');
+  e.line('Please come again :)');
+  e.feed(3).cut();
+  return e.build();
+}
+
+async function sendToPrinter(escposData) {
+  const settings = loadSettings();
+  if (!settings.printerIp) return false;
+
+  // Try 1: server-side TCP print
+  try {
+    const res = await fetch(`${API_BASE}/api/print`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: escposData,
+    });
+    if (res.ok) return true;
+  } catch (_) {}
+
+  // Try 2: local relay
+  const relayUrl = settings.relayUrl || 'http://localhost:9101';
+  try {
+    const b64 = btoa(String.fromCharCode(...escposData));
+    const res = await fetch(`${relayUrl}/print`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        printerIp:   settings.printerIp,
+        printerPort: parseInt(settings.printerPort, 10) || 9100,
+        data:        b64,
+      }),
+    });
+    if (res.ok) return true;
+  } catch (_) {}
+
+  return false;
+}
+
 // ─── PRINT ORDER SLIP ─────────────────────────────────────────────────────────
 
 function printOrderSlip(table, items, isUpdate) {
+  const settings = loadSettings();
+
+  // Try direct thermal print if printer configured
+  if (settings.printerIp) {
+    const data = generateOrderSlipEscPos(table, items, isUpdate);
+    sendToPrinter(data).then(ok => {
+      if (!ok) {
+        showToast('⚠ Thermal print failed — opening browser print');
+        printOrderSlipHTML(table, items, isUpdate);
+      }
+    });
+    return;
+  }
+
+  // Fallback: browser print
+  printOrderSlipHTML(table, items, isUpdate);
+}
+
+function printOrderSlipHTML(table, items, isUpdate) {
   const total    = items.reduce((s, i) => s + i.subtotal, 0);
   const now      = new Date();
   const dateStr  = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -834,7 +1007,6 @@ function printOrderSlip(table, items, isUpdate) {
   const shopName = settings.shopName || 'BKT House';
 
   const itemRows = items.map(item => {
-    // state.items nest names under menuItem; billRow items have them at top level
     const nameZh = item.menuItem?.nameZh || item.nameZh || '';
     const nameEn = item.menuItem?.name   || item.name   || '';
     const mods   = (item.selectedModifiers || []).map(m => m.optionLabel).join(', ');
@@ -909,6 +1081,25 @@ function printOrderSlip(table, items, isUpdate) {
 // ─── PAYMENT RECEIPT ──────────────────────────────────────────────────────────
 
 function printPaymentReceipt(table, items, total, method, orderId) {
+  const settings = loadSettings();
+
+  // Try direct thermal print if printer configured
+  if (settings.printerIp) {
+    const data = generateReceiptEscPos(table, items, total, method, orderId);
+    sendToPrinter(data).then(ok => {
+      if (!ok) {
+        showToast('⚠ Thermal print failed — opening browser print');
+        printPaymentReceiptHTML(table, items, total, method, orderId);
+      }
+    });
+    return;
+  }
+
+  // Fallback: browser print
+  printPaymentReceiptHTML(table, items, total, method, orderId);
+}
+
+function printPaymentReceiptHTML(table, items, total, method, orderId) {
   const now        = new Date();
   const dateStr    = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr    = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });

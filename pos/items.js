@@ -315,10 +315,16 @@ function initSettings() {
   const duitnowInput   = document.getElementById('s-duitnow-url');
   const tngPreview     = document.getElementById('s-tng-preview');
   const duitnowPreview = document.getElementById('s-duitnow-preview');
+  const printerIpInput   = document.getElementById('s-printer-ip');
+  const printerPortInput = document.getElementById('s-printer-port');
+  const relayUrlInput    = document.getElementById('s-relay-url');
 
-  shopNameInput.value  = settings.shopName    || '';
-  tngInput.value       = settings.tngQrUrl    || '';
-  duitnowInput.value   = settings.duitnowQrUrl || '';
+  shopNameInput.value    = settings.shopName      || '';
+  tngInput.value         = settings.tngQrUrl      || '';
+  duitnowInput.value     = settings.duitnowQrUrl  || '';
+  printerIpInput.value   = settings.printerIp     || '';
+  printerPortInput.value = settings.printerPort   || '9100';
+  relayUrlInput.value    = settings.relayUrl       || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -332,15 +338,88 @@ function initSettings() {
   tngInput.addEventListener('input',     () => updatePreview(tngInput, tngPreview));
   duitnowInput.addEventListener('input', () => updatePreview(duitnowInput, duitnowPreview));
 
-  document.getElementById('s-save-btn').addEventListener('click', () => {
-    saveSettings({
+  function gatherSettings() {
+    return {
       shopName:     shopNameInput.value.trim(),
       tngQrUrl:     tngInput.value.trim(),
       duitnowQrUrl: duitnowInput.value.trim(),
-    });
+      printerIp:    printerIpInput.value.trim(),
+      printerPort:  printerPortInput.value.trim() || '9100',
+      relayUrl:     relayUrlInput.value.trim(),
+    };
+  }
+
+  document.getElementById('s-save-btn').addEventListener('click', () => {
+    saveSettings(gatherSettings());
     const msg = document.getElementById('s-saved-msg');
     msg.classList.remove('hidden');
     setTimeout(() => msg.classList.add('hidden'), 2000);
+  });
+
+  // Test print button
+  document.getElementById('s-test-print-btn').addEventListener('click', async () => {
+    const testMsg = document.getElementById('s-test-msg');
+    const ip = printerIpInput.value.trim();
+    if (!ip) { testMsg.textContent = 'Enter printer IP first'; return; }
+
+    // Save current settings first so the server can read them
+    saveSettings(gatherSettings());
+
+    // Build a simple ESC/POS test page
+    const ESC = 0x1B, GS = 0x1D, LF = 0x0A;
+    const enc = new TextEncoder();
+    const parts = [];
+    const push = (...b) => parts.push(new Uint8Array(b));
+    const text = (s) => parts.push(enc.encode(s));
+
+    push(ESC, 0x40);           // init
+    push(ESC, 0x61, 1);        // center
+    push(GS, 0x21, 0x11);      // double size
+    text('TEST PRINT'); push(LF);
+    push(GS, 0x21, 0x00);      // normal
+    push(LF);
+    text('Printer is working!'); push(LF);
+    text(`IP: ${ip}`); push(LF);
+    text(`Port: ${printerPortInput.value.trim() || '9100'}`); push(LF);
+    text(new Date().toLocaleString()); push(LF);
+    push(ESC, 0x64, 3);        // feed
+    push(GS, 0x56, 1);         // partial cut
+
+    let total = 0;
+    for (const p of parts) total += p.length;
+    const buf = new Uint8Array(total);
+    let off = 0;
+    for (const p of parts) { buf.set(p, off); off += p.length; }
+
+    testMsg.textContent = 'Sending...';
+
+    // Try server endpoint
+    let ok = false;
+    try {
+      const res = await fetch(`${API_BASE}/api/print`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf,
+      });
+      if (res.ok) ok = true;
+    } catch (_) {}
+
+    // Try relay
+    if (!ok) {
+      const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
+      try {
+        const b64 = btoa(String.fromCharCode(...buf));
+        const res = await fetch(`${relay}/print`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ printerIp: ip, printerPort: parseInt(printerPortInput.value, 10) || 9100, data: b64 }),
+        });
+        if (res.ok) ok = true;
+      } catch (_) {}
+    }
+
+    testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check IP/port and server';
+    setTimeout(() => { testMsg.textContent = ''; }, 4000);
   });
 }
 
