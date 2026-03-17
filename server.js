@@ -401,6 +401,23 @@ app.put('/api/settings', async (req, res) => {
 });
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
 
+// ─── REST API: Manual Cloud Sync ──────────────────────────────────────────────
+
+app.post('/api/sync', async (req, res) => {
+  if (!cloudSync) return res.status(400).json({ error: 'Cloud sync not configured' });
+  try {
+    // Sync all order history
+    const history = await store.getOrderHistory();
+    for (const order of history) cloudSync.syncOrder(order);
+    // Sync settings + menu
+    cloudSync.syncSettings(await store.getSettings());
+    cloudSync.syncMenu(await store.getMenuItems());
+    res.json({ ok: true, orders: history.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
 const net = require('net');

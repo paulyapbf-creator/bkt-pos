@@ -419,6 +419,24 @@ function initMaintenance() {
   closeBtn.addEventListener('click',  closeConfirm);
   modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
 
+  // ── Sync to Cloud ─────────────────────────────────────────────────────────
+  document.getElementById('maint-sync-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('maint-sync-msg');
+    msg.textContent = 'Syncing...';
+    try {
+      const res = await fetch(`${API_BASE}/api/sync`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        msg.textContent = `✓ Synced ${data.orders} orders to cloud`;
+      } else {
+        msg.textContent = `✗ ${data.error || 'Sync failed'}`;
+      }
+    } catch (e) {
+      msg.textContent = '✗ Could not reach server';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 5000);
+  });
+
   // ── Reset & Go Live ───────────────────────────────────────────────────────
   document.getElementById('maint-reset-live-btn').addEventListener('click', () => {
     document.getElementById('maint-confirm-title').textContent = '🚀 Reset & Go Live';

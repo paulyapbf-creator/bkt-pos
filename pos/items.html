@@ -114,6 +114,17 @@
       <h2 class="settings-title">Maintenance</h2>
       <p class="settings-hint">Use before going live or at the start of a new day to ensure a clean slate.</p>
 
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">☁️ Sync to Cloud</div>
+          <div class="maint-card-desc">Manually push all local order history, settings and menu to cloud MongoDB backup. Use this if automatic sync missed any data.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button id="maint-sync-btn" class="add-btn" style="padding:10px 20px;white-space:nowrap;">Sync Now</button>
+          <span id="maint-sync-msg" style="font-size:13px;color:#888;"></span>
+        </div>
+      </div>
+
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
           <div class="maint-card-title">🚀 Reset &amp; Go Live</div>
