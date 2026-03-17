@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const express   = require('express');
 const http      = require('http');
 const WebSocket = require('ws');
@@ -373,113 +375,212 @@ app.get('/api/history', async (req, res) => {
   const to   = req.query.to   ? Number(req.query.to)   : undefined;
   res.json(await store.getOrderHistory(from, to));
 });
-app.post('/api/history',   async (req, res) => { await store.addOrderHistory(req.body); res.json({ ok: true }); });
+app.post('/api/history', async (req, res) => {
+  await store.addOrderHistory(req.body);
+  if (cloudSync) cloudSync.syncOrder(req.body);
+  res.json({ ok: true });
+});
 app.delete('/api/history', async (req, res) => { await store.deleteOrderHistory(); res.json({ ok: true }); });
 
 // ─── REST API: Menu ───────────────────────────────────────────────────────────
 
 app.get('/api/menu', async (req, res) => res.json(await store.getMenuItems()));
-app.put('/api/menu', async (req, res) => { await store.saveMenuItems(req.body); res.json({ ok: true }); });
+app.put('/api/menu', async (req, res) => {
+  await store.saveMenuItems(req.body);
+  if (cloudSync) cloudSync.syncMenu(req.body);
+  res.json({ ok: true });
+});
 
 // ─── REST API: Settings ───────────────────────────────────────────────────────
 
 app.get('/api/settings',    async (req, res) => res.json(await store.getSettings()));
-app.put('/api/settings',    async (req, res) => { await store.saveSettings(req.body); res.json({ ok: true }); });
+app.put('/api/settings', async (req, res) => {
+  await store.saveSettings(req.body);
+  if (cloudSync) cloudSync.syncSettings(req.body);
+  res.json({ ok: true });
+});
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
 
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
-const iconv = require('iconv-lite');
-const net   = require('net');
+const net = require('net');
+const { createCanvas } = require('canvas');
 
-const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, FS_BYTE = 0x1C, LF_BYTE = 0x0A;
+const PRINTER_WIDTH = 480; // 80mm thermal printer effective print width
+const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
+
+// Render a line of text to a 1-bit raster bitmap for GS v 0
+function textToRaster(text, opts = {}) {
+  const fontSize = opts.fontSize || 22;
+  const bold     = opts.bold || false;
+  const align    = opts.align || 'left'; // left, center, right
+  const width    = opts.width || PRINTER_WIDTH;
+  const height   = Math.ceil(fontSize * 1.4);
+
+  const canvas = createCanvas(width, height);
+  const ctx    = canvas.getContext('2d');
+
+  // White background
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw text
+  ctx.fillStyle = '#000';
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "SimSun","Microsoft YaHei","SimHei","Arial"`;
+  ctx.textBaseline = 'top';
+
+  const measured = ctx.measureText(text);
+  let x = 0;
+  if (align === 'center')     x = (width - measured.width) / 2;
+  else if (align === 'right') x = width - measured.width;
+
+  ctx.fillText(text, x, Math.floor(fontSize * 0.15));
+
+  // Convert to 1-bit raster: GS v 0 format
+  // Each byte = 8 horizontal pixels, MSB = leftmost
+  const imgData    = ctx.getImageData(0, 0, width, height).data;
+  const bytesPerRow = Math.ceil(width / 8);
+  const raster      = Buffer.alloc(bytesPerRow * height);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const gray = imgData[idx] * 0.299 + imgData[idx+1] * 0.587 + imgData[idx+2] * 0.114;
+      if (gray < 128) { // dark pixel
+        const byteIdx = y * bytesPerRow + Math.floor(x / 8);
+        raster[byteIdx] |= (0x80 >> (x % 8));
+      }
+    }
+  }
+
+  return { raster, bytesPerRow, height };
+}
+
+// Print a raster image via GS v 0
+function rasterCmd(raster, bytesPerRow, height) {
+  // GS v 0 m xL xH yL yH d1...dk
+  const header = Buffer.from([
+    GS_BYTE, 0x76, 0x30, 0x00, // GS v 0, mode 0 (normal)
+    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
+    height & 0xFF, (height >> 8) & 0xFF,
+  ]);
+  return Buffer.concat([header, raster]);
+}
+
+function printLine(parts, text, opts) {
+  const { raster, bytesPerRow, height } = textToRaster(text, opts);
+  parts.push(rasterCmd(raster, bytesPerRow, height));
+}
+
+function printDash(parts) {
+  printLine(parts, '-'.repeat(48), { fontSize: 20 });
+}
+
+function printLR(parts, left, right, opts = {}) {
+  printLine(parts, left, { ...opts, align: 'left' });
+  // Overlay: render both on one line
+  const fontSize = opts.fontSize || 22;
+  const bold = opts.bold || false;
+  const height = Math.ceil(fontSize * 1.4);
+  const width = PRINTER_WIDTH;
+
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#000';
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "SimSun","Microsoft YaHei","SimHei","Arial"`;
+  ctx.textBaseline = 'top';
+  const yPos = Math.floor(fontSize * 0.15);
+  ctx.fillText(left, 0, yPos);
+  const rm = ctx.measureText(right);
+  ctx.fillText(right, width - rm.width, yPos);
+
+  const imgData = ctx.getImageData(0, 0, width, height).data;
+  const bytesPerRow = Math.ceil(width / 8);
+  const raster = Buffer.alloc(bytesPerRow * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const gray = imgData[idx] * 0.299 + imgData[idx+1] * 0.587 + imgData[idx+2] * 0.114;
+      if (gray < 128) {
+        raster[y * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
+      }
+    }
+  }
+  // Replace last printLine with this combined one
+  parts.pop();
+  parts.push(rasterCmd(raster, bytesPerRow, height));
+}
 
 function buildEscPos(job) {
   const parts = [];
-  const push  = (...b) => parts.push(Buffer.from(b));
-  const raw   = (buf)  => parts.push(buf);
-  const text  = (s)    => raw(iconv.encode(s, 'gbk'));
-  const lf    = ()     => push(LF_BYTE);
-  const line  = (s)    => { text(s); lf(); };
-  const dash  = (w)    => { text('-'.repeat(w || 32)); lf(); };
-  const lr    = (l, r, w) => {
-    w = w || 32;
-    // Calculate byte-width for alignment (CJK chars = 2 columns)
-    const lw = [...l].reduce((s, c) => s + (c.charCodeAt(0) > 0x7F ? 2 : 1), 0);
-    const rw = [...r].reduce((s, c) => s + (c.charCodeAt(0) > 0x7F ? 2 : 1), 0);
-    const pad = Math.max(1, w - lw - rw);
-    text(l + ' '.repeat(pad) + r); lf();
-  };
+  const push = (...b) => parts.push(Buffer.from(b));
+  const feed = (n) => push(ESC_BYTE, 0x64, n);
+  const cut  = () => push(GS_BYTE, 0x56, 1);
 
-  // Init + enable Chinese mode
-  push(ESC_BYTE, 0x40);             // ESC @ — init
-  push(FS_BYTE, 0x26);              // FS &  — select Chinese chars
+  // ESC @ — init printer
+  push(ESC_BYTE, 0x40);
 
-  const center = () => push(ESC_BYTE, 0x61, 1);
-  const left   = () => push(ESC_BYTE, 0x61, 0);
-  const bold   = (on) => push(ESC_BYTE, 0x45, on ? 1 : 0);
-  const dbl    = () => push(GS_BYTE, 0x21, 0x11);
-  const norm   = () => push(GS_BYTE, 0x21, 0x00);
-  const feed   = (n) => push(ESC_BYTE, 0x64, n);
-  const cut    = () => push(GS_BYTE, 0x56, 1);
+  const S  = 24;  // normal text size
+  const SM = 20;  // small text (English sub-lines, mods)
+  const LG = 40;  // shop name / title
 
   if (job.type === 'test') {
-    center(); dbl(); line('TEST PRINT'); norm(); lf();
-    line('Printer is working!');
-    line(`IP: ${job.printerIp || '?'}`);
-    line(`Port: ${job.printerPort || 9100}`);
-    line(new Date().toLocaleString());
+    printLine(parts, 'TEST PRINT', { fontSize: LG, bold: true, align: 'center' });
+    printLine(parts, '打印测试 OK', { fontSize: S, align: 'center' });
+    printLine(parts, 'Printer is working!', { fontSize: S, align: 'center' });
+    printLine(parts, `IP: ${job.printerIp || '?'}`, { fontSize: S, align: 'center' });
+    printLine(parts, `Port: ${job.printerPort || 9100}`, { fontSize: S, align: 'center' });
+    printLine(parts, new Date().toLocaleString(), { fontSize: S, align: 'center' });
     feed(3); cut();
 
   } else if (job.type === 'orderSlip') {
     const d = job.data;
-    center(); dbl(); line(d.shopName || 'BKT House'); norm();
-    line('Order Slip');
-    dash(32);
-    left();
-    lr('Table', d.table);
-    lr('Date', d.dateStr);
-    lr('Time', d.timeStr);
-    center(); bold(true); line(d.isUpdate ? '[ ORDER UPDATE ]' : '[ NEW ORDER ]'); bold(false);
-    dash(32);
-    left();
+    printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
+    printLine(parts, 'Order Slip', { fontSize: S, align: 'center' });
+    printDash(parts);
+    printLR(parts, 'Table', d.table, { fontSize: S });
+    printLR(parts, 'Date', d.dateStr, { fontSize: S });
+    printLR(parts, 'Time', d.timeStr, { fontSize: S });
+    printLine(parts, d.isUpdate ? '[ ORDER UPDATE ]' : '[ NEW ORDER ]', { fontSize: S, bold: true, align: 'center' });
+    printDash(parts);
     (d.items || []).forEach(item => {
-      bold(true); lr(`${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`); bold(false);
-      if (item.nameEn) line(`   ${item.nameEn}`);
-      if (item.mods)   line(`   [${item.mods}]`);
-      if (item.notes)  line(`   * ${item.notes}`);
+      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`, { fontSize: S, bold: true });
+      if (item.nameEn) printLine(parts, `   ${item.nameEn}`, { fontSize: SM });
+      if (item.mods)   printLine(parts, `   [${item.mods}]`, { fontSize: SM });
+      if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
     });
-    dash(32);
-    bold(true); lr('TOTAL', `RM${d.total}`); bold(false);
-    center(); lf(); line('-- Thank you --');
+    printDash(parts);
+    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 28, bold: true });
+    printLine(parts, '-- Thank you --', { fontSize: S, align: 'center' });
     feed(3); cut();
 
   } else if (job.type === 'receipt') {
     const d = job.data;
-    center(); dbl(); line(d.shopName || 'BKT House'); norm();
-    line('Official Receipt');
-    bold(true); line('RECEIPT'); bold(false);
-    dash(32);
-    left();
-    lr('Receipt No', d.receiptNo);
-    lr('Table', d.table);
-    lr('Date', d.dateStr);
-    lr('Time', d.timeStr);
-    dash(32);
+    printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
+    printLine(parts, 'Official Receipt', { fontSize: S, align: 'center' });
+    printLine(parts, 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
+    printDash(parts);
+    printLR(parts, 'Receipt No', d.receiptNo, { fontSize: S });
+    printLR(parts, 'Table', d.table, { fontSize: S });
+    printLR(parts, 'Date', d.dateStr, { fontSize: S });
+    printLR(parts, 'Time', d.timeStr, { fontSize: S });
+    printDash(parts);
     (d.items || []).forEach(item => {
-      bold(true); lr(`${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`); bold(false);
-      if (item.nameEn) line(`   ${item.nameEn}`);
-      if (item.mods)   line(`   [${item.mods}]`);
-      if (item.notes)  line(`   * ${item.notes}`);
+      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`, { fontSize: S, bold: true });
+      if (item.nameEn) printLine(parts, `   ${item.nameEn}`, { fontSize: SM });
+      if (item.mods)   printLine(parts, `   [${item.mods}]`, { fontSize: SM });
+      if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
     });
-    dash(32);
-    lr('Subtotal', `RM${d.total}`);
-    bold(true); lr('TOTAL', `RM${d.total}`); bold(false);
-    dash(32);
-    lr('Payment', d.payLabel);
-    lf();
-    center(); line('Thank you for dining with us!');
-    line('Please come again :)');
+    printDash(parts);
+    printLR(parts, 'Subtotal', `RM${d.total}`, { fontSize: S });
+    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 28, bold: true });
+    printDash(parts);
+    printLR(parts, 'Payment', d.payLabel, { fontSize: S });
+    push(LF_BYTE);
+    printLine(parts, 'Thank you for dining with us!', { fontSize: S, align: 'center' });
+    printLine(parts, 'Please come again :)', { fontSize: S, align: 'center' });
     feed(3); cut();
   }
 
@@ -510,6 +611,7 @@ app.post('/api/print', async (req, res) => {
     job.printerPort = job.printerPort || printerPort;
 
     const escpos = buildEscPos(job);
+    console.log(`[print] type=${job.type} size=${escpos.length}B → ${printerIp}:${printerPort}`);
 
     // Try sending to printer
     let sent = false;
@@ -530,6 +632,81 @@ app.post('/api/print', async (req, res) => {
     res.status(500).json({ error: `Print failed: ${e.message}` });
   }
 });
+
+// ─── Cloud Sync (background backup to MongoDB) ──────────────────────────────
+// When running locally (file store), sync order history + settings to cloud
+// MongoDB after each payment. Queues failed syncs and retries.
+
+let cloudSync = null; // assigned in start() if SYNC_MONGODB_URI is set
+
+function createCloudSync(uri) {
+  const { MongoClient } = require('mongodb');
+  const client = new MongoClient(uri);
+  let db = null;
+  let connected = false;
+  const queue = []; // pending sync items
+  let flushing = false;
+
+  async function ensureConnected() {
+    if (connected) return true;
+    try {
+      await client.connect();
+      db = client.db('pos');
+      await db.collection('orderHistory').createIndex({ timestamp: -1 });
+      connected = true;
+      console.log('[sync] Cloud MongoDB connected');
+      return true;
+    } catch (e) {
+      console.error('[sync] Cloud MongoDB connect failed:', e.message);
+      return false;
+    }
+  }
+
+  async function flush() {
+    if (flushing || queue.length === 0) return;
+    flushing = true;
+    try {
+      if (!await ensureConnected()) { flushing = false; return; }
+      while (queue.length > 0) {
+        const item = queue[0];
+        try {
+          if (item.type === 'orderHistory') {
+            // Upsert by order id to avoid duplicates
+            await db.collection('orderHistory').replaceOne(
+              { id: item.data.id }, item.data, { upsert: true }
+            );
+          } else if (item.type === 'settings') {
+            await db.collection('settings').replaceOne(
+              { _id: 'main' }, { _id: 'main', ...item.data }, { upsert: true }
+            );
+          } else if (item.type === 'menu') {
+            await db.collection('settings').replaceOne(
+              { _id: 'menu' }, { _id: 'menu', items: item.data }, { upsert: true }
+            );
+          }
+          queue.shift(); // success — remove from queue
+        } catch (e) {
+          console.error('[sync] Failed to sync item:', e.message);
+          connected = false;
+          break; // retry later
+        }
+      }
+    } finally {
+      flushing = false;
+    }
+  }
+
+  // Retry queued items every 60 seconds
+  setInterval(() => { if (queue.length > 0) flush(); }, 60000);
+
+  return {
+    syncOrder(order)      { queue.push({ type: 'orderHistory', data: order }); flush(); },
+    syncSettings(s)       { queue.push({ type: 'settings', data: s }); flush(); },
+    syncMenu(items)       { queue.push({ type: 'menu', data: items }); flush(); },
+    queueLength()         { return queue.length; },
+    async close()         { if (connected) await client.close(); },
+  };
+}
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
@@ -555,6 +732,13 @@ async function start() {
   await store.connect();
   await cleanupStaleBills();
 
+  // Cloud sync: when running locally (file store), sync to cloud MongoDB
+  const syncUri = process.env.SYNC_MONGODB_URI;
+  if (!process.env.MONGODB_URI && syncUri) {
+    cloudSync = createCloudSync(syncUri);
+    console.log('Cloud sync enabled (background backup to MongoDB)');
+  }
+
   server.listen(PORT, '0.0.0.0', () => {
     const { networkInterfaces } = require('os');
     let localIP = 'localhost';
@@ -573,7 +757,7 @@ async function start() {
   });
 }
 
-process.on('SIGTERM', () => { server.close(() => { store.close(); process.exit(0); }); });
-process.on('SIGINT',  () => { server.close(() => { store.close(); process.exit(0); }); });
+process.on('SIGTERM', () => { server.close(async () => { if (cloudSync) await cloudSync.close(); store.close(); process.exit(0); }); });
+process.on('SIGINT',  () => { server.close(async () => { if (cloudSync) await cloudSync.close(); store.close(); process.exit(0); }); });
 
 start().catch(e => { console.error('Failed to start server:', e); process.exit(1); });
