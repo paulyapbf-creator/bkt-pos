@@ -2,6 +2,10 @@
 
 require('dotenv').config();
 
+// Use Google DNS so MongoDB SRV lookups work on restrictive networks
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const express   = require('express');
 const http      = require('http');
 const WebSocket = require('ws');
@@ -377,7 +381,7 @@ app.get('/api/history', async (req, res) => {
 });
 app.post('/api/history', async (req, res) => {
   await store.addOrderHistory(req.body);
-  if (cloudSync) cloudSync.syncOrder(req.body);
+  if (cloudSync) await cloudSync.syncOrder(req.body);
   res.json({ ok: true });
 });
 app.delete('/api/history', async (req, res) => { await store.deleteOrderHistory(); res.json({ ok: true }); });
@@ -387,7 +391,7 @@ app.delete('/api/history', async (req, res) => { await store.deleteOrderHistory(
 app.get('/api/menu', async (req, res) => res.json(await store.getMenuItems()));
 app.put('/api/menu', async (req, res) => {
   await store.saveMenuItems(req.body);
-  if (cloudSync) cloudSync.syncMenu(req.body);
+  if (cloudSync) await cloudSync.syncMenu(req.body);
   res.json({ ok: true });
 });
 
@@ -396,7 +400,7 @@ app.put('/api/menu', async (req, res) => {
 app.get('/api/settings',    async (req, res) => res.json(await store.getSettings()));
 app.put('/api/settings', async (req, res) => {
   await store.saveSettings(req.body);
-  if (cloudSync) cloudSync.syncSettings(req.body);
+  if (cloudSync) await cloudSync.syncSettings(req.body);
   res.json({ ok: true });
 });
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
@@ -578,6 +582,7 @@ function buildEscPos(job) {
   } else if (job.type === 'receipt') {
     const d = job.data;
     printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
+    if (d.shopAddress) printLine(parts, d.shopAddress, { fontSize: SM, align: 'center' });
     printLine(parts, 'Official Receipt', { fontSize: S, align: 'center' });
     printLine(parts, 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
     printDash(parts);
@@ -721,9 +726,9 @@ function createCloudSync(uri) {
   setInterval(() => { if (queue.length > 0) flush(); }, 60000);
 
   return {
-    syncOrder(order)      { queue.push({ type: 'orderHistory', data: order }); flush(); },
-    syncSettings(s)       { queue.push({ type: 'settings', data: s }); flush(); },
-    syncMenu(items)       { queue.push({ type: 'menu', data: items }); flush(); },
+    syncOrder(order)      { queue.push({ type: 'orderHistory', data: order }); return flush(); },
+    syncSettings(s)       { queue.push({ type: 'settings', data: s }); return flush(); },
+    syncMenu(items)       { queue.push({ type: 'menu', data: items }); return flush(); },
     queueLength()         { return queue.length; },
     async close()         { if (connected) await client.close(); },
   };
