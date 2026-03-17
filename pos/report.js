@@ -1,14 +1,15 @@
 'use strict';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const API_BASE = (() => {
+function getApiBase() {
   const saved = localStorage.getItem('bkt_api_base');
   if (saved) return saved;
   const loc = location;
   return loc.hostname === 'localhost' || loc.hostname === '127.0.0.1'
     ? `${loc.protocol}//${loc.hostname}:3000`
     : `${loc.protocol}//${loc.host}`;
-})();
+}
+let API_BASE = getApiBase();
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let orders = [];
@@ -283,6 +284,59 @@ document.querySelectorAll('.report-tab').forEach(btn => {
   });
 });
 
+// ─── API config UI ───────────────────────────────────────────────────────────
+const settingsBtn   = document.getElementById('settings-btn');
+const apiConfigBar  = document.getElementById('api-config-bar');
+const apiUrlInput   = document.getElementById('api-url-input');
+const apiSaveBtn    = document.getElementById('api-save-btn');
+const apiClearBtn   = document.getElementById('api-clear-btn');
+const apiStatus     = document.getElementById('api-status');
+
+// Show current saved URL
+apiUrlInput.value = localStorage.getItem('bkt_api_base') || '';
+
+settingsBtn.addEventListener('click', () => {
+  const open = apiConfigBar.classList.toggle('hidden');
+  settingsBtn.classList.toggle('active', !apiConfigBar.classList.contains('hidden'));
+});
+
+apiSaveBtn.addEventListener('click', () => {
+  const url = apiUrlInput.value.trim().replace(/\/+$/, '');
+  if (!url) return;
+  localStorage.setItem('bkt_api_base', url);
+  API_BASE = url;
+  apiStatus.textContent = '✓ Saved';
+  setTimeout(() => { apiStatus.textContent = ''; }, 2000);
+  // Reload data & shop name with new API
+  fetchShopName();
+  const { from, to } = getDateRange(currentPreset);
+  loadData(from, to);
+});
+
+apiClearBtn.addEventListener('click', () => {
+  localStorage.removeItem('bkt_api_base');
+  apiUrlInput.value = '';
+  API_BASE = getApiBase();
+  apiStatus.textContent = '✓ Cleared';
+  setTimeout(() => { apiStatus.textContent = ''; }, 2000);
+  fetchShopName();
+  const { from, to } = getDateRange(currentPreset);
+  loadData(from, to);
+});
+
+// ─── Dynamic shop name ───────────────────────────────────────────────────────
+async function fetchShopName() {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings`);
+    if (res.ok) {
+      const settings = await res.json();
+      const name = settings.shopName || 'BKT House';
+      document.getElementById('shop-name').textContent = name;
+      document.title = `Reports — ${name}`;
+    }
+  } catch (e) { /* keep default */ }
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 (function init() {
   // Set default custom date inputs to today
@@ -290,6 +344,7 @@ document.querySelectorAll('.report-tab').forEach(btn => {
   document.getElementById('date-from').value = today;
   document.getElementById('date-to').value = today;
 
+  fetchShopName();
   const { from, to } = getDateRange('today');
   loadData(from, to);
 })();
