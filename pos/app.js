@@ -830,22 +830,20 @@ function buildPrintJob(type, data) {
 }
 
 function buildOrderSlipJob(table, items, isUpdate) {
-  const total    = items.reduce((s, i) => s + i.subtotal, 0);
   const now      = new Date();
-  const settings = loadSettings();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
   return buildPrintJob('orderSlip', {
-    shopName: settings.shopName || 'BKT House',
     table,
-    dateStr: now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
-    timeStr: now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    dateTime: `${dd}/${mm} ${hh}:${mi}`,
     isUpdate,
-    total: total.toFixed(2),
     items: items.map(item => ({
       qty:    item.quantity,
       nameZh: item.menuItem?.nameZh || item.nameZh || '',
       nameEn: item.menuItem?.name   || item.name   || '',
-      price:  item.subtotal.toFixed(2),
-      mods:   (item.selectedModifiers || []).map(m => m.optionLabel).join(', '),
+      mods:   (item.selectedModifiers || []).map(m => m.optionLabel),
       notes:  item.notes ? item.notes.trim() : '',
     })),
   });

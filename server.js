@@ -554,23 +554,25 @@ function buildEscPos(job) {
 
   } else if (job.type === 'orderSlip') {
     const d = job.data;
-    printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
-    printLine(parts, 'Order Slip', { fontSize: S, align: 'center' });
+    // Date/time left, table number large right
+    printLR(parts, d.dateTime || '', `T${d.table}`, { fontSize: LG, bold: true });
+    printLine(parts, d.isUpdate ? 'ORDER UPDATE' : 'NEW ORDER', { fontSize: S, bold: true, align: 'left' });
     printDash(parts);
-    printLR(parts, 'Table', d.table, { fontSize: S });
-    printLR(parts, 'Date', d.dateStr, { fontSize: S });
-    printLR(parts, 'Time', d.timeStr, { fontSize: S });
-    printLine(parts, d.isUpdate ? '[ ORDER UPDATE ]' : '[ NEW ORDER ]', { fontSize: S, bold: true, align: 'center' });
-    printDash(parts);
-    (d.items || []).forEach(item => {
-      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`, { fontSize: S, bold: true });
-      if (item.nameEn) printLine(parts, `   ${item.nameEn}`, { fontSize: SM });
-      if (item.mods)   printLine(parts, `   [${item.mods}]`, { fontSize: SM });
-      if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
+    (d.items || []).forEach((item, idx) => {
+      // Qty + English name + Chinese name (bold)
+      const label = `${item.qty}  ${item.nameEn || ''}${item.nameZh ? ' ' + item.nameZh : ''}`;
+      printLine(parts, label, { fontSize: S, bold: true });
+      // Modifiers with - prefix
+      const mods = Array.isArray(item.mods) ? item.mods : (item.mods ? [item.mods] : []);
+      mods.forEach(m => {
+        if (m) printLine(parts, `   -${m}`, { fontSize: SM });
+      });
+      // Notes with * prefix
+      if (item.notes) printLine(parts, `   *${item.notes}`, { fontSize: SM });
+      // Separator between items
+      if (idx < d.items.length - 1) printDash(parts);
     });
     printDash(parts);
-    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 28, bold: true });
-    printLine(parts, '-- Thank you --', { fontSize: S, align: 'center' });
     feed(3); cut();
 
   } else if (job.type === 'receipt') {
