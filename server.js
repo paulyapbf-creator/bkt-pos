@@ -593,7 +593,9 @@ function buildEscPos(job) {
       if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
     });
     printDash(parts);
-    printLR(parts, 'Subtotal', `RM${d.total}`, { fontSize: S });
+    printLR(parts, 'Subtotal', `RM${d.subtotal || d.total}`, { fontSize: S });
+    if (d.sst) printLR(parts, `SST (${d.sstRate || 6}%)`, `RM${d.sst}`, { fontSize: S });
+    if (d.svc) printLR(parts, `Service (${d.svcRate || 10}%)`, `RM${d.svc}`, { fontSize: S });
     printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 28, bold: true });
     printDash(parts);
     printLR(parts, 'Payment', d.payLabel, { fontSize: S });

@@ -258,6 +258,12 @@ function getActiveBillTotal(items) {
   return items.reduce((s, i) => s + i.subtotal, 0);
 }
 
+function calcBillBreakdown(subtotal, settings) {
+  const sst = settings.sstEnabled ? +(subtotal * (parseFloat(settings.sstRate) || 6) / 100).toFixed(2) : 0;
+  const svc = settings.svcEnabled ? +(subtotal * (parseFloat(settings.svcRate) || 10) / 100).toFixed(2) : 0;
+  return { subtotal, sst, svc, sstRate: parseFloat(settings.sstRate) || 6, svcRate: parseFloat(settings.svcRate) || 10, total: +(subtotal + sst + svc).toFixed(2) };
+}
+
 async function saveOrderToHistory(table, items, total, method) {
   const order = { id: `ord_${Date.now()}`, table, timestamp: Date.now(),
                   paymentMethod: method, total, items };
@@ -639,8 +645,10 @@ function renderBillingStep() {
     titleEl.textContent = 'Unpaid Bills'; subEl.textContent = '';
     const bills = loadActiveBills(); const tables = Object.keys(bills);
     if (tables.length === 0) { bodyEl.innerHTML = '<div class="empty-state">No unpaid bills</div>'; return; }
+    const billSettings = loadSettings();
     bodyEl.innerHTML = tables.map(table => {
-      const bill = bills[table]; const total = getActiveBillTotal(bill.items);
+      const bill = bills[table]; const subtotal = getActiveBillTotal(bill.items);
+      const bd = calcBillBreakdown(subtotal, billSettings);
       const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
       const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
       return `<div class="bill-card">
@@ -649,7 +657,7 @@ function renderBillingStep() {
           <div class="bill-meta"><span class="bill-items">${itemQty} item${itemQty > 1 ? 's' : ''}</span><span class="bill-since">Since ${timeStr}</span></div>
         </div>
         <div class="bill-card-right">
-          <span class="bill-total">RM ${total.toFixed(2)}</span>
+          <span class="bill-total">RM ${bd.total.toFixed(2)}</span>
           <button class="pay-table-btn" data-table="${table}">Pay ▶</button>
         </div></div>`;
     }).join('');
@@ -660,21 +668,28 @@ function renderBillingStep() {
   } else if (state.payStep === 'bill') {
     const table = state.payingTable; const bills = loadActiveBills(); const bill = bills[table];
     if (!bill) { state.payStep = 'list'; renderBillingStep(); return; }
-    const total = getActiveBillTotal(bill.items); const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
+    const subtotal = getActiveBillTotal(bill.items); const billSettings = loadSettings();
+    const bd = calcBillBreakdown(subtotal, billSettings);
+    const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
     titleEl.textContent = `Bill — ${table}`; subEl.textContent = `${itemQty} item(s)`;
+    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">Subtotal</td><td class="bill-total-amt">RM ${bd.subtotal.toFixed(2)}</td></tr>`;
+    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">SST (${bd.sstRate}%)</td><td class="bill-total-amt">RM ${bd.sst.toFixed(2)}</td></tr>`;
+    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">Service (${bd.svcRate}%)</td><td class="bill-total-amt">RM ${bd.svc.toFixed(2)}</td></tr>`;
+    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">TOTAL</td><td class="bill-total-amt" style="font-weight:bold;">RM ${bd.total.toFixed(2)}</td></tr>`;
     bodyEl.innerHTML = `<table class="hist-items-table bill-table">
       ${bill.items.map(bi => `<tr>
         <td class="hi-name">${bi.nameZh} <span class="hi-en">${bi.name}</span>
           ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
         </td>
         <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">RM ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
-      <tr class="bill-total-row"><td colspan="2" class="bill-total-label">Total</td><td class="bill-total-amt">RM ${total.toFixed(2)}</td></tr>
+      ${breakdownRows}
     </table>`;
     confirmBtn.textContent = 'Proceed to Payment →'; confirmBtn.classList.remove('hidden');
 
   } else if (state.payStep === 'method') {
-    const bills = loadActiveBills(); const total = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
-    titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${total.toFixed(2)}`;
+    const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
+    const bd = calcBillBreakdown(subtotal, loadSettings());
+    titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     bodyEl.innerHTML = `<div class="pay-methods">
       <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">Touch &amp; Go eWallet</span></button>
       <button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">DuitNow QR</span></button>
@@ -685,18 +700,19 @@ function renderBillingStep() {
     });
 
   } else if (state.payStep === 'qr') {
-    const bills = loadActiveBills(); const total = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
+    const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
+    const bd = calcBillBreakdown(subtotal, settings);
     const titles = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash Payment' };
-    titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${total.toFixed(2)}`;
+    titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
     if (method === 'tng' || method === 'duitnow') {
       const url = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
       body = url ? `<div class="qr-container"><img src="${url}" class="qr-img" alt="QR"></div>`
                  : `<div class="qr-placeholder">No QR image configured.<br>Go to <b>Items → Payment Settings</b>.</div>`;
-      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${total.toFixed(2)}</span></div>`;
+      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${bd.total.toFixed(2)}</span></div>`;
     } else {
-      body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${total.toFixed(2)}</div></div>`;
+      body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
     }
     bodyEl.innerHTML = body;
     confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
@@ -720,15 +736,17 @@ async function confirmTablePayment() {
   const table = state.payingTable; const method = state.payMethod;
   const bills = loadActiveBills(); const bill = bills[table];
   if (!bill) return;
-  const total   = getActiveBillTotal(bill.items);
+  const subtotal = getActiveBillTotal(bill.items);
+  const settings = loadSettings();
+  const bd = calcBillBreakdown(subtotal, settings);
   const orderId = `RCP-${Date.now()}`;
-  await saveOrderToHistory(table, bill.items, total, method);
+  await saveOrderToHistory(table, bill.items, bd.total, method);
   await clearActiveBill(table);
   closeBillingModal();
   updateTableBtn();
   const labels = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
   showToast(`✓ Payment confirmed · ${table} · ${labels[method] || method}`);
-  printPaymentReceipt(table, bill.items, total, method, orderId);
+  printPaymentReceipt(table, bill.items, bd, method, orderId);
 }
 
 // ─── HISTORY MODAL ────────────────────────────────────────────────────────────
@@ -849,7 +867,7 @@ function buildOrderSlipJob(table, items, isUpdate) {
   });
 }
 
-function buildReceiptJob(table, items, total, method, orderId) {
+function buildReceiptJob(table, items, bd, method, orderId) {
   const now      = new Date();
   const settings = loadSettings();
   const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
@@ -859,7 +877,12 @@ function buildReceiptJob(table, items, total, method, orderId) {
     dateStr:    now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
     timeStr:    now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     receiptNo:  orderId || `RCP-${Date.now()}`,
-    total:      total.toFixed(2),
+    subtotal:   bd.subtotal.toFixed(2),
+    sst:        bd.sst ? bd.sst.toFixed(2) : null,
+    sstRate:    bd.sstRate,
+    svc:        bd.svc ? bd.svc.toFixed(2) : null,
+    svcRate:    bd.svcRate,
+    total:      bd.total.toFixed(2),
     payLabel:   methodLabel[method] || method,
     items: items.map(item => ({
       qty:    item.quantity,
@@ -931,29 +954,31 @@ function printOrderSlip(table, items, isUpdate) {
 }
 
 function printOrderSlipHTML(table, items, isUpdate) {
-  const total    = items.reduce((s, i) => s + i.subtotal, 0);
-  const now      = new Date();
-  const dateStr  = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
-  const timeStr  = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  const dateTime = `${dd}/${mm} ${hh}:${mi}`;
+  const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const settings = loadSettings();
   const shopName = settings.shopName || 'BKT House';
 
-  const itemRows = items.map(item => {
+  const itemRows = items.map((item, idx) => {
     const nameZh = item.menuItem?.nameZh || item.nameZh || '';
     const nameEn = item.menuItem?.name   || item.name   || '';
-    const mods   = (item.selectedModifiers || []).map(m => m.optionLabel).join(', ');
+    const mods   = (item.selectedModifiers || []).map(m => m.optionLabel);
     const notes  = item.notes ? item.notes.trim() : '';
     return `
-      <tr>
-        <td class="td-qty">${item.quantity}</td>
-        <td class="td-name">
-          <div class="item-zh">${nameZh}</div>
-          <div class="item-en">${nameEn}</div>
-          ${mods  ? `<div class="item-mod">${mods}</div>`      : ''}
-          ${notes ? `<div class="item-note">📝 ${notes}</div>` : ''}
-        </td>
-        <td class="td-price">RM ${item.subtotal.toFixed(2)}</td>
-      </tr>`;
+      <div class="item-block${idx > 0 ? ' item-border' : ''}">
+        <div class="item-row">
+          <span class="item-qty">${item.quantity}</span>
+          <span class="item-name">${nameEn} ${nameZh}</span>
+          <span class="item-chk">☐</span>
+        </div>
+        ${mods.map(m => `<div class="item-sub">-${m}</div>`).join('')}
+        ${notes ? `<div class="item-sub">*${notes}</div>` : ''}
+      </div>`;
   }).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -961,46 +986,45 @@ function printOrderSlipHTML(table, items, isUpdate) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: 'Courier New', monospace; font-size: 12px;
-         width: 80mm; margin: 0 auto; padding: 6px 8px 16px; color: #000; }
-  .shop-name  { text-align:center; font-size:16px; font-weight:bold; margin-bottom:2px; }
-  .shop-sub   { text-align:center; font-size:11px; color:#555; margin-bottom:6px; }
-  .divider    { border:none; border-top:1px dashed #000; margin:6px 0; }
-  .meta-row   { display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px; }
-  .label      { font-weight:bold; }
-  .order-type { text-align:center; font-size:11px; font-weight:bold;
-                border:1px solid #000; padding:2px 6px; margin:4px auto 6px;
+         width: 80mm; margin: 0 auto; padding: 4px 6px 12px; color: #000; }
+  .shop-name { text-align:center; font-size:14px; font-weight:bold; margin-bottom:4px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2px; }
+  .header-left { font-size:11px; line-height:1.5; }
+  .header-right { text-align:right; }
+  .table-no { font-size:28px; font-weight:bold; line-height:1; }
+  .pax { font-size:11px; }
+  .order-type { text-align:center; font-size:12px; font-weight:bold;
+                border:1px solid #000; padding:1px 8px; margin:2px auto 0;
                 display:inline-block; }
-  .order-type-wrap { text-align:center; }
-  table       { width:100%; border-collapse:collapse; margin-top:4px; }
-  .td-qty     { width:20px; vertical-align:top; padding:3px 2px; }
-  .td-name    { vertical-align:top; padding:3px 4px; }
-  .td-price   { width:70px; text-align:right; vertical-align:top; padding:3px 2px; }
-  .item-zh    { font-size:13px; font-weight:bold; }
-  .item-en    { font-size:11px; color:#333; }
-  .item-mod   { font-size:10px; color:#555; font-style:italic; }
-  .item-note  { font-size:10px; color:#555; }
-  .total-row  { display:flex; justify-content:space-between;
-                font-size:14px; font-weight:bold; margin-top:4px; }
-  .footer     { text-align:center; font-size:10px; color:#777; margin-top:8px; }
+  .order-type-wrap { text-align:center; margin-bottom:2px; }
+  .divider { border:none; border-top:1px solid #000; margin:4px 0; }
+  .item-block { padding:4px 0; }
+  .item-border { border-top:1px solid #000; }
+  .item-row { display:flex; align-items:flex-start; font-size:13px; font-weight:bold; }
+  .item-qty { width:18px; flex-shrink:0; }
+  .item-name { flex:1; }
+  .item-chk { width:16px; height:16px; flex-shrink:0; text-align:center; font-size:14px; margin-left:4px; margin-top:1px; }
+  .item-sub { font-size:12px; font-weight:normal; padding-left:18px; }
+  .footer-line { border-top:1px solid #000; margin-top:4px; }
   @media print {
-    body { width:80mm; padding:0 4px 12px; }
+    body { width:80mm; padding:0 4px 8px; }
     @page { size:80mm auto; margin:0; }
   }
 </style></head><body>
   <div class="shop-name">${shopName}</div>
-  <div class="shop-sub">Order Slip</div>
-  <hr class="divider">
-  <div class="meta-row"><span class="label">Table</span><span>${table}</span></div>
-  <div class="meta-row"><span class="label">Date</span><span>${dateStr}</span></div>
-  <div class="meta-row"><span class="label">Time</span><span>${timeStr}</span></div>
-  <div class="order-type-wrap">
-    <span class="order-type">${isUpdate ? 'ORDER UPDATE' : 'NEW ORDER'}</span>
+  <div class="header">
+    <div class="header-left">
+      ${dateTime}<br>
+      ${isUpdate ? 'ORDER UPDATE' : 'NEW ORDER'}
+    </div>
+    <div class="header-right">
+      <div class="table-no">${table}</div>
+      <div class="pax">${itemCount} Item${itemCount > 1 ? 's' : ''}</div>
+    </div>
   </div>
   <hr class="divider">
-  <table><tbody>${itemRows}</tbody></table>
-  <hr class="divider">
-  <div class="total-row"><span>TOTAL</span><span>RM ${total.toFixed(2)}</span></div>
-  <div class="footer">— Thank you —</div>
+  ${itemRows}
+  <div class="footer-line"></div>
 <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); };<\/script>
 </body></html>`;
 
@@ -1012,26 +1036,26 @@ function printOrderSlipHTML(table, items, isUpdate) {
 
 // ─── PAYMENT RECEIPT ──────────────────────────────────────────────────────────
 
-function printPaymentReceipt(table, items, total, method, orderId) {
+function printPaymentReceipt(table, items, bd, method, orderId) {
   const settings = loadSettings();
 
   // Try direct thermal print if printer configured
   if (settings.printerIp) {
-    const job = buildReceiptJob(table, items, total, method, orderId);
+    const job = buildReceiptJob(table, items, bd, method, orderId);
     sendToPrinter(job).then(ok => {
       if (!ok) {
         showToast('⚠ Thermal print failed — opening browser print');
-        printPaymentReceiptHTML(table, items, total, method, orderId);
+        printPaymentReceiptHTML(table, items, bd, method, orderId);
       }
     });
     return;
   }
 
   // Fallback: browser print
-  printPaymentReceiptHTML(table, items, total, method, orderId);
+  printPaymentReceiptHTML(table, items, bd, method, orderId);
 }
 
-function printPaymentReceiptHTML(table, items, total, method, orderId) {
+function printPaymentReceiptHTML(table, items, bd, method, orderId) {
   const now        = new Date();
   const dateStr    = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr    = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1102,8 +1126,10 @@ function printPaymentReceiptHTML(table, items, total, method, orderId) {
   <table><tbody>${itemRows}</tbody></table>
   <hr class="divider">
   <div class="summary">
-    <div class="sum-row"><span>Subtotal</span><span>RM&nbsp;${total.toFixed(2)}</span></div>
-    <div class="sum-row total"><span>TOTAL</span><span>RM&nbsp;${total.toFixed(2)}</span></div>
+    <div class="sum-row"><span>Subtotal</span><span>RM&nbsp;${bd.subtotal.toFixed(2)}</span></div>
+    ${bd.sst ? `<div class="sum-row"><span>SST (${bd.sstRate}%)</span><span>RM&nbsp;${bd.sst.toFixed(2)}</span></div>` : ''}
+    ${bd.svc ? `<div class="sum-row"><span>Service (${bd.svcRate}%)</span><span>RM&nbsp;${bd.svc.toFixed(2)}</span></div>` : ''}
+    <div class="sum-row total"><span>TOTAL</span><span>RM&nbsp;${bd.total.toFixed(2)}</span></div>
   </div>
   <hr class="divider">
   <div class="pay-row"><span class="lbl">Payment</span><span>${payLabel}</span></div>

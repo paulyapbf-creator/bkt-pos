@@ -318,6 +318,10 @@ function initSettings() {
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
   const relayUrlInput    = document.getElementById('s-relay-url');
+  const sstEnabledInput  = document.getElementById('s-sst-enabled');
+  const sstRateInput     = document.getElementById('s-sst-rate');
+  const svcEnabledInput  = document.getElementById('s-svc-enabled');
+  const svcRateInput     = document.getElementById('s-svc-rate');
 
   shopNameInput.value    = settings.shopName      || '';
   tngInput.value         = settings.tngQrUrl      || '';
@@ -325,6 +329,10 @@ function initSettings() {
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
   relayUrlInput.value    = settings.relayUrl       || '';
+  sstEnabledInput.checked = !!settings.sstEnabled;
+  sstRateInput.value      = settings.sstRate ?? 6;
+  svcEnabledInput.checked = !!settings.svcEnabled;
+  svcRateInput.value      = settings.svcRate ?? 10;
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -346,6 +354,10 @@ function initSettings() {
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
       relayUrl:     relayUrlInput.value.trim(),
+      sstEnabled:   sstEnabledInput.checked,
+      sstRate:      parseFloat(sstRateInput.value) || 6,
+      svcEnabled:   svcEnabledInput.checked,
+      svcRate:      parseFloat(svcRateInput.value) || 10,
     };
   }
 
