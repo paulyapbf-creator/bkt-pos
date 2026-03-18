@@ -436,12 +436,13 @@ function initMaintenance() {
 
   // ── Network Info ──────────────────────────────────────────────────────────
   (async () => {
+    const el = document.getElementById('network-urls');
+    if (!el) return;
     try {
       const res = await fetch(`${API_BASE}/api/network`);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('Not available');
       const { urls } = await res.json();
-      const el = document.getElementById('network-urls');
-      if (!el || urls.length === 0) return;
+      if (!urls || urls.length === 0) throw new Error('No network');
       el.innerHTML = urls.map(url =>
         `<div style="margin-bottom:4px;">
           <strong>POS:</strong> <span style="color:var(--text);user-select:all">${url}</span><br>
@@ -449,7 +450,15 @@ function initMaintenance() {
           <strong>Report:</strong> <span style="color:var(--text);user-select:all">${url}/report.html</span>
         </div>`
       ).join('<hr style="border-color:var(--border);margin:8px 0;">');
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      // Fallback: show current page origin
+      const base = location.origin;
+      el.innerHTML = `<div style="margin-bottom:4px;">
+        <strong>POS:</strong> <span style="color:var(--text);user-select:all">${base}</span><br>
+        <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${base}/kds/</span><br>
+        <strong>Report:</strong> <span style="color:var(--text);user-select:all">${base}/report.html</span>
+      </div>`;
+    }
   })();
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────
