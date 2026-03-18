@@ -438,9 +438,19 @@ function initMaintenance() {
   (async () => {
     const el = document.getElementById('network-urls');
     if (!el) return;
+
+    function showUrls(base) {
+      el.innerHTML = `<div style="margin-bottom:4px;">
+        <strong>POS:</strong> <span style="color:var(--text);user-select:all">${base}</span><br>
+        <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${base}/kds/</span><br>
+        <strong>Report:</strong> <span style="color:var(--text);user-select:all">${base}/report.html</span>
+      </div>`;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/network`);
-      if (!res.ok) throw new Error('Not available');
+      const ct = res.headers.get('content-type') || '';
+      if (!res.ok || !ct.includes('json')) throw new Error('Not available');
       const { urls } = await res.json();
       if (!urls || urls.length === 0) throw new Error('No network');
       el.innerHTML = urls.map(url =>
@@ -451,13 +461,7 @@ function initMaintenance() {
         </div>`
       ).join('<hr style="border-color:var(--border);margin:8px 0;">');
     } catch (e) {
-      // Fallback: show current page origin
-      const base = location.origin;
-      el.innerHTML = `<div style="margin-bottom:4px;">
-        <strong>POS:</strong> <span style="color:var(--text);user-select:all">${base}</span><br>
-        <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${base}/kds/</span><br>
-        <strong>Report:</strong> <span style="color:var(--text);user-select:all">${base}/report.html</span>
-      </div>`;
+      showUrls(location.origin);
     }
   })();
 
