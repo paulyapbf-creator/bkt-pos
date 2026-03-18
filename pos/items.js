@@ -310,7 +310,8 @@ function init() {
 
 function initSettings() {
   const settings = loadSettings();
-  const shopNameInput  = document.getElementById('s-shop-name');
+  const shopNameInput    = document.getElementById('s-shop-name');
+  const shopAddressInput = document.getElementById('s-shop-address');
   const tngInput       = document.getElementById('s-tng-url');
   const duitnowInput   = document.getElementById('s-duitnow-url');
   const tngPreview     = document.getElementById('s-tng-preview');
@@ -324,6 +325,7 @@ function initSettings() {
   const svcRateInput     = document.getElementById('s-svc-rate');
 
   shopNameInput.value    = settings.shopName      || '';
+  shopAddressInput.value = settings.shopAddress   || '';
   tngInput.value         = settings.tngQrUrl      || '';
   duitnowInput.value     = settings.duitnowQrUrl  || '';
   printerIpInput.value   = settings.printerIp     || '';
@@ -349,6 +351,7 @@ function initSettings() {
   function gatherSettings() {
     return {
       shopName:     shopNameInput.value.trim(),
+      shopAddress:  shopAddressInput.value.trim(),
       tngQrUrl:     tngInput.value.trim(),
       duitnowQrUrl: duitnowInput.value.trim(),
       printerIp:    printerIpInput.value.trim(),
@@ -430,6 +433,24 @@ function initMaintenance() {
   cancelBtn.addEventListener('click', closeConfirm);
   closeBtn.addEventListener('click',  closeConfirm);
   modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
+
+  // ── Network Info ──────────────────────────────────────────────────────────
+  (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/network`);
+      if (!res.ok) return;
+      const { urls } = await res.json();
+      const el = document.getElementById('network-urls');
+      if (!el || urls.length === 0) return;
+      el.innerHTML = urls.map(url =>
+        `<div style="margin-bottom:4px;">
+          <strong>POS:</strong> <span style="color:var(--text);user-select:all">${url}</span><br>
+          <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${url}/kds/</span><br>
+          <strong>Report:</strong> <span style="color:var(--text);user-select:all">${url}/report.html</span>
+        </div>`
+      ).join('<hr style="border-color:var(--border);margin:8px 0;">');
+    } catch (e) { /* ignore */ }
+  })();
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────
   document.getElementById('maint-sync-btn').addEventListener('click', async () => {

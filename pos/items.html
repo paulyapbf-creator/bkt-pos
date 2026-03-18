@@ -19,7 +19,7 @@
   <!-- ── Admin tabs ── -->
   <div id="admin-tabs">
     <button class="admin-tab active" data-tab="items">📋 Items</button>
-    <button class="admin-tab" data-tab="settings">💳 Payment Settings</button>
+    <button class="admin-tab" data-tab="settings">⚙️ System Settings</button>
     <button class="admin-tab" data-tab="maintenance">🔧 Maintenance</button>
   </div>
 
@@ -55,8 +55,13 @@
       <h2 class="settings-title">General Settings</h2>
 
       <div class="settings-field">
-        <label>Shop Name (printed on order slip)</label>
+        <label>Shop Name (printed on order slip &amp; receipt)</label>
         <input type="text" id="s-shop-name" placeholder="BKT House" maxlength="40">
+      </div>
+
+      <div class="settings-field">
+        <label>Shop Address (printed on receipt)</label>
+        <input type="text" id="s-shop-address" placeholder="e.g. 123 Jalan Example, 50000 KL" maxlength="80">
       </div>
 
       <h2 class="settings-title" style="margin-top:24px;">Payment QR Settings</h2>
@@ -130,6 +135,14 @@
     <div id="maintenance-wrap">
       <h2 class="settings-title">Maintenance</h2>
       <p class="settings-hint">Use before going live or at the start of a new day to ensure a clean slate.</p>
+
+      <div class="maint-card" id="network-info-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">🌐 Network Info</div>
+          <div class="maint-card-desc">Connect other devices on the same WiFi using these addresses:</div>
+          <div id="network-urls" style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.8;">Loading...</div>
+        </div>
+      </div>
 
       <div class="maint-card">
         <div class="maint-card-info">

@@ -405,6 +405,23 @@ app.put('/api/settings', async (req, res) => {
 });
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
 
+// ─── REST API: Network Info ───────────────────────────────────────────────────
+
+app.get('/api/network', (req, res) => {
+  const { networkInterfaces } = require('os');
+  const ips = [];
+  for (const ifaces of Object.values(networkInterfaces())) {
+    for (const iface of ifaces) {
+      if (iface.family === 'IPv4' && !iface.internal) ips.push(iface.address);
+    }
+  }
+  const port = PORT;
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const urls = ips.map(ip => `http://${ip}:${port}`);
+  if (railwayDomain) urls.unshift(`https://${railwayDomain}`);
+  res.json({ ips, port, urls });
+});
+
 // ─── REST API: Manual Cloud Sync ──────────────────────────────────────────────
 
 app.post('/api/sync', async (req, res) => {
