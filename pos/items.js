@@ -440,9 +440,9 @@ function initMaintenance() {
     if (el) {
       const base = location.origin;
       el.innerHTML = `<div>
-        <strong>POS:</strong> <span style="color:var(--text);user-select:all">${base}</span><br>
-        <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${base}/kds/</span><br>
-        <strong>Report:</strong> <span style="color:var(--text);user-select:all">${base}/report.html</span>
+        <strong>POS:</strong> <span style="user-select:all">${base}</span><br>
+        <strong>KDS:</strong> <span style="user-select:all">${base}/kds/</span><br>
+        <strong>Report:</strong> <span style="user-select:all">${base}/report.html</span>
       </div>`;
     }
   }
