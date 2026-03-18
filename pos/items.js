@@ -435,35 +435,17 @@ function initMaintenance() {
   modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
 
   // ── Network Info ──────────────────────────────────────────────────────────
-  (async () => {
+  {
     const el = document.getElementById('network-urls');
-    if (!el) return;
-
-    function showUrls(base) {
-      el.innerHTML = `<div style="margin-bottom:4px;">
+    if (el) {
+      const base = location.origin;
+      el.innerHTML = `<div>
         <strong>POS:</strong> <span style="color:var(--text);user-select:all">${base}</span><br>
         <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${base}/kds/</span><br>
         <strong>Report:</strong> <span style="color:var(--text);user-select:all">${base}/report.html</span>
       </div>`;
     }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/network`);
-      const ct = res.headers.get('content-type') || '';
-      if (!res.ok || !ct.includes('json')) throw new Error('Not available');
-      const { urls } = await res.json();
-      if (!urls || urls.length === 0) throw new Error('No network');
-      el.innerHTML = urls.map(url =>
-        `<div style="margin-bottom:4px;">
-          <strong>POS:</strong> <span style="color:var(--text);user-select:all">${url}</span><br>
-          <strong>KDS:</strong> <span style="color:var(--text);user-select:all">${url}/kds/</span><br>
-          <strong>Report:</strong> <span style="color:var(--text);user-select:all">${url}/report.html</span>
-        </div>`
-      ).join('<hr style="border-color:var(--border);margin:8px 0;">');
-    } catch (e) {
-      showUrls(location.origin);
-    }
-  })();
+  }
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────
   document.getElementById('maint-sync-btn').addEventListener('click', async () => {
