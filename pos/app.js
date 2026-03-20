@@ -1,6 +1,205 @@
 'use strict';
 // CATEGORIES, MENU_ITEMS and STORAGE_KEY come from menuDefaults.js
 
+// ─── Minimal QR Code Generator (byte-mode, version auto) ────────────────────
+// Renders a QR code onto a <canvas> element. No external dependencies.
+const QR = (() => {
+  // GF(256) exp/log tables
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  { let v = 1; for (let i = 0; i < 255; i++) { EXP[i] = v; LOG[v] = i; v = (v << 1) ^ (v >= 128 ? 0x11d : 0); } for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; }
+  function gfMul(a, b) { return a === 0 || b === 0 ? 0 : EXP[LOG[a] + LOG[b]]; }
+  function polyMul(a, b) { const r = new Uint8Array(a.length + b.length - 1); for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) r[i + j] ^= gfMul(a[i], b[j]); return r; }
+  function genPoly(n) { let g = new Uint8Array([1]); for (let i = 0; i < n; i++) g = polyMul(g, new Uint8Array([1, EXP[i]])); return g; }
+  function ecBytes(data, ecCount) { const gen = genPoly(ecCount); const msg = new Uint8Array(data.length + ecCount); msg.set(data); for (let i = 0; i < data.length; i++) { const coef = msg[i]; if (coef !== 0) for (let j = 0; j < gen.length; j++) msg[i + j] ^= gfMul(gen[j], coef); } return msg.slice(data.length); }
+
+  // Version/EC capacity table [totalBytes, ecBytesPerBlock, numBlocks] for EC level M (versions 1-20)
+  const CAP = [
+    [16,10,1],[28,16,1],[44,26,1],[64,18,2],[86,24,2],[108,16,4],[124,18,4],[154,22,4],[182,22,4],[216,26,4],
+    [254,30,4],[290,22,8],[334,24,8],[365,24,8],[415,24,8],[453,28,8],[507,28,8],[563,26,8],[627,26,8],[669,28,8],
+  ];
+
+  // Alignment pattern positions
+  const ALIGN = [
+    [],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],
+    [6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
+  ];
+
+  function getVersion(len) {
+    for (let v = 1; v <= 20; v++) { const [total, ecPer, blocks] = CAP[v - 1]; if (total - ecPer * blocks - 3 >= len) return v; }
+    return -1;
+  }
+
+  function encodeData(text) {
+    const bytes = new TextEncoder().encode(text);
+    const ver = getVersion(bytes.length); if (ver < 0) throw new Error('Data too long');
+    const [total, ecPer, blocks] = CAP[ver - 1];
+    const dataCap = total - ecPer * blocks;
+    // Build data codewords: mode=0100(byte), char count, data, terminator+padding
+    const bits = [];
+    function push(val, len) { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+    push(4, 4); // byte mode
+    push(bytes.length, ver <= 9 ? 8 : 16);
+    for (const b of bytes) push(b, 8);
+    push(0, Math.min(4, dataCap * 8 - bits.length));
+    while (bits.length % 8) bits.push(0);
+    const data = new Uint8Array(dataCap);
+    for (let i = 0; i < bits.length / 8; i++) { let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i * 8 + j]; data[i] = v; }
+    const pads = [0xEC, 0x11];
+    for (let i = bits.length / 8; i < dataCap; i++) data[i] = pads[(i - bits.length / 8) % 2];
+
+    // Split into blocks and generate EC
+    const blockSize = Math.floor(dataCap / blocks);
+    const longBlocks = dataCap % blocks;
+    const dataBlocks = [], ecBlocks = [];
+    let offset = 0;
+    for (let i = 0; i < blocks; i++) {
+      const sz = blockSize + (i >= blocks - longBlocks ? 1 : 0);
+      dataBlocks.push(data.slice(offset, offset + sz));
+      ecBlocks.push(ecBytes(data.slice(offset, offset + sz), ecPer));
+      offset += sz;
+    }
+    // Interleave
+    const result = [];
+    const maxData = blockSize + (longBlocks > 0 ? 1 : 0);
+    for (let i = 0; i < maxData; i++) for (const b of dataBlocks) if (i < b.length) result.push(b[i]);
+    for (let i = 0; i < ecPer; i++) for (const b of ecBlocks) result.push(b[i]);
+    return { ver, codewords: new Uint8Array(result) };
+  }
+
+  function createMatrix(ver) {
+    const size = ver * 4 + 17;
+    const mod = Array.from({ length: size }, () => new Uint8Array(size));
+    const reserved = Array.from({ length: size }, () => new Uint8Array(size));
+
+    function setMod(r, c, v) { if (r >= 0 && r < size && c >= 0 && c < size) { mod[r][c] = v ? 1 : 0; reserved[r][c] = 1; } }
+
+    // Finder patterns
+    for (const [dr, dc] of [[0, 0], [0, size - 7], [size - 7, 0]]) {
+      for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+        const v = (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4));
+        setMod(dr + r, dc + c, v);
+      }
+      // Separators
+      for (let i = 0; i < 8; i++) { setMod(dr + (dr === 0 ? 7 : -1), dc + i, 0); setMod(dr + i, dc + (dc === 0 ? 7 : -1), 0); }
+      if (dr === 0 && dc === 0) setMod(7, 7, 0);
+      if (dr === 0 && dc !== 0) setMod(7, dc - 1, 0);
+      if (dr !== 0 && dc === 0) setMod(dr - 1, 7, 0);
+    }
+
+    // Timing patterns
+    for (let i = 8; i < size - 8; i++) { setMod(6, i, i % 2 === 0); setMod(i, 6, i % 2 === 0); }
+
+    // Alignment patterns
+    if (ver >= 2) {
+      const pos = ALIGN[ver - 1];
+      for (const r of pos) for (const c of pos) {
+        if (reserved[r][c]) continue;
+        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++)
+          setMod(r + dr, c + dc, Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0));
+      }
+    }
+
+    // Dark module + reserved format/version areas
+    setMod(size - 8, 8, 1);
+    for (let i = 0; i < 15; i++) { // format info area
+      if (i < 8) { setMod(8, i <= 5 ? i : i + 1, 0); setMod(i <= 5 ? i : i + 1, 8, 0); }
+      else { setMod(8, size - 15 + i, 0); setMod(size - 15 + i, 8, 0); }
+      reserved[8][i <= 5 ? i : (i < 8 ? i + 1 : size - 15 + i)] = 1;
+      reserved[i <= 5 ? i : (i < 8 ? i + 1 : size - 15 + i)][8] = 1;
+    }
+    if (ver >= 7) for (let i = 0; i < 18; i++) {
+      const r = Math.floor(i / 3), c = i % 3;
+      reserved[size - 11 + c][r] = 1; reserved[r][size - 11 + c] = 1;
+    }
+    return { size, mod, reserved };
+  }
+
+  function placeData(matrix, codewords) {
+    const { size, mod, reserved } = matrix;
+    let bitIdx = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++) {
+        for (const dx of [0, -1]) {
+          const col = right + dx;
+          const row = ((Math.floor((size - 1 - right + (right < 6 ? 1 : 0)) / 2)) % 2 === 0) ? size - 1 - vert : vert;
+          if (reserved[row][col]) continue;
+          if (bitIdx < codewords.length * 8) {
+            mod[row][col] = (codewords[bitIdx >> 3] >> (7 - (bitIdx & 7))) & 1;
+            bitIdx++;
+          }
+        }
+      }
+    }
+  }
+
+  function applyMask(matrix, maskNum) {
+    const { size, mod, reserved } = matrix;
+    const fns = [
+      (r, c) => (r + c) % 2 === 0, (r, c) => r % 2 === 0,
+      (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0,
+      (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+      (r, c) => (r * c) % 2 + (r * c) % 3 === 0,
+      (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0,
+      (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0,
+    ];
+    const fn = fns[maskNum];
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (!reserved[r][c]) mod[r][c] ^= fn(r, c) ? 1 : 0;
+  }
+
+  function applyFormatInfo(matrix, maskNum) {
+    const { size, mod } = matrix;
+    // EC level M = 00, mask
+    const data = (0b00 << 3) | maskNum;
+    let bits = data;
+    for (let i = 0; i < 10; i++) bits = (bits << 1) ^ ((bits >> 9) * 0x537);
+    bits = ((data << 10) | bits) ^ 0x5412;
+    const coords1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    const coords2 = [];
+    for (let i = 0; i < 7; i++) coords2.push([size - 1 - i, 8]);
+    for (let i = 7; i < 15; i++) coords2.push([8, size - 15 + i]);
+    for (let i = 0; i < 15; i++) {
+      const b = (bits >> (14 - i)) & 1;
+      mod[coords1[i][0]][coords1[i][1]] = b;
+      mod[coords2[i][0]][coords2[i][1]] = b;
+    }
+  }
+
+  function penalty(matrix) {
+    const { size, mod } = matrix;
+    let score = 0;
+    // Rule 1: runs of 5+
+    for (let r = 0; r < size; r++) { let cnt = 1; for (let c = 1; c < size; c++) { if (mod[r][c] === mod[r][c-1]) cnt++; else { if (cnt >= 5) score += cnt - 2; cnt = 1; } } if (cnt >= 5) score += cnt - 2; }
+    for (let c = 0; c < size; c++) { let cnt = 1; for (let r = 1; r < size; r++) { if (mod[r][c] === mod[r-1][c]) cnt++; else { if (cnt >= 5) score += cnt - 2; cnt = 1; } } if (cnt >= 5) score += cnt - 2; }
+    return score;
+  }
+
+  function renderCanvas(canvas, matrix, scale = 8) {
+    const { size, mod } = matrix;
+    const quiet = 4;
+    const totalSize = (size + quiet * 2) * scale;
+    canvas.width = totalSize; canvas.height = totalSize;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, totalSize, totalSize);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (mod[r][c]) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+  }
+
+  return function drawQR(canvas, text) {
+    const { ver, codewords } = encodeData(text);
+    let bestMatrix = null, bestPen = Infinity;
+    for (let mask = 0; mask < 8; mask++) {
+      const m = createMatrix(ver);
+      placeData(m, codewords);
+      applyMask(m, mask);
+      applyFormatInfo(m, mask);
+      const p = penalty(m);
+      if (p < bestPen) { bestPen = p; bestMatrix = m; }
+    }
+    renderCanvas(canvas, bestMatrix);
+  };
+})();
+
 const HISTORY_KEY      = 'bkt_order_history';
 const SETTINGS_KEY     = 'bkt_settings';
 const ACTIVE_BILLS_KEY = 'bkt_active_bills';
@@ -712,8 +911,7 @@ function renderBillingStep() {
       if (qrImgUrl) {
         body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
       } else if (payLink) {
-        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payLink)}`;
-        body = `<div class="qr-container"><img src="${qrApi}" class="qr-img" alt="QR"></div>`;
+        body = `<div class="qr-container"><canvas id="pay-qr-canvas" style="width:250px;height:250px;"></canvas></div>`;
       } else {
         body = `<div class="qr-placeholder">No QR or payment link configured.<br>Go to <b>Items → System Settings</b>.</div>`;
       }
@@ -727,6 +925,9 @@ function renderBillingStep() {
       body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
     }
     bodyEl.innerHTML = body;
+    // Render QR code from payment link onto canvas
+    const qrCanvas = document.getElementById('pay-qr-canvas');
+    if (qrCanvas && payLink) { try { QR(qrCanvas, payLink); } catch (e) { console.error('QR render error:', e); } }
     confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
     confirmBtn.classList.remove('hidden');
   }
