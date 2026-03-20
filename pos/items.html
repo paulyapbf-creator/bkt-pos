@@ -64,12 +64,19 @@
         <input type="text" id="s-shop-address" placeholder="e.g. 123 Jalan Example, 50000 KL" maxlength="80">
       </div>
 
-      <h2 class="settings-title" style="margin-top:24px;">Payment QR Settings</h2>
-      <p class="settings-hint">Paste the URL of your merchant QR code image (PNG/JPG). The image will be displayed full-size on the payment screen.</p>
+      <h2 class="settings-title" style="margin-top:24px;">Payment Settings</h2>
+      <p class="settings-hint">Configure payment links and QR codes for e-wallet payments.</p>
 
       <div class="settings-field">
-        <label>Touch &amp; Go eWallet — QR Image URL</label>
+        <label>Touch &amp; Go eWallet — Payment Link</label>
+        <input type="url" id="s-tng-link" placeholder="https://payment.tngdigital.com.my/sc/…">
+        <p class="settings-hint" style="margin-top:4px;">Paste your TNG eWallet payment link. A QR code will be generated automatically.</p>
+      </div>
+
+      <div class="settings-field">
+        <label>Touch &amp; Go eWallet — QR Image URL (optional)</label>
         <input type="url" id="s-tng-url" placeholder="https://…">
+        <p class="settings-hint" style="margin-top:4px;">Override with a custom QR image if preferred. Leave empty to auto-generate from payment link.</p>
         <div class="qr-preview-wrap">
           <img id="s-tng-preview" class="qr-preview hidden" alt="T&G QR Preview">
         </div>

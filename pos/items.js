@@ -312,6 +312,7 @@ function initSettings() {
   const settings = loadSettings();
   const shopNameInput    = document.getElementById('s-shop-name');
   const shopAddressInput = document.getElementById('s-shop-address');
+  const tngLinkInput   = document.getElementById('s-tng-link');
   const tngInput       = document.getElementById('s-tng-url');
   const duitnowInput   = document.getElementById('s-duitnow-url');
   const tngPreview     = document.getElementById('s-tng-preview');
@@ -326,6 +327,7 @@ function initSettings() {
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
+  tngLinkInput.value     = settings.tngPayLink    || '';
   tngInput.value         = settings.tngQrUrl      || '';
   duitnowInput.value     = settings.duitnowQrUrl  || '';
   printerIpInput.value   = settings.printerIp     || '';
@@ -352,6 +354,7 @@ function initSettings() {
     return {
       shopName:     shopNameInput.value.trim(),
       shopAddress:  shopAddressInput.value.trim(),
+      tngPayLink:   tngLinkInput.value.trim(),
       tngQrUrl:     tngInput.value.trim(),
       duitnowQrUrl: duitnowInput.value.trim(),
       printerIp:    printerIpInput.value.trim(),

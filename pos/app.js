@@ -707,9 +707,21 @@ function renderBillingStep() {
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
     if (method === 'tng' || method === 'duitnow') {
-      const url = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
-      body = url ? `<div class="qr-container"><img src="${url}" class="qr-img" alt="QR"></div>`
-                 : `<div class="qr-placeholder">No QR image configured.<br>Go to <b>Items → Payment Settings</b>.</div>`;
+      const qrImgUrl = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
+      const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
+      if (qrImgUrl) {
+        body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
+      } else if (payLink) {
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payLink)}`;
+        body = `<div class="qr-container"><img src="${qrApi}" class="qr-img" alt="QR"></div>`;
+      } else {
+        body = `<div class="qr-placeholder">No QR or payment link configured.<br>Go to <b>Items → System Settings</b>.</div>`;
+      }
+      if (payLink) {
+        body += `<div class="pay-link-row" style="text-align:center;margin:10px 0;">
+          <a href="${payLink}" target="_blank" style="color:#3498db;font-size:14px;text-decoration:underline;">Open Payment Link ↗</a>
+        </div>`;
+      }
       body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${bd.total.toFixed(2)}</span></div>`;
     } else {
       body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
@@ -873,6 +885,7 @@ function buildReceiptJob(table, items, bd, method, orderId) {
   const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
   return buildPrintJob('receipt', {
     shopName:   settings.shopName || 'BKT House',
+    shopAddress: settings.shopAddress || '',
     table,
     dateStr:    now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
     timeStr:    now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -1060,8 +1073,9 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
   const dateStr    = now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr    = now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const settings   = loadSettings();
-  const shopName   = settings.shopName || 'BKT House';
-  const receiptNo  = orderId || `RCP-${Date.now()}`;
+  const shopName    = settings.shopName || 'BKT House';
+  const shopAddress = settings.shopAddress || '';
+  const receiptNo   = orderId || `RCP-${Date.now()}`;
   const methodLabel = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash' };
   const payLabel   = methodLabel[method] || method;
 
@@ -1115,6 +1129,7 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
   }
 </style></head><body>
   <div class="shop-name">${shopName}</div>
+  ${shopAddress ? `<div class="shop-sub">${shopAddress}</div>` : ''}
   <div class="shop-sub">Official Receipt</div>
   <div class="receipt-lbl">RECEIPT</div>
   <hr class="divider">
@@ -1155,6 +1170,11 @@ async function init() {
     menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
     if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
   } catch (e) { menuItems = [...MENU_ITEMS]; }
+
+  // Shop name from settings
+  const _s = loadSettings();
+  const headerName = document.getElementById('header-shop-name');
+  if (headerName && _s.shopName) headerName.textContent = _s.shopName;
 
   // Search
   document.getElementById('search-input').addEventListener('input', e => {
