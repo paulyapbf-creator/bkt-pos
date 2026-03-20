@@ -905,11 +905,11 @@ function renderBillingStep() {
     const titles = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash Payment' };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
+    const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
     if (method === 'tng' || method === 'duitnow') {
       const qrImgUrl = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
-      const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
       if (payLink) {
-        body = `<div class="qr-container"><canvas id="pay-qr-canvas" style="width:250px;height:250px;"></canvas></div>`;
+        body = `<div class="qr-container"><canvas id="pay-qr-canvas" class="qr-img" style="background:#fff;"></canvas></div>`;
       } else if (qrImgUrl) {
         body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
       } else {
