@@ -691,7 +691,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const bd = calcBillBreakdown(subtotal, loadSettings());
     titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
-    const cardConfigured = settings.airwallexClientId && settings.airwallexApiKey;
+    const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
     bodyEl.innerHTML = `<div class="pay-methods">
       <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">Touch &amp; Go eWallet</span></button>
       ${cardConfigured ? '<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">Credit / Debit Card</span></button>' : ''}
