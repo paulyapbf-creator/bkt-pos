@@ -908,10 +908,10 @@ function renderBillingStep() {
     if (method === 'tng' || method === 'duitnow') {
       const qrImgUrl = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
       const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
-      if (qrImgUrl) {
-        body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
-      } else if (payLink) {
+      if (payLink) {
         body = `<div class="qr-container"><canvas id="pay-qr-canvas" style="width:250px;height:250px;"></canvas></div>`;
+      } else if (qrImgUrl) {
+        body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
       } else {
         body = `<div class="qr-placeholder">No QR or payment link configured.<br>Go to <b>Items → System Settings</b>.</div>`;
       }
