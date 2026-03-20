@@ -87,6 +87,27 @@
         <p class="settings-hint" style="margin:0;">Cashier photographs the customer's payment receipt for OCR amount verification before confirming.</p>
       </div>
 
+      <h2 class="settings-title" style="margin-top:24px;">Airwallex Card Payments</h2>
+      <p class="settings-hint">Configure Airwallex credentials for credit/debit card payments. Use demo mode for testing.</p>
+
+      <div class="settings-field">
+        <label>Client ID</label>
+        <input type="text" id="s-aw-client-id" placeholder="Your Airwallex Client ID">
+      </div>
+
+      <div class="settings-field">
+        <label>API Key</label>
+        <input type="password" id="s-aw-api-key" placeholder="Your Airwallex API Key">
+      </div>
+
+      <div class="settings-field">
+        <label>Environment</label>
+        <select id="s-aw-env">
+          <option value="demo">Demo (testing)</option>
+          <option value="production">Production (live)</option>
+        </select>
+      </div>
+
       <h2 class="settings-title" style="margin-top:24px;">Tax &amp; Service Charge</h2>
       <p class="settings-hint">Configure SST and service charge. These appear as a breakdown on bills and receipts.</p>
 

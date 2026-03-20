@@ -626,6 +626,7 @@ async function openBillingModal() {
 }
 
 function closeBillingModal() {
+  destroyAirwallexElement();
   document.getElementById('payment-modal').classList.add('hidden');
   document.body.style.overflow = '';
   state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
@@ -690,8 +691,10 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const bd = calcBillBreakdown(subtotal, loadSettings());
     titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    const cardConfigured = settings.airwallexClientId && settings.airwallexApiKey;
     bodyEl.innerHTML = `<div class="pay-methods">
       <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">Touch &amp; Go eWallet</span></button>
+      ${cardConfigured ? '<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">Credit / Debit Card</span></button>' : ''}
       <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">Cash</span></button>
     </div>`;
     bodyEl.querySelectorAll('.pay-method-btn').forEach(btn => {
@@ -702,7 +705,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash Payment' };
+    const titles = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash Payment', card: 'Credit Card' };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -722,6 +725,12 @@ function renderBillingStep() {
       }
       body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${bd.total.toFixed(2)}</span></div>`;
       body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>RM ${bd.total.toFixed(2)}</b> received in TNG app before confirming</div>`;
+    } else if (method === 'card') {
+      body = `<div class="card-pay-container">
+        <div class="card-pay-loading" id="card-loading"><div class="card-spinner"></div><div>Setting up card payment...</div></div>
+        <div id="airwallex-dropin"></div>
+        <div class="card-pay-error hidden" id="card-error"><span id="card-error-msg"></span><button class="retry-btn" id="card-retry-btn">Retry</button></div>
+      </div>`;
     } else {
       body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
     }
@@ -735,13 +744,19 @@ function renderBillingStep() {
         qrEl.querySelector('svg').style.cssText = 'width:220px;height:220px;border-radius:12px;';
       } catch (e) { console.error('QR render error:', e); }
     }
-    const settings2 = loadSettings();
-    if (settings2.verifyEwallet && method !== 'cash') {
-      confirmBtn.textContent = 'Verify Receipt →';
+    // Initialize Airwallex card payment
+    if (method === 'card') {
+      confirmBtn.classList.add('hidden');
+      initAirwallexPayment(bd.total, state.payingTable, settings, bd);
     } else {
-      confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
+      const settings2 = loadSettings();
+      if (settings2.verifyEwallet && method !== 'cash') {
+        confirmBtn.textContent = 'Verify Receipt →';
+      } else {
+        confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
+      }
+      confirmBtn.classList.remove('hidden');
     }
-    confirmBtn.classList.remove('hidden');
 
   } else if (state.payStep === 'verify') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
@@ -879,7 +894,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
 function handleBillingBack() {
   if (state.payStep === 'bill')        { state.payStep = 'list';   state.payingTable = null; }
   else if (state.payStep === 'method')   state.payStep = 'bill';
-  else if (state.payStep === 'qr')     { state.payStep = 'method'; state.payMethod = null; }
+  else if (state.payStep === 'qr')     { destroyAirwallexElement(); state.payStep = 'method'; state.payMethod = null; }
   else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
 }
@@ -897,6 +912,84 @@ function handleBillingConfirm() {
   else if (state.payStep === 'verify') confirmTablePayment();
 }
 
+// ─── AIRWALLEX CARD PAYMENT ───────────────────────────────────────────────────
+
+let airwallexElement = null;
+
+async function initAirwallexPayment(amount, table, settings, bd) {
+  const loadingEl = document.getElementById('card-loading');
+  const errorEl   = document.getElementById('card-error');
+  const errorMsg  = document.getElementById('card-error-msg');
+  const retryBtn  = document.getElementById('card-retry-btn');
+
+  function showError(msg) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (errorEl) { errorEl.classList.remove('hidden'); errorMsg.textContent = msg; }
+  }
+
+  if (retryBtn) retryBtn.addEventListener('click', () => {
+    if (errorEl) errorEl.classList.add('hidden');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    initAirwallexPayment(amount, table, settings, bd);
+  });
+
+  try {
+    // Create PaymentIntent on server
+    const res = await fetch(`${API_BASE}/api/airwallex/create-intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, table }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Server error' }));
+      showError(err.error || 'Failed to create payment intent');
+      return;
+    }
+    const { clientSecret, intentId } = await res.json();
+
+    // Initialize Airwallex SDK
+    const env = settings.airwallexEnv || 'demo';
+    Airwallex.init({ env, origin: window.location.origin });
+
+    // Create and mount Drop-in element
+    const dropIn = Airwallex.createElement('dropIn', {
+      intent_id: intentId,
+      client_secret: clientSecret,
+      currency: 'MYR',
+      mode: 'payment',
+      autoCapture: true,
+    });
+
+    dropIn.mount('airwallex-dropin');
+    airwallexElement = dropIn;
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+
+    // Listen for events
+    window.addEventListener('onSuccess', function onAwSuccess(e) {
+      window.removeEventListener('onSuccess', onAwSuccess);
+      confirmTablePayment();
+    });
+
+    window.addEventListener('onError', function onAwError(e) {
+      window.removeEventListener('onError', onAwError);
+      console.error('Airwallex payment error:', e.detail);
+      showError('Payment failed. Please try again.');
+    });
+
+  } catch (e) {
+    console.error('Airwallex init error:', e);
+    showError('Failed to initialize card payment');
+  }
+}
+
+function destroyAirwallexElement() {
+  if (airwallexElement) {
+    try { airwallexElement.destroy(); } catch (_) {}
+    airwallexElement = null;
+  }
+}
+
 async function confirmTablePayment() {
   const table = state.payingTable; const method = state.payMethod;
   const bills = loadActiveBills(); const bill = bills[table];
@@ -909,7 +1002,7 @@ async function confirmTablePayment() {
   await clearActiveBill(table);
   closeBillingModal();
   updateTableBtn();
-  const labels = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
+  const labels = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
   showToast(`✓ Payment confirmed · ${table} · ${labels[method] || method}`);
   printPaymentReceipt(table, bill.items, bd, method, orderId);
 }
@@ -947,7 +1040,7 @@ async function renderHistoryList(tableFilter) {
   const list = tableFilter === 'all' ? history : history.filter(o => o.table === tableFilter);
   const body = document.getElementById('history-body');
   if (list.length === 0) { body.innerHTML = '<div class="empty-state">No orders found</div>'; return; }
-  const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash' };
+  const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
   body.innerHTML = list.map(ord => {
     const d = new Date(ord.timestamp);
     const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1035,7 +1128,7 @@ function buildOrderSlipJob(table, items, isUpdate) {
 function buildReceiptJob(table, items, bd, method, orderId) {
   const now      = new Date();
   const settings = loadSettings();
-  const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash' };
+  const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
   return buildPrintJob('receipt', {
     shopName:   settings.shopName || 'BKT House',
     shopAddress: settings.shopAddress || '',
@@ -1229,7 +1322,7 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
   const shopName    = settings.shopName || 'BKT House';
   const shopAddress = settings.shopAddress || '';
   const receiptNo   = orderId || `RCP-${Date.now()}`;
-  const methodLabel = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash' };
+  const methodLabel = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
   const payLabel   = methodLabel[method] || method;
 
   const itemRows = items.map(item => {

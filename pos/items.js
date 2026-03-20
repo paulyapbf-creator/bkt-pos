@@ -323,6 +323,9 @@ function initSettings() {
   const svcEnabledInput  = document.getElementById('s-svc-enabled');
   const svcRateInput     = document.getElementById('s-svc-rate');
   const verifyEwalletInput = document.getElementById('s-verify-ewallet');
+  const awClientIdInput  = document.getElementById('s-aw-client-id');
+  const awApiKeyInput    = document.getElementById('s-aw-api-key');
+  const awEnvInput       = document.getElementById('s-aw-env');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -336,6 +339,9 @@ function initSettings() {
   svcEnabledInput.checked = !!settings.svcEnabled;
   svcRateInput.value      = settings.svcRate ?? 10;
   verifyEwalletInput.checked = !!settings.verifyEwallet;
+  awClientIdInput.value  = settings.airwallexClientId || '';
+  awApiKeyInput.value    = settings.airwallexApiKey   || '';
+  awEnvInput.value       = settings.airwallexEnv      || 'demo';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -361,6 +367,9 @@ function initSettings() {
       svcEnabled:   svcEnabledInput.checked,
       svcRate:      parseFloat(svcRateInput.value) || 10,
       verifyEwallet: verifyEwalletInput.checked,
+      airwallexClientId: awClientIdInput.value.trim(),
+      airwallexApiKey:   awApiKeyInput.value.trim(),
+      airwallexEnv:      awEnvInput.value,
     };
   }
 

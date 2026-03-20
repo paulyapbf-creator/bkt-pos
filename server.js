@@ -405,6 +405,83 @@ app.put('/api/settings', async (req, res) => {
 });
 app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
 
+// ─── REST API: Airwallex Card Payments ───────────────────────────────────────
+
+function airwallexBaseUrl(env) {
+  return env === 'production' ? 'https://api.airwallex.com' : 'https://api-demo.airwallex.com';
+}
+
+app.post('/api/airwallex/create-intent', async (req, res) => {
+  try {
+    const settings = await store.getSettings();
+    const clientId = settings.airwallexClientId;
+    const apiKey   = settings.airwallexApiKey;
+    const env      = settings.airwallexEnv || 'demo';
+    if (!clientId || !apiKey) return res.status(400).json({ error: 'Airwallex credentials not configured' });
+
+    const baseUrl = airwallexBaseUrl(env);
+
+    // Step 1: Authenticate
+    const authRes = await fetch(`${baseUrl}/api/v1/authentication/login`, {
+      method: 'POST',
+      headers: { 'x-client-id': clientId, 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+    });
+    if (!authRes.ok) {
+      const err = await authRes.text();
+      return res.status(401).json({ error: `Airwallex auth failed: ${err}` });
+    }
+    const { token } = await authRes.json();
+
+    // Step 2: Create PaymentIntent
+    const { amount, table } = req.body;
+    const intentRes = await fetch(`${baseUrl}/api/v1/pa/payment_intents/create`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        request_id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        amount: parseFloat(amount),
+        currency: 'MYR',
+        merchant_order_id: `${table}_${Date.now()}`,
+      }),
+    });
+    if (!intentRes.ok) {
+      const err = await intentRes.text();
+      return res.status(500).json({ error: `PaymentIntent creation failed: ${err}` });
+    }
+    const intent = await intentRes.json();
+    res.json({ clientSecret: intent.client_secret, intentId: intent.id });
+  } catch (e) {
+    res.status(500).json({ error: `Airwallex error: ${e.message}` });
+  }
+});
+
+app.get('/api/airwallex/intent-status/:id', async (req, res) => {
+  try {
+    const settings = await store.getSettings();
+    const clientId = settings.airwallexClientId;
+    const apiKey   = settings.airwallexApiKey;
+    const env      = settings.airwallexEnv || 'demo';
+    if (!clientId || !apiKey) return res.status(400).json({ error: 'Airwallex credentials not configured' });
+
+    const baseUrl = airwallexBaseUrl(env);
+    const authRes = await fetch(`${baseUrl}/api/v1/authentication/login`, {
+      method: 'POST',
+      headers: { 'x-client-id': clientId, 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+    });
+    if (!authRes.ok) return res.status(401).json({ error: 'Airwallex auth failed' });
+    const { token } = await authRes.json();
+
+    const intentRes = await fetch(`${baseUrl}/api/v1/pa/payment_intents/${req.params.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!intentRes.ok) return res.status(500).json({ error: 'Failed to fetch intent status' });
+    const intent = await intentRes.json();
+    res.json({ status: intent.status });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── REST API: Network Info ───────────────────────────────────────────────────
 
 app.get('/api/network', (req, res) => {
