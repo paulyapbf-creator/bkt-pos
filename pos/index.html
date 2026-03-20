@@ -10,13 +10,12 @@
 
   <!-- ── Header ── -->
   <header id="header">
-    <span id="app-title">🍲 <span class="app-txt">BKT House</span></span>
+    <span id="app-title">🍲 <span class="app-txt" id="header-shop-name">BKT House</span></span>
     <div id="header-right">
       <button id="history-btn" class="nav-link" title="Order History">🕐 <span class="nav-txt">History</span></button>
       <a href="orders.html" class="nav-link" title="Active Orders">📋 <span class="nav-txt">Orders</span></a>
       <a href="kds.html" class="nav-link" title="Kitchen Status">👨‍🍳 <span class="nav-txt">Kitchen Status</span></a>
       <a href="report.html" class="nav-link" title="Reports">📊 <span class="nav-txt">Reports</span></a>
-      <a href="items.html" class="nav-link" title="Item Master">☰ <span class="nav-txt">Items</span></a>
       <a href="items.html?tab=maintenance" class="nav-link" title="Maintenance">🔧 <span class="nav-txt">Maint.</span></a>
       <button id="pay-bills-btn" class="pay-bills-btn" title="Pay Bills">💰 <span class="nav-txt">Pay</span></button>
     </div>
@@ -128,6 +127,7 @@
   <!-- ── Toast ── -->
   <div id="toast" class="toast hidden"></div>
 
+  <script src="qrcode.min.js"></script>
   <script src="menuDefaults.js"></script>
   <script src="app.js"></script>
 </body>
