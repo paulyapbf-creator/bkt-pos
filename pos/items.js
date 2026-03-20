@@ -322,6 +322,7 @@ function initSettings() {
   const sstRateInput     = document.getElementById('s-sst-rate');
   const svcEnabledInput  = document.getElementById('s-svc-enabled');
   const svcRateInput     = document.getElementById('s-svc-rate');
+  const verifyEwalletInput = document.getElementById('s-verify-ewallet');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -334,6 +335,7 @@ function initSettings() {
   sstRateInput.value      = settings.sstRate ?? 6;
   svcEnabledInput.checked = !!settings.svcEnabled;
   svcRateInput.value      = settings.svcRate ?? 10;
+  verifyEwalletInput.checked = !!settings.verifyEwallet;
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -358,6 +360,7 @@ function initSettings() {
       sstRate:      parseFloat(sstRateInput.value) || 6,
       svcEnabled:   svcEnabledInput.checked,
       svcRate:      parseFloat(svcRateInput.value) || 10,
+      verifyEwallet: verifyEwalletInput.checked,
     };
   }
 

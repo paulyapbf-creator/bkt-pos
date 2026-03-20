@@ -735,7 +735,143 @@ function renderBillingStep() {
         qrEl.querySelector('svg').style.cssText = 'width:220px;height:220px;border-radius:12px;';
       } catch (e) { console.error('QR render error:', e); }
     }
-    confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
+    const settings2 = loadSettings();
+    if (settings2.verifyEwallet && method !== 'cash') {
+      confirmBtn.textContent = 'Verify Receipt →';
+    } else {
+      confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
+    }
+    confirmBtn.classList.remove('hidden');
+
+  } else if (state.payStep === 'verify') {
+    const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
+    const settings = loadSettings(); const bd = calcBillBreakdown(subtotal, settings);
+    titleEl.textContent = 'Verify Receipt'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+
+    bodyEl.innerHTML = `
+      <div class="verify-container">
+        <div class="verify-expected">Expected: <strong>RM ${bd.total.toFixed(2)}</strong></div>
+        <div class="verify-capture-area">
+          <label class="verify-capture-btn">
+            📷 Take Photo of Receipt
+            <input type="file" id="verify-camera-input" accept="image/*" capture="environment" style="display:none;">
+          </label>
+          <label class="verify-upload-btn">
+            📁 Upload Image
+            <input type="file" id="verify-file-input" accept="image/*" style="display:none;">
+          </label>
+        </div>
+        <div id="verify-preview-wrap" class="verify-preview-wrap hidden">
+          <img id="verify-preview-img" class="verify-preview-img" alt="Receipt">
+        </div>
+        <div id="verify-progress" class="verify-progress hidden">
+          <div class="verify-spinner"></div>
+          <span id="verify-progress-text">Processing OCR...</span>
+        </div>
+        <div id="verify-result" class="verify-result hidden"></div>
+        <button id="verify-skip-btn" class="verify-skip-btn">Skip Verification →</button>
+      </div>`;
+
+    confirmBtn.textContent = 'Confirm Payment';
+    confirmBtn.classList.add('hidden');
+
+    const expectedTotal = bd.total;
+    const cameraInput = document.getElementById('verify-camera-input');
+    const fileInput = document.getElementById('verify-file-input');
+    const skipBtn = document.getElementById('verify-skip-btn');
+
+    function handleReceiptFile(e) {
+      const file = e.target.files[0];
+      if (file) processReceiptImage(file, expectedTotal, confirmBtn);
+    }
+    cameraInput.addEventListener('change', handleReceiptFile);
+    fileInput.addEventListener('change', handleReceiptFile);
+    skipBtn.addEventListener('click', () => confirmTablePayment());
+  }
+}
+
+async function processReceiptImage(file, expectedTotal, confirmBtn) {
+  const previewWrap = document.getElementById('verify-preview-wrap');
+  const previewImg = document.getElementById('verify-preview-img');
+  const progressEl = document.getElementById('verify-progress');
+  const progressText = document.getElementById('verify-progress-text');
+  const resultEl = document.getElementById('verify-result');
+
+  // Show preview
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  previewWrap.classList.remove('hidden');
+
+  // Show progress
+  progressEl.classList.remove('hidden');
+  resultEl.classList.add('hidden');
+  progressText.textContent = 'Processing OCR...';
+
+  try {
+    const { data } = await Tesseract.recognize(file, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          progressText.textContent = `OCR: ${Math.round((m.progress || 0) * 100)}%`;
+        }
+      }
+    });
+
+    progressEl.classList.add('hidden');
+    const text = data.text;
+
+    // Extract RM amounts
+    const amountRegex = /RM\s*([\d,]+\.?\d{0,2})/gi;
+    const amounts = [];
+    let match;
+    while ((match = amountRegex.exec(text)) !== null) {
+      const val = parseFloat(match[1].replace(/,/g, ''));
+      if (!isNaN(val) && val > 0) amounts.push(val);
+    }
+
+    resultEl.classList.remove('hidden');
+
+    if (amounts.length === 0) {
+      // No amounts found
+      resultEl.className = 'verify-result verify-result--warn';
+      resultEl.innerHTML = `<div class="verify-result-icon">⚠️</div>
+        <div class="verify-result-text">No RM amounts detected in receipt.</div>
+        <div class="verify-result-hint">You can still confirm payment.</div>`;
+      confirmBtn.textContent = 'Confirm Payment';
+      confirmBtn.classList.remove('hidden');
+    } else {
+      // Find closest amount to expected
+      let closest = amounts[0];
+      let minDiff = Math.abs(amounts[0] - expectedTotal);
+      for (const amt of amounts) {
+        const diff = Math.abs(amt - expectedTotal);
+        if (diff < minDiff) { minDiff = diff; closest = amt; }
+      }
+
+      if (minDiff <= 0.01) {
+        // Match
+        resultEl.className = 'verify-result verify-result--match';
+        resultEl.innerHTML = `<div class="verify-result-icon">✅</div>
+          <div class="verify-result-text">Amount matches: <strong>RM ${closest.toFixed(2)}</strong></div>`;
+        confirmBtn.textContent = 'Confirm Payment';
+        confirmBtn.classList.remove('hidden');
+      } else {
+        // Mismatch
+        resultEl.className = 'verify-result verify-result--mismatch';
+        resultEl.innerHTML = `<div class="verify-result-icon">❌</div>
+          <div class="verify-result-text">Amount mismatch: receipt shows <strong>RM ${closest.toFixed(2)}</strong>, expected <strong>RM ${expectedTotal.toFixed(2)}</strong></div>
+          <div class="verify-result-hint">Difference: RM ${Math.abs(closest - expectedTotal).toFixed(2)}</div>`;
+        confirmBtn.textContent = 'Confirm Anyway';
+        confirmBtn.classList.remove('hidden');
+      }
+    }
+  } catch (err) {
+    progressEl.classList.add('hidden');
+    resultEl.classList.remove('hidden');
+    resultEl.className = 'verify-result verify-result--warn';
+    resultEl.innerHTML = `<div class="verify-result-icon">⚠️</div>
+      <div class="verify-result-text">OCR failed: ${err.message}</div>
+      <div class="verify-result-hint">You can still confirm payment.</div>`;
+    confirmBtn.textContent = 'Confirm Payment';
     confirmBtn.classList.remove('hidden');
   }
 }
@@ -744,12 +880,21 @@ function handleBillingBack() {
   if (state.payStep === 'bill')        { state.payStep = 'list';   state.payingTable = null; }
   else if (state.payStep === 'method')   state.payStep = 'bill';
   else if (state.payStep === 'qr')     { state.payStep = 'method'; state.payMethod = null; }
+  else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
 }
 
 function handleBillingConfirm() {
   if (state.payStep === 'bill') { state.payStep = 'method'; renderBillingStep(); }
-  else if (state.payStep === 'qr') confirmTablePayment();
+  else if (state.payStep === 'qr') {
+    const settings = loadSettings();
+    if (settings.verifyEwallet && state.payMethod !== 'cash') {
+      state.payStep = 'verify'; renderBillingStep();
+    } else {
+      confirmTablePayment();
+    }
+  }
+  else if (state.payStep === 'verify') confirmTablePayment();
 }
 
 async function confirmTablePayment() {
