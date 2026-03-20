@@ -722,6 +722,7 @@ function renderBillingStep() {
         </div>`;
       }
       body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${bd.total.toFixed(2)}</span></div>`;
+      body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>RM ${bd.total.toFixed(2)}</b> received in TNG app before confirming</div>`;
     } else {
       body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
     }
