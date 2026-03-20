@@ -692,7 +692,6 @@ function renderBillingStep() {
     titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     bodyEl.innerHTML = `<div class="pay-methods">
       <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">Touch &amp; Go eWallet</span></button>
-      <button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">DuitNow QR</span></button>
       <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">Cash</span></button>
     </div>`;
     bodyEl.querySelectorAll('.pay-method-btn').forEach(btn => {
@@ -707,8 +706,8 @@ function renderBillingStep() {
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
-    if (method === 'tng' || method === 'duitnow') {
-      const qrImgUrl = settings[method === 'tng' ? 'tngQrUrl' : 'duitnowQrUrl'] || '';
+    if (method === 'tng') {
+      const qrImgUrl = settings.tngQrUrl || '';
       if (payLink) {
         body = `<div class="qr-container"><div id="pay-qr-el" style="display:inline-block;"></div></div>`;
       } else if (qrImgUrl) {

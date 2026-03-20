@@ -314,9 +314,7 @@ function initSettings() {
   const shopAddressInput = document.getElementById('s-shop-address');
   const tngLinkInput   = document.getElementById('s-tng-link');
   const tngInput       = document.getElementById('s-tng-url');
-  const duitnowInput   = document.getElementById('s-duitnow-url');
   const tngPreview     = document.getElementById('s-tng-preview');
-  const duitnowPreview = document.getElementById('s-duitnow-preview');
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
   const relayUrlInput    = document.getElementById('s-relay-url');
@@ -329,7 +327,6 @@ function initSettings() {
   shopAddressInput.value = settings.shopAddress   || '';
   tngLinkInput.value     = settings.tngPayLink    || '';
   tngInput.value         = settings.tngQrUrl      || '';
-  duitnowInput.value     = settings.duitnowQrUrl  || '';
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
   relayUrlInput.value    = settings.relayUrl       || '';
@@ -345,10 +342,8 @@ function initSettings() {
   }
 
   updatePreview(tngInput, tngPreview);
-  updatePreview(duitnowInput, duitnowPreview);
 
-  tngInput.addEventListener('input',     () => updatePreview(tngInput, tngPreview));
-  duitnowInput.addEventListener('input', () => updatePreview(duitnowInput, duitnowPreview));
+  tngInput.addEventListener('input', () => updatePreview(tngInput, tngPreview));
 
   function gatherSettings() {
     return {
@@ -356,7 +351,6 @@ function initSettings() {
       shopAddress:  shopAddressInput.value.trim(),
       tngPayLink:   tngLinkInput.value.trim(),
       tngQrUrl:     tngInput.value.trim(),
-      duitnowQrUrl: duitnowInput.value.trim(),
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
       relayUrl:     relayUrlInput.value.trim(),
