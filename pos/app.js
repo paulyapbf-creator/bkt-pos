@@ -489,16 +489,12 @@ function renderMenuList() {
     const count   = cartCountForMenuItem(item.id);
     const hasMods = item.modifierGroups && item.modifierGroups.length > 0;
     return `
-      <div class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
-        <div class="mli-info">
-          <span class="mli-zh">${item.nameZh}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
-          <span class="mli-en">${item.name}${hasMods ? ' <span class="mli-opts">Options</span>' : ''}</span>
-        </div>
-        <div class="mli-right">
-          <span class="mli-price">RM ${item.price.toFixed(2)}</span>
-          ${count > 0 ? `<span class="mli-badge">${count}</span>` : '<span class="mli-add-icon">+</span>'}
-        </div>
-      </div>`;
+      <button class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
+        ${count > 0 ? `<span class="mli-badge">${count}</span>` : ''}
+        <span class="mli-zh">${item.nameZh}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
+        <span class="mli-price">RM ${item.price.toFixed(2)}</span>
+        <span class="mli-en">${item.name}${hasMods ? ' <span class="mli-opts">+Options</span>' : ''}</span>
+      </button>`;
   }).join('');
 
   list.querySelectorAll('.mli').forEach(row => {
