@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sales Dashboard — BKT House</title>
+  <style>
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0f1a;
+  --header:     #1a1a2e;
+  --panel:      #2d2d44;
+  --red:        #C0392B;
+  --red-light:  #fdecea;
+  --red-dim:    #8b2a1e;
+  --green:      #27ae60;
+  --blue:       #3498db;
+  --purple:     #9b59b6;
+  --orange:     #e67e22;
+  --text:       #ffffff;
+  --muted:      #aaaaaa;
+  --dim:        #777777;
+  --border:     #3a3a55;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  gap: 12px;
+}
+
+#app-title {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-link {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  background: none;
+  cursor: pointer;
+}
+.nav-link:hover { color: #fff; border-color: #555; }
+
+.page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Date filter bar ──────────────────────────────────────────────────────── */
+#filter-bar {
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preset-btn:hover { border-color: var(--red); color: var(--text); }
+.preset-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+.filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filter-dates.hidden { display: none; }
+
+.filter-dates input[type="date"] {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+}
+.filter-dates input[type="date"]:focus { border-color: var(--red); }
+
+.date-sep { color: var(--muted); font-size: 13px; }
+
+.apply-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.apply-btn:hover { opacity: 0.85; }
+
+/* ── Dashboard grid ──────────────────────────────────────────────────────── */
+#dashboard {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── KPI cards ────────────────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.kpi-value.green { color: var(--green); }
+
+/* ── Chart containers ────────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.chart-card h3 {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.chart-wrap-sm {
+  position: relative;
+  height: 250px;
+}
+
+/* ── Daily table ─────────────────────────────────────────────────────────── */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-table th {
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+}
+
+.report-table .num { text-align: right; }
+
+.report-table tfoot td {
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
+.table-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.table-card h3 {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--dim);
+  font-size: 15px;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--dim);
+  font-size: 14px;
+}
+
+/* ── Login overlay ───────────────────────────────────────────────────────── */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#login-overlay.hidden { display: none; }
+
+#login-content {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.login-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  color: var(--text);
+  font-size: 15px;
+}
+.login-user-btn:hover { border-color: var(--red); }
+
+.login-user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.login-user-name { flex: 1; text-align: left; }
+
+.login-role-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.role-super   { background: #C0392B33; color: var(--red); }
+.role-cashier { background: #27ae6033; color: var(--green); }
+
+.login-back-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 4px 0;
+}
+.login-back-btn:hover { color: var(--text); }
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.pin-error {
+  text-align: center;
+  color: var(--red);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.pin-error.hidden { display: none; }
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 280px;
+  margin: 0 auto;
+}
+.pin-key {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 600;
+  padding: 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pin-key:active { background: var(--border); }
+.pin-key-empty { visibility: hidden; }
+.pin-key-del { font-size: 20px; color: var(--muted); }
+
+/* ── Mobile responsive ────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .dash-grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  #dashboard { padding: 10px; }
+  .kpi-value { font-size: 20px; }
+  .chart-wrap { height: 220px; }
+  .chart-wrap-sm { height: 200px; }
+  .report-table { font-size: 12px; }
+  .report-table th, .report-table td { padding: 8px 6px; }
+  #header { padding: 0 10px; gap: 6px; }
+  #header-right { gap: 4px; }
+  .nav-link { padding: 8px 9px; font-size: 16px; line-height: 1; }
+  .nav-txt { display: none; }
+}
+
+@media (max-width: 400px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+  </style>
+</head>
+<body>
+
+  <!-- ── Login overlay ── -->
+  <div id="login-overlay">
+    <div id="login-content"></div>
+  </div>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <span id="app-title"><span id="shop-name">BKT House</span></span>
+    <div id="header-right">
+      <span class="page-title">Sales Dashboard</span>
+      <button id="logout-btn" class="nav-link">Logout</button>
+    </div>
+  </header>
+
+  <!-- ── Date filter bar ── -->
+  <div id="filter-bar">
+    <div class="filter-presets">
+      <button class="preset-btn active" data-preset="today">Today</button>
+      <button class="preset-btn" data-preset="yesterday">Yesterday</button>
+      <button class="preset-btn" data-preset="week">This Week</button>
+      <button class="preset-btn" data-preset="month">This Month</button>
+      <button class="preset-btn" data-preset="custom">Custom</button>
+    </div>
+    <div class="filter-dates hidden" id="custom-dates">
+      <input type="date" id="date-from">
+      <span class="date-sep">to</span>
+      <input type="date" id="date-to">
+      <button id="apply-custom-btn" class="apply-btn">Apply</button>
+    </div>
+  </div>
+
+  <!-- ── Dashboard content ── -->
+  <div id="dashboard">
+    <div class="loading" id="loading">Loading...</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="auth.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Active Orders — BKT House</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page orders-page">
+
+  <header id="header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="index.html" class="back-link">← <span class="nav-txt">POS</span></a>
+      <span id="app-title">📋 <span class="app-txt">Active Orders</span></span>
+      <span id="active-count" class="active-count-badge hidden"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="esc-hint">Esc to exit</span>
+      <button id="refresh-btn" class="nav-link refresh-btn">↺ Refresh</button>
+    </div>
+  </header>
+
+  <div id="last-updated" class="last-updated"></div>
+  <div id="orders-wrap"></div>
+
+  <script src="menuDefaults.js"></script>
+  <script src="orders.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+Setting Up BKT POS on a New Machine
+-----------------------------------
+  Step 1: Install Node.js
+  Download and install Node.js v18 or above from https://nodejs.org/
+  - Choose the LTS version
+  - During install, check "Add to PATH"
+  - To verify, open Command Prompt and run:
+  node --version
+  - You should see v18.x.x or higher.
+---------------------------------------------------------------------
+  Step 2: Copy the Project Files
+  Copy these files/folders to the new machine (e.g. to C:\bkt-pos\):
+  
+bkt-pos/
+  ├── server.js
+  ├── print-relay.js
+  ├── package.json
+  ├── package-lock.json
+  ├── .env.example
+  ├── pos/            ← entire folder
+  └── public/         ← entire folder
+
+  You can copy via USB drive, network share, or zip and transfer.
+----------------------------------------------------------------------
+  Step 3: Create the .env File
+  In the project folder, copy .env.example to .env:
+  copy .env.example .env
+  Edit .env with Notepad and set:
+
+# Data located in cloud
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority 
+
+# Leave MONGODB_URI empty — this keeps storage local
+  MONGODB_URI=
+# Set SYNC_MONGODB_URI to enable background backup to cloudSYNC_MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+
+PORT=3000
+Use the same MongoDB URI as your existing POS machine so all machines share the same data (menu items, orders, bills).
+If running offline (no internet): leave MONGODB_URI empty — the system will fall back to a local data.json file, but data won't sync between machines.
+-------------------------------------------------------------------------------------------------------------------------
+Step 4: Install Dependencies
+Open Command Prompt, navigate to the project folder, and run:
+cd C:\bkt-pos
+npm install
+This downloads all required packages (~1-2 minutes). You'll see a node_modules/ folder appear.
+
+Note: The canvas package may need build tools. If npm install fails with a build error, run:
+  ▎ npm install --global windows-build-tools
+  ▎ Then retry npm install.
+------------------------------------------------------------------------------------------------
+
+Step 5: Start the POS Server
+node server.js
+You should see output like:
+Server listening on port 3000
+
+Open a browser and go to: http://localhost:3000
+- POS interface: http://localhost:3000
+ - KDS display: http://localhost:3000/kds
+-------------------------------------------------------------------------------------------------
+Step 6: Start the Print Relay (for receipt printing)
+Open a second Command Prompt window and run:
+cd C:\bkt-pos
+node print-relay.js
+
+This starts the print relay on port 9101, which sends print jobs to your thermal printer via network (TCP port 9100).
+
+▎ Make sure the receipt printer's IP address is configured in the POS settings.
+-------------------------------------------------------------------------------------------------------------------
+Step 7: Make it Start Automatically (Optional)
+To auto-start on Windows boot, create a batch file start-pos.bat:
+@echo off
+cd C:\bkt-pos
+start "POS Server" node server.js
+start "Print Relay" node print-relay.js
+Then place a shortcut to this .bat file in:
+C:\Users\<username>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+
+  ---
+  Quick Summary
+  ┌──────────────────────┬───────────────────────────────────────────┐
+  │         Step         │                  Command                  │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Install dependencies │ npm install                               │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Create config        │ Copy .env.example → .env, set MONGODB_URI │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Start POS            │ node server.js                            │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Start printer        │ node print-relay.js                       │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Access POS           │ http://localhost:3000                     │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Access KDS           │ http://localhost:3000/kds                 │
+  └──────────────────────┴───────────────────────────────────────────┘

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Reports — BKT House</title>
+  <style>
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0f1a;
+  --header:     #1a1a2e;
+  --panel:      #2d2d44;
+  --red:        #C0392B;
+  --red-light:  #fdecea;
+  --red-dim:    #8b2a1e;
+  --green:      #27ae60;
+  --text:       #ffffff;
+  --muted:      #aaaaaa;
+  --dim:        #777777;
+  --border:     #3a3a55;
+  --card-bg:    #ffffff;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  gap: 12px;
+}
+
+#app-title {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-link, .back-link {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  background: none;
+  cursor: pointer;
+}
+.nav-link:hover, .back-link:hover { color: #fff; border-color: #555; }
+
+.back-link {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 17px;
+  border: none;
+  padding: 0;
+}
+.back-link:hover { opacity: 0.8; }
+
+.report-page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── API config bar ──────────────────────────────────────────────────────── */
+#api-config-bar {
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#api-config-bar.hidden { display: none; }
+
+#api-url-input {
+  flex: 1;
+  max-width: 400px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+}
+#api-url-input:focus { border-color: var(--red); }
+#api-url-input::placeholder { color: var(--dim); }
+
+.api-save-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.api-save-btn:hover { opacity: 0.85; }
+
+.api-clear-btn {
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.api-clear-btn:hover { color: var(--text); border-color: #555; }
+
+.api-status {
+  font-size: 12px;
+  color: var(--dim);
+  margin-left: 4px;
+}
+
+/* ── Settings gear button ────────────────────────────────────────────────── */
+.settings-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 16px;
+  padding: 4px 8px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.settings-btn:hover { color: #fff; border-color: #555; }
+.settings-btn.active { color: var(--red); border-color: var(--red); }
+
+/* ── Date filter bar ──────────────────────────────────────────────────────── */
+#report-filter-bar {
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preset-btn:hover { border-color: var(--red); color: var(--text); }
+.preset-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+.filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filter-dates.hidden { display: none; }
+
+.filter-dates input[type="date"] {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+}
+.filter-dates input[type="date"]:focus { border-color: var(--red); }
+
+.date-sep { color: var(--muted); font-size: 13px; }
+
+.apply-btn {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.apply-btn:hover { opacity: 0.85; }
+
+/* ── Tab bar ──────────────────────────────────────────────────────────────── */
+#report-tabs {
+  background: var(--header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-tab {
+  flex: 1;
+  min-width: 100px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.report-tab:hover { color: var(--text); }
+.report-tab.active { color: var(--text); border-bottom-color: var(--red); }
+
+/* ── Report content container ─────────────────────────────────────────────── */
+#report-content {
+  padding: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.report-panel { display: none; }
+.report-panel.active { display: block; }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--dim);
+  font-size: 15px;
+}
+
+/* ── KPI cards ────────────────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── Report tables ────────────────────────────────────────────────────────── */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-table th {
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+}
+
+.report-table .num { text-align: right; }
+.report-table .rank { color: var(--dim); width: 40px; }
+
+.report-table tfoot td {
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
+/* ── Detail cards ─────────────────────────────────────────────────────────── */
+.detail-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.detail-table {
+  background: var(--header);
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.detail-time { color: var(--muted); font-size: 12px; }
+.detail-total { margin-left: auto; font-weight: 700; font-size: 15px; }
+
+.detail-items {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.detail-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.detail-mods { color: var(--dim); font-size: 11px; }
+
+/* ── Payment method badges ────────────────────────────────────────────────── */
+.badge-cash, .badge-tng, .badge-duitnow {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-cash    { background: #27ae6033; color: #27ae60; }
+.badge-tng     { background: #2980b933; color: #3498db; }
+.badge-duitnow { background: #8e44ad33; color: #9b59b6; }
+
+/* ── Collection report bars ───────────────────────────────────────────────── */
+.collection-list { display: flex; flex-direction: column; gap: 14px; }
+
+.collection-row {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.collection-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.collection-count { color: var(--dim); font-size: 12px; }
+
+.collection-bar-wrap {
+  background: var(--header);
+  border-radius: 4px;
+  height: 24px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.collection-bar {
+  height: 100%;
+  background: var(--red);
+  border-radius: 4px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.collection-values {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.collection-amount { font-weight: 700; }
+.collection-pct { color: var(--muted); }
+
+/* ── Print media query ────────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff; color: #000; }
+  #header, #report-filter-bar, #report-tabs, #api-config-bar { display: none; }
+  #report-content { max-width: 100%; padding: 0; }
+  .report-panel { display: block !important; page-break-inside: avoid; }
+  .kpi-card { border: 1px solid #ccc; background: #f9f9f9; }
+  .kpi-value, .kpi-label { color: #000; }
+  .report-table th { background: #eee; color: #333; }
+  .report-table td { color: #000; }
+  .detail-card { border: 1px solid #ccc; background: #f9f9f9; }
+  .detail-table { background: #eee; color: #000; }
+  .detail-item-row, .detail-time { color: #333; }
+  .collection-row { border: 1px solid #ccc; background: #f9f9f9; }
+  .collection-bar { background: #333; }
+  .collection-amount, .collection-pct { color: #000; }
+}
+
+/* ── Mobile responsive ────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  #report-content { padding: 10px; }
+  .detail-header { font-size: 12px; }
+  .detail-total { font-size: 13px; }
+  .kpi-value { font-size: 20px; }
+  .report-table { font-size: 12px; }
+  .report-table th, .report-table td { padding: 8px 6px; }
+  .app-txt { display: none; }
+  .nav-txt  { display: none; }
+  #header   { justify-content: space-between; gap: 6px; padding: 0 10px; }
+  #header-right { gap: 4px; }
+  .nav-link { padding: 8px 9px; font-size: 16px; line-height: 1; }
+}
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <span id="app-title"><a href="/" class="back-link">← <span class="app-txt" id="shop-name">BKT House</span></a></span>
+    <div id="header-right">
+      <span class="report-page-title">📊 Reports</span>
+      <button id="settings-btn" class="settings-btn" title="API Settings">⚙️</button>
+      <button id="print-btn" class="nav-link" onclick="window.print()">🖨️ <span class="nav-txt">Print</span></button>
+    </div>
+  </header>
+
+  <!-- ── API config bar ── -->
+  <div id="api-config-bar" class="hidden">
+    <input type="text" id="api-url-input" placeholder="API URL (e.g. https://your-app.railway.app)">
+    <button class="api-save-btn" id="api-save-btn">Save</button>
+    <button class="api-clear-btn" id="api-clear-btn">Clear</button>
+    <span class="api-status" id="api-status"></span>
+  </div>
+
+  <!-- ── Date filter bar ── -->
+  <div id="report-filter-bar">
+    <div class="filter-presets">
+      <button class="preset-btn active" data-preset="today">Today</button>
+      <button class="preset-btn" data-preset="yesterday">Yesterday</button>
+      <button class="preset-btn" data-preset="week">This Week</button>
+      <button class="preset-btn" data-preset="month">This Month</button>
+      <button class="preset-btn" data-preset="custom">Custom</button>
+    </div>
+    <div class="filter-dates hidden" id="custom-dates">
+      <input type="date" id="date-from">
+      <span class="date-sep">to</span>
+      <input type="date" id="date-to">
+      <button id="apply-custom-btn" class="apply-btn">Apply</button>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ── -->
+  <div id="report-tabs">
+    <button class="report-tab active" data-tab="summary">Sales Summary</button>
+    <button class="report-tab" data-tab="detail">Sales Detail</button>
+    <button class="report-tab" data-tab="collection">Collection</button>
+    <button class="report-tab" data-tab="items">Item Sales</button>
+  </div>
+
+  <!-- ── Report panels ── -->
+  <div id="report-content">
+    <div id="panel-summary" class="report-panel active"></div>
+    <div id="panel-detail" class="report-panel"></div>
+    <div id="panel-collection" class="report-panel"></div>
+    <div id="panel-items" class="report-panel"></div>
+  </div>
+
+  <script src="report.js"></script>
+</body>
+</html>

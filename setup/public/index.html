@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Kitchen Display — BKT House</title>
+  <link rel="stylesheet" href="kds.css">
+</head>
+<body>
+
+  <header id="kds-header">
+    <div id="kds-header-left">
+      <span id="kds-title">👨‍🍳 Kitchen Display</span>
+      <span id="kds-count" class="kds-count-badge hidden">0</span>
+    </div>
+    <div id="kds-header-right">
+      <button id="kds-clear-history-btn" class="kds-header-btn kds-header-btn--danger hidden" onclick="clearKdsHistory()">Clear All</button>
+      <span id="kds-pending-count" class="kds-badge">0 cooking</span>
+      <span id="kds-conn" class="kds-conn offline">●</span>
+    </div>
+  </header>
+
+  <div class="kds-tab-bar">
+    <button class="kds-tab kds-tab--active" data-tab="kitchen" onclick="setTab('kitchen')">
+      🍳 In Kitchen <span id="tab-kitchen-count" class="kds-tab-badge hidden"></span>
+    </button>
+    <button class="kds-tab" data-tab="served" onclick="setTab('served')">
+      ✓ All Served <span id="tab-served-count" class="kds-tab-badge hidden"></span>
+    </button>
+    <span id="kds-last-updated" class="kds-last-updated"></span>
+  </div>
+
+  <div id="kds-grid"></div>
+
+  <div id="kds-history-panel" class="kds-history-panel hidden"></div>
+
+  <div id="kds-empty" class="kds-empty hidden">
+    <div class="kds-empty-icon">👨‍🍳</div>
+    <div class="kds-empty-title">No Active Orders</div>
+    <div class="kds-empty-sub">Orders sent from POS will appear here.</div>
+  </div>
+
+  <div id="kds-toast" class="kds-toast hidden"></div>
+
+  <script src="kds.js"></script>
+</body>
+</html>
