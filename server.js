@@ -656,8 +656,18 @@ function printLR(parts, left, right, opts = {}) {
   ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "SimSun","Microsoft YaHei","SimHei","Arial"`;
   ctx.textBaseline = 'top';
   const yPos = Math.floor(fontSize * 0.15);
-  ctx.fillText(left, 0, yPos);
   const rm = ctx.measureText(right);
+  const gap = fontSize; // minimum gap between left and right text
+  const maxLeftWidth = width - rm.width - gap;
+  // Truncate left text if too long
+  let truncLeft = left;
+  if (ctx.measureText(truncLeft).width > maxLeftWidth) {
+    while (truncLeft.length > 1 && ctx.measureText(truncLeft + '..').width > maxLeftWidth) {
+      truncLeft = truncLeft.slice(0, -1);
+    }
+    truncLeft += '..';
+  }
+  ctx.fillText(truncLeft, 0, yPos);
   ctx.fillText(right, width - rm.width, yPos);
 
   const imgData = ctx.getImageData(0, 0, width, height).data;
@@ -686,9 +696,9 @@ function buildEscPos(job) {
   // ESC @ — init printer
   push(ESC_BYTE, 0x40);
 
-  const S  = 24;  // normal text size
-  const SM = 20;  // small text (English sub-lines, mods)
-  const LG = 40;  // shop name / title
+  const S  = 34;  // normal text size
+  const SM = 28;  // small text (English sub-lines, mods)
+  const LG = 48;  // shop name / title
 
   if (job.type === 'test') {
     printLine(parts, 'TEST PRINT', { fontSize: LG, bold: true, align: 'center' });
@@ -702,20 +712,24 @@ function buildEscPos(job) {
   } else if (job.type === 'orderSlip') {
     const d = job.data;
     // Date/time left, table number large right
-    printLR(parts, d.dateTime || '', `T${d.table}`, { fontSize: LG, bold: true });
+    printLR(parts, d.dateTime || '', d.table, { fontSize: LG, bold: true });
     printLine(parts, d.isUpdate ? 'ORDER UPDATE' : 'NEW ORDER', { fontSize: S, bold: true, align: 'left' });
+    if (d.cashier) printLine(parts, `Cashier: ${d.cashier}`, { fontSize: SM });
+    if (d.pax > 0) printLine(parts, `Pax: ${d.pax}`, { fontSize: SM });
     printDash(parts);
     (d.items || []).forEach((item, idx) => {
-      // Qty + English name + Chinese name (bold)
-      const label = `${item.qty}  ${item.nameEn || ''}${item.nameZh ? ' ' + item.nameZh : ''}`;
-      printLine(parts, label, { fontSize: S, bold: true });
+      // Qty + Chinese name (large, bold) on first line
+      const zhLabel = `${item.qty}x  ${item.nameZh || item.nameEn || ''}`;
+      printLine(parts, zhLabel, { fontSize: S, bold: true });
+      // English name on second line (smaller)
+      if (item.nameEn && item.nameZh) printLine(parts, `    ${item.nameEn}`, { fontSize: SM });
       // Modifiers with - prefix
       const mods = Array.isArray(item.mods) ? item.mods : (item.mods ? [item.mods] : []);
       mods.forEach(m => {
-        if (m) printLine(parts, `   -${m}`, { fontSize: SM });
+        if (m) printLine(parts, `    -${m}`, { fontSize: SM });
       });
       // Notes with * prefix
-      if (item.notes) printLine(parts, `   *${item.notes}`, { fontSize: SM });
+      if (item.notes) printLine(parts, `    *${item.notes}`, { fontSize: SM });
       // Separator between items
       if (idx < d.items.length - 1) printDash(parts);
     });
@@ -745,7 +759,7 @@ function buildEscPos(job) {
     printLR(parts, 'Subtotal', `RM${d.subtotal || d.total}`, { fontSize: S });
     if (d.sst) printLR(parts, `SST (${d.sstRate || 6}%)`, `RM${d.sst}`, { fontSize: S });
     if (d.svc) printLR(parts, `Service (${d.svcRate || 10}%)`, `RM${d.svc}`, { fontSize: S });
-    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 28, bold: true });
+    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 40, bold: true });
     printDash(parts);
     printLR(parts, 'Payment', d.payLabel, { fontSize: S });
     push(LF_BYTE);

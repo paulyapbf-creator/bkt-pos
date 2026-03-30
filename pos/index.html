@@ -28,7 +28,15 @@
     <!-- Left: Cart panel -->
     <div id="cart-panel">
       <div id="cp-head">
-        <button id="table-select-btn" class="table-select-btn tbl-btn-no-table">Select Table <span class="tbl-arrow">▾</span></button>
+        <div class="cp-head-row">
+          <button id="table-select-btn" class="table-select-btn tbl-btn-no-table">Select Table <span class="tbl-arrow">▾</span></button>
+          <div class="pax-inline">
+            <button class="pax-inline-btn" id="pax-minus">−</button>
+            <span class="pax-inline-val" id="pax-display">1</span>
+            <button class="pax-inline-btn" id="pax-plus">+</button>
+            <span class="pax-inline-label">pax</span>
+          </div>
+        </div>
         <div id="cp-head-top">
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="cp-title">Order</span>

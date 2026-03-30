@@ -108,6 +108,7 @@ let menuItems = [];
 
 const state = {
   tableNumber:        null,
+  pax:                1,
   items:              [],
   selectedCategory:   'all',
   searchQuery:        '',
@@ -1113,6 +1114,7 @@ function buildOrderSlipJob(table, items, isUpdate) {
     table,
     dateTime: `${dd}/${mm} ${hh}:${mi}`,
     cashier: sess ? sess.name : '',
+    pax: state.pax || 0,
     isUpdate,
     items: items.map(item => ({
       qty:    item.quantity,
@@ -1470,6 +1472,17 @@ async function init() {
     if (e.target === e.currentTarget && state.tableNumber) closeTablePicker();
   });
 
+  // Pax controls
+  function updatePaxDisplay() { document.getElementById('pax-display').textContent = state.pax; }
+  document.getElementById('pax-minus').addEventListener('click', () => {
+    if (state.pax > 1) state.pax--;
+    updatePaxDisplay();
+  });
+  document.getElementById('pax-plus').addEventListener('click', () => {
+    state.pax++;
+    updatePaxDisplay();
+  });
+
   // Cart panel: clear + send
   document.getElementById('cp-clear-btn').addEventListener('click', () => {
     if (state.items.length === 0) return;
@@ -1491,6 +1504,8 @@ async function init() {
       }
       clearOrder();
       state.tableNumber       = null;
+      state.pax               = 1;
+      document.getElementById('pax-display').textContent = state.pax;
       state.editingActiveBill = null;
       renderCartPanel();
       renderMenuList();
