@@ -28,6 +28,18 @@ const posPath = existsSync(path.join(__dirname, 'pos'))
 app.use(express.static(posPath));
 app.get('/dashboard', (req, res) => res.redirect('/dashboard.html'));
 
+// ─── SaaS multi-tenant ───────────────────────────────────────────────────────
+const isSaasMode = process.env.SAAS_MODE === 'true';
+let saasClient = null;  // shared MongoClient for all tenants
+let saasDb = null;      // the 'saas' registry database
+const tenantStores = new Map(); // slug -> store object
+
+function parseCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.split(';').find(c => c.trim().startsWith(name + '='));
+  return match ? match.split('=')[1].trim() : null;
+}
+
 // ─── Storage layer ────────────────────────────────────────────────────────────
 // File-based when no MONGODB_URI (local / Android).
 // MongoDB when MONGODB_URI is set (cloud / Railway).
@@ -156,9 +168,82 @@ function createMongoStore() {
   };
 }
 
+// ─── SaaS: Tenant store factory (reuses shared MongoClient) ──────────────────
+
+function createTenantStore(dbName) {
+  const db = saasClient.db(dbName);
+  const col = name => db.collection(name);
+  function strip(doc) { if (!doc) return null; const { _id, ...rest } = doc; return rest; }
+
+  const s = {
+    dbName,
+    async connect() {
+      await col('orderHistory').createIndex({ timestamp: -1 });
+      await col('kdsHistory').createIndex({ servedAt: -1 });
+    },
+    async getBill(table)       { return strip(await col('bills').findOne({ _id: table })); },
+    async getAllBills()         { const docs = await col('bills').find({}).toArray(); return Object.fromEntries(docs.map(d => [d._id, strip(d)])); },
+    async saveBill(table, bill){ await col('bills').replaceOne({ _id: table }, { _id: table, ...bill }, { upsert: true }); },
+    async deleteBill(table)    { await col('bills').deleteOne({ _id: table }); },
+    async getSettings()        { return strip(await col('settings').findOne({ _id: 'main' })) || {}; },
+    async saveSettings(s)      { await col('settings').replaceOne({ _id: 'main' }, { _id: 'main', ...s }, { upsert: true }); },
+    async deleteSettings()     { await col('settings').deleteOne({ _id: 'main' }); },
+    async getMenuItems()       { const doc = await col('settings').findOne({ _id: 'menu' }); return doc ? doc.items : []; },
+    async saveMenuItems(items) { await col('settings').replaceOne({ _id: 'menu' }, { _id: 'menu', items }, { upsert: true }); },
+    async addOrderHistory(o)   { await col('orderHistory').insertOne({ ...o }); },
+    async getOrderHistory(from, to) {
+      const query = {};
+      if (from || to) { query.timestamp = {}; if (from) query.timestamp.$gte = from; if (to) query.timestamp.$lte = to; }
+      return (await col('orderHistory').find(query).sort({ timestamp: -1 }).limit(3000).toArray()).map(strip);
+    },
+    async deleteOrderHistory() { await col('orderHistory').deleteMany({}); },
+    async addKdsHistory(e)     { await col('kdsHistory').insertOne({ ...e }); },
+    async getKdsHistory()      { return (await col('kdsHistory').find({}).sort({ servedAt: -1 }).limit(200).toArray()).map(strip); },
+    async deleteKdsHistory()   { await col('kdsHistory').deleteMany({}); },
+    async getUsers()           { return (await col('users').find({}).toArray()).map(strip); },
+    async saveUsers(users)     { await col('users').deleteMany({}); if (users.length > 0) await col('users').insertMany(users.map(u => ({ ...u }))); },
+    close() {},
+  };
+  return s;
+}
+
+function getTenantStore(slug, dbName) {
+  if (tenantStores.has(slug)) return tenantStores.get(slug);
+  const s = createTenantStore(dbName);
+  tenantStores.set(slug, s);
+  return s;
+}
+
+// ─── SaaS: Tenant registry ──────────────────────────────────────────────────
+
+async function getTenantBySlug(slug) {
+  return await saasDb.collection('tenants').findOne({ slug, status: 'active' });
+}
+
+async function getAllActiveTenants() {
+  return await saasDb.collection('tenants').find({ status: 'active' }).project({ slug: 1, name: 1, _id: 0 }).toArray();
+}
+
+async function initTenantDb(tenantStore) {
+  await tenantStore.connect();
+  const users = await tenantStore.getUsers();
+  if (!users || users.length === 0) {
+    await tenantStore.saveUsers([{ id: 'user_default', name: 'Admin', pin: '1234', role: 'super' }]);
+  }
+}
+
 // ─── WebSocket hub ────────────────────────────────────────────────────────────
 
-const clients = { pos: new Set(), kds: new Set() };
+const clients = {}; // { [tenantSlug]: { pos: Set, kds: Set } }
+
+function getClients(tenantSlug) {
+  const key = tenantSlug || '_default';
+  if (!clients[key]) clients[key] = { pos: new Set(), kds: new Set() };
+  return clients[key];
+}
+
+// Backward compat: ensure old single-tenant clients structure works
+if (!isSaasMode) clients['_default'] = { pos: new Set(), kds: new Set() };
 
 // ─── Per-table mutation queue ─────────────────────────────────────────────────
 // All bill reads/writes for the same table are serialised through this queue.
@@ -166,28 +251,29 @@ const clients = { pos: new Set(), kds: new Set() };
 // overwrite each other — so archiveIfAllServed never sees all items as served.
 const tableQueues = new Map();
 
-function queueTableUpdate(table, fn) {
-  const prev = tableQueues.get(table) || Promise.resolve();
-  const next = prev.then(fn).catch(e => console.error(`[queue:${table}]`, e.message));
-  tableQueues.set(table, next);
-  next.finally(() => { if (tableQueues.get(table) === next) tableQueues.delete(table); });
+function queueTableUpdate(tenantSlug, table, fn) {
+  const key = `${tenantSlug || '_default'}:${table}`;
+  const prev = tableQueues.get(key) || Promise.resolve();
+  const next = prev.then(fn).catch(e => console.error(`[queue:${key}]`, e.message));
+  tableQueues.set(key, next);
+  next.finally(() => { if (tableQueues.get(key) === next) tableQueues.delete(key); });
   return next;
 }
 
-function broadcast(targets, message) {
+function broadcast(tenantSlug, targets, message) {
   const payload = JSON.stringify(message);
-  targets.forEach(role =>
-    clients[role].forEach(ws => {
+  const tc = getClients(tenantSlug);
+  targets.forEach(role => {
+    if (tc[role]) tc[role].forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) ws.send(payload);
-    })
-  );
+    });
+  });
 }
 
 // saveKdsHistory: record kitchen service without deleting the bill.
-// The bill stays alive so the POS can still collect payment.
-async function saveKdsHistory(table, bill) {
+async function saveKdsHistory(reqStore, tenantSlug, table, bill) {
   const servedAt = Date.now();
-  await store.addKdsHistory({
+  await reqStore.addKdsHistory({
     table,
     servedAt,
     startedAt: bill.startedAt,
@@ -195,29 +281,26 @@ async function saveKdsHistory(table, bill) {
       id, name, nameZh, quantity, sentAt, readyAt: readyAt || servedAt,
     })),
   });
-  broadcast(['pos', 'kds'], { type: 'bill:allServed', table });
+  broadcast(tenantSlug, ['pos', 'kds'], { type: 'bill:allServed', table });
 }
 
 // archiveBill: full close — save kds-history + DELETE bill + broadcast cleared.
-// Only used when starting a new ordering round for a table that still has
-// unserved items (so the old partial order isn't left dangling).
-async function archiveBill(table, bill) {
-  await saveKdsHistory(table, bill);
-  await store.deleteBill(table);
-  broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
+async function archiveBill(reqStore, tenantSlug, table, bill) {
+  await saveKdsHistory(reqStore, tenantSlug, table, bill);
+  await reqStore.deleteBill(table);
+  broadcast(tenantSlug, ['pos', 'kds'], { type: 'bill:cleared', table });
 }
 
-async function archiveIfAllServed(table, bill) {
+async function archiveIfAllServed(reqStore, tenantSlug, table, bill) {
   if (!bill.items.every(i => i.status === 'served')) return;
-  // Re-read from store to guard against race with concurrent requests
-  const current = await store.getBill(table);
+  const current = await reqStore.getBill(table);
   if (!current || !current.items.every(i => i.status === 'served')) return;
-  // Record to kds-history but keep bill active for payment collection
-  await saveKdsHistory(table, current);
+  await saveKdsHistory(reqStore, tenantSlug, table, current);
 }
 
 wss.on('connection', (ws) => {
   ws.role = null;
+  ws.tenantSlug = null;
 
   ws.on('message', async (raw) => {
     let msg;
@@ -225,62 +308,168 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'register') {
       ws.role = msg.role === 'kds' ? 'kds' : 'pos';
-      clients[ws.role].add(ws);
+      ws.tenantSlug = msg.tenantSlug || '_default';
+      getClients(ws.tenantSlug)[ws.role].add(ws);
       return;
     }
 
     if (msg.type === 'item:statusChange') {
-      queueTableUpdate(msg.table, async () => {
-        const bill = await store.getBill(msg.table);
+      const tSlug = ws.tenantSlug || '_default';
+      const wsStore = isSaasMode ? tenantStores.get(tSlug) : store;
+      if (!wsStore) return;
+      queueTableUpdate(tSlug, msg.table, async () => {
+        const bill = await wsStore.getBill(msg.table);
         if (!bill) return;
         const item = bill.items.find(i => i.id === msg.itemId);
         if (!item) return;
 
         item.status = msg.status;
         if (msg.status === 'ready') item.readyAt = Date.now();
-        await store.saveBill(msg.table, bill);
+        await wsStore.saveBill(msg.table, bill);
 
-        broadcast(['pos', 'kds'], {
+        broadcast(tSlug, ['pos', 'kds'], {
           type: 'item:statusChanged', table: msg.table,
           itemId: msg.itemId, status: msg.status, item,
         });
 
         const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
-        if (allReady) broadcast(['pos'], { type: 'table:allReady', table: msg.table });
+        if (allReady) broadcast(tSlug, ['pos'], { type: 'table:allReady', table: msg.table });
 
-        await archiveIfAllServed(msg.table, bill);
+        await archiveIfAllServed(wsStore, tSlug, msg.table, bill);
       });
     }
   });
 
-  ws.on('close', () => { if (ws.role) clients[ws.role].delete(ws); });
+  ws.on('close', () => {
+    if (ws.role && ws.tenantSlug) {
+      const tc = clients[ws.tenantSlug];
+      if (tc && tc[ws.role]) tc[ws.role].delete(ws);
+    }
+  });
 });
+
+// ─── SaaS: Tenant middleware ──────────────────────────────────────────────────
+
+app.use('/api', async (req, res, next) => {
+  // Skip tenant resolution for tenant-list and admin endpoints
+  if (req.path === '/tenants' || req.path.startsWith('/tenants/') || req.path.startsWith('/admin')) return next();
+
+  if (!isSaasMode) {
+    req.store = store;
+    req.tenantSlug = '_default';
+    return next();
+  }
+
+  const slug = req.headers['x-tenant'] ||
+    parseCookie(req.headers.cookie, 'bkt_tenant') ||
+    req.query.tenant;
+
+  if (!slug) return res.status(400).json({ error: 'Tenant not specified' });
+
+  const tenant = await getTenantBySlug(slug);
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  req.tenant = tenant;
+  req.tenantSlug = tenant.slug;
+  req.store = getTenantStore(tenant.slug, tenant.dbName);
+  next();
+});
+
+// ─── REST API: Tenant endpoints (SaaS) ──────────────────────────────────────
+
+app.get('/api/tenants', async (req, res) => {
+  if (!isSaasMode) return res.json([]);
+  res.json(await getAllActiveTenants());
+});
+
+app.post('/api/tenants/select', async (req, res) => {
+  if (!isSaasMode) return res.json({ slug: '_default', name: 'Default' });
+  const { slug } = req.body;
+  const tenant = await getTenantBySlug(slug);
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+  res.setHeader('Set-Cookie', `bkt_tenant=${slug}; Path=/; SameSite=Strict; Max-Age=86400`);
+  res.json({ slug: tenant.slug, name: tenant.name });
+});
+
+// ─── REST API: Admin tenant management (protected) ───────────────────────────
+
+function adminAuth(req, res, next) {
+  const key = req.headers['x-admin-key'];
+  if (!process.env.SAAS_ADMIN_KEY || key !== process.env.SAAS_ADMIN_KEY) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/api/admin/tenants', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const tenants = await saasDb.collection('tenants').find({}).toArray();
+  res.json(tenants);
+});
+
+app.post('/api/admin/tenants', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const { slug, name } = req.body;
+  if (!slug || !name) return res.status(400).json({ error: 'slug and name required' });
+  const dbName = 'pos_' + slug.replace(/[^a-z0-9]/g, '_');
+  const tenant = { slug, name, dbName, status: 'active', createdAt: new Date(), updatedAt: new Date() };
+  try {
+    await saasDb.collection('tenants').insertOne(tenant);
+  } catch (e) {
+    if (e.code === 11000) return res.status(409).json({ error: 'Tenant slug already exists' });
+    throw e;
+  }
+  const tenantStore = getTenantStore(slug, dbName);
+  await initTenantDb(tenantStore);
+  res.json(tenant);
+});
+
+app.put('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const updates = {};
+  if (req.body.name) updates.name = req.body.name;
+  if (req.body.status) updates.status = req.body.status;
+  updates.updatedAt = new Date();
+  const result = await saasDb.collection('tenants').findOneAndUpdate(
+    { slug: req.params.slug }, { $set: updates }, { returnDocument: 'after' }
+  );
+  if (!result) return res.status(404).json({ error: 'Tenant not found' });
+  if (updates.status === 'disabled') tenantStores.delete(req.params.slug);
+  res.json(result);
+});
+
+app.delete('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  await saasDb.collection('tenants').updateOne({ slug: req.params.slug }, { $set: { status: 'disabled', updatedAt: new Date() } });
+  tenantStores.delete(req.params.slug);
+  res.json({ ok: true });
+});
+
+app.get('/admin', (req, res) => res.redirect('/admin.html'));
 
 // ─── REST API: Bills ──────────────────────────────────────────────────────────
 
 app.get('/api/bills', async (req, res) => {
-  res.json(await store.getAllBills());
+  res.json(await req.store.getAllBills());
 });
 
 app.get('/api/bills/:table', async (req, res) => {
-  const bill = await store.getBill(req.params.table);
+  const bill = await req.store.getBill(req.params.table);
   if (!bill) return res.status(404).json({ error: 'No bill for this table' });
   res.json(bill);
 });
 
 app.post('/api/bills/:table/items', async (req, res) => {
   const table = req.params.table;
-  let bill = await store.getBill(table);
+  const ts = req.tenantSlug;
+  let bill = await req.store.getBill(table);
 
-  // POST = new ordering round — close out any existing bill before starting fresh.
-  // If all items are already served the bill is already in kds-history; just
-  // delete it.  If it has unserved items, archive it (saves to kds-history first).
   if (bill && bill.items.length > 0) {
     if (bill.items.every(i => i.status === 'served')) {
-      await store.deleteBill(table);
-      broadcast(['pos', 'kds'], { type: 'bill:cleared', table });
+      await req.store.deleteBill(table);
+      broadcast(ts, ['pos', 'kds'], { type: 'bill:cleared', table });
     } else {
-      await archiveBill(table, bill);
+      await archiveBill(req.store, ts, table, bill);
     }
     bill = null;
   }
@@ -291,15 +480,16 @@ app.post('/api/bills/:table/items', async (req, res) => {
     ...item, status: 'cooking', sentAt: Date.now(), readyAt: null,
   }));
   bill.items.push(...enhanced);
-  await store.saveBill(table, bill);
+  await req.store.saveBill(table, bill);
 
-  broadcast(['kds'], { type: 'order:new', table, bill });
+  broadcast(ts, ['kds'], { type: 'order:new', table, bill });
   res.json(bill);
 });
 
 app.put('/api/bills/:table', async (req, res) => {
   const table    = req.params.table;
-  const existing = await store.getBill(table);
+  const ts = req.tenantSlug;
+  const existing = await req.store.getBill(table);
   const existingMap = {};
   if (existing) existing.items.forEach(i => { existingMap[i.id] = i; });
 
@@ -311,56 +501,57 @@ app.put('/api/bills/:table', async (req, res) => {
   });
 
   const bill = { startedAt: existing?.startedAt || Date.now(), items };
-  await store.saveBill(table, bill);
+  await req.store.saveBill(table, bill);
 
-  broadcast(['kds'], { type: 'order:updated', table, bill });
+  broadcast(ts, ['kds'], { type: 'order:updated', table, bill });
   res.json(bill);
 });
 
 app.delete('/api/bills/:table', async (req, res) => {
-  await store.deleteBill(req.params.table);
-  broadcast(['kds'], { type: 'bill:cleared', table: req.params.table });
+  await req.store.deleteBill(req.params.table);
+  broadcast(req.tenantSlug, ['kds'], { type: 'bill:cleared', table: req.params.table });
   res.json({ ok: true });
 });
 
 app.delete('/api/bills', async (req, res) => {
-  const bills = await store.getAllBills();
-  await Promise.all(Object.keys(bills).map(t => store.deleteBill(t)));
-  broadcast(['pos', 'kds'], { type: 'bill:cleared', table: '*' });
+  const bills = await req.store.getAllBills();
+  await Promise.all(Object.keys(bills).map(t => req.store.deleteBill(t)));
+  broadcast(req.tenantSlug, ['pos', 'kds'], { type: 'bill:cleared', table: '*' });
   res.json({ ok: true });
 });
 
 app.patch('/api/bills/:table/items/:itemId/status', (req, res) => {
   const { table, itemId } = req.params;
   const { status } = req.body;
-  queueTableUpdate(table, async () => {
-    const bill = await store.getBill(table);
+  const ts = req.tenantSlug;
+  const rs = req.store;
+  queueTableUpdate(ts, table, async () => {
+    const bill = await rs.getBill(table);
     if (!bill) { res.status(404).json({ error: 'No bill for this table' }); return; }
     const item = bill.items.find(i => i.id === itemId);
     if (!item) { res.status(404).json({ error: 'Item not found' }); return; }
 
     item.status = status;
     if (status === 'ready') item.readyAt = Date.now();
-    await store.saveBill(table, bill);
+    await rs.saveBill(table, bill);
 
-    broadcast(['pos', 'kds'], { type: 'item:statusChanged', table, itemId, status, item });
+    broadcast(ts, ['pos', 'kds'], { type: 'item:statusChanged', table, itemId, status, item });
 
     const allReady = bill.items.every(i => i.status === 'ready' || i.status === 'served');
-    if (allReady) broadcast(['pos'], { type: 'table:allReady', table });
+    if (allReady) broadcast(ts, ['pos'], { type: 'table:allReady', table });
 
     res.json(item);
 
-    await archiveIfAllServed(table, bill);
+    await archiveIfAllServed(rs, ts, table, bill);
   });
 });
 
-// Atomic serve-all: marks every item served and archives in one DB operation.
-// Avoids the concurrent-PATCH race condition where Promise.all overwrites cause
-// archiveIfAllServed to never see all items as served.
 app.post('/api/bills/:table/serve', (req, res) => {
   const table = req.params.table;
-  queueTableUpdate(table, async () => {
-    const bill = await store.getBill(table);
+  const ts = req.tenantSlug;
+  const rs = req.store;
+  queueTableUpdate(ts, table, async () => {
+    const bill = await rs.getBill(table);
     if (!bill) { res.status(404).json({ error: 'No bill' }); return; }
 
     const now = Date.now();
@@ -369,59 +560,57 @@ app.post('/api/bills/:table/serve', (req, res) => {
       if (!item.readyAt) item.readyAt = now;
     });
 
-    // Save served statuses to DB, record to kds-history, but keep bill alive
-    // so the POS can still collect payment.
-    await store.saveBill(table, bill);
-    await saveKdsHistory(table, bill); // records kds-history + broadcasts bill:allServed
+    await rs.saveBill(table, bill);
+    await saveKdsHistory(rs, ts, table, bill);
     res.json({ ok: true });
   });
 });
 
 // ─── REST API: KDS History ────────────────────────────────────────────────────
 
-app.get('/api/kds-history',    async (req, res) => res.json(await store.getKdsHistory()));
-app.post('/api/kds-history',   async (req, res) => { await store.addKdsHistory(req.body); res.json({ ok: true }); });
-app.delete('/api/kds-history', async (req, res) => { await store.deleteKdsHistory(); res.json({ ok: true }); });
+app.get('/api/kds-history',    async (req, res) => res.json(await req.store.getKdsHistory()));
+app.post('/api/kds-history',   async (req, res) => { await req.store.addKdsHistory(req.body); res.json({ ok: true }); });
+app.delete('/api/kds-history', async (req, res) => { await req.store.deleteKdsHistory(); res.json({ ok: true }); });
 
 // ─── REST API: Order History ──────────────────────────────────────────────────
 
 app.get('/api/history', async (req, res) => {
   const from = req.query.from ? Number(req.query.from) : undefined;
   const to   = req.query.to   ? Number(req.query.to)   : undefined;
-  res.json(await store.getOrderHistory(from, to));
+  res.json(await req.store.getOrderHistory(from, to));
 });
 app.post('/api/history', async (req, res) => {
-  await store.addOrderHistory(req.body);
+  await req.store.addOrderHistory(req.body);
   if (cloudSync) await cloudSync.syncOrder(req.body);
   res.json({ ok: true });
 });
-app.delete('/api/history', async (req, res) => { await store.deleteOrderHistory(); res.json({ ok: true }); });
+app.delete('/api/history', async (req, res) => { await req.store.deleteOrderHistory(); res.json({ ok: true }); });
 
 // ─── REST API: Menu ───────────────────────────────────────────────────────────
 
-app.get('/api/menu', async (req, res) => res.json(await store.getMenuItems()));
+app.get('/api/menu', async (req, res) => res.json(await req.store.getMenuItems()));
 app.put('/api/menu', async (req, res) => {
-  await store.saveMenuItems(req.body);
+  await req.store.saveMenuItems(req.body);
   if (cloudSync) await cloudSync.syncMenu(req.body);
   res.json({ ok: true });
 });
 
 // ─── REST API: Settings ───────────────────────────────────────────────────────
 
-app.get('/api/settings',    async (req, res) => res.json(await store.getSettings()));
+app.get('/api/settings',    async (req, res) => res.json(await req.store.getSettings()));
 app.put('/api/settings', async (req, res) => {
-  await store.saveSettings(req.body);
+  await req.store.saveSettings(req.body);
   if (cloudSync) await cloudSync.syncSettings(req.body);
   res.json({ ok: true });
 });
-app.delete('/api/settings', async (req, res) => { await store.deleteSettings(); res.json({ ok: true }); });
+app.delete('/api/settings', async (req, res) => { await req.store.deleteSettings(); res.json({ ok: true }); });
 
 // ─── REST API: Users ──────────────────────────────────────────────────────
 
-app.get('/api/users', async (req, res) => res.json(await store.getUsers()));
+app.get('/api/users', async (req, res) => res.json(await req.store.getUsers()));
 
 app.post('/api/users', async (req, res) => {
-  const users = await store.getUsers();
+  const users = await req.store.getUsers();
   const user = {
     id: `user_${Date.now()}`,
     name: req.body.name,
@@ -429,28 +618,28 @@ app.post('/api/users', async (req, res) => {
     role: req.body.role || 'cashier',
   };
   users.push(user);
-  await store.saveUsers(users);
+  await req.store.saveUsers(users);
   res.json(user);
 });
 
 app.put('/api/users/:id', async (req, res) => {
-  const users = await store.getUsers();
+  const users = await req.store.getUsers();
   const idx = users.findIndex(u => u.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
   users[idx] = { ...users[idx], ...req.body, id: req.params.id };
-  await store.saveUsers(users);
+  await req.store.saveUsers(users);
   res.json(users[idx]);
 });
 
 app.delete('/api/users/:id', async (req, res) => {
-  const users = await store.getUsers();
+  const users = await req.store.getUsers();
   const superCount = users.filter(u => u.role === 'super').length;
   const target = users.find(u => u.id === req.params.id);
   if (target && target.role === 'super' && superCount <= 1) {
     return res.status(400).json({ error: 'Cannot delete last super user' });
   }
   const filtered = users.filter(u => u.id !== req.params.id);
-  await store.saveUsers(filtered);
+  await req.store.saveUsers(filtered);
   res.json({ ok: true });
 });
 
@@ -462,7 +651,7 @@ function airwallexBaseUrl(env) {
 
 app.post('/api/airwallex/create-intent', async (req, res) => {
   try {
-    const settings = await store.getSettings();
+    const settings = await req.store.getSettings();
     const clientId = settings.airwallexClientId;
     const apiKey   = settings.airwallexApiKey;
     const env      = settings.airwallexEnv || 'demo';
@@ -506,7 +695,7 @@ app.post('/api/airwallex/create-intent', async (req, res) => {
 
 app.get('/api/airwallex/intent-status/:id', async (req, res) => {
   try {
-    const settings = await store.getSettings();
+    const settings = await req.store.getSettings();
     const clientId = settings.airwallexClientId;
     const apiKey   = settings.airwallexApiKey;
     const env      = settings.airwallexEnv || 'demo';
@@ -554,11 +743,11 @@ app.post('/api/sync', async (req, res) => {
   if (!cloudSync) return res.status(400).json({ error: 'Cloud sync not configured' });
   try {
     // Sync all order history
-    const history = await store.getOrderHistory();
+    const history = await req.store.getOrderHistory();
     for (const order of history) cloudSync.syncOrder(order);
     // Sync settings + menu
-    cloudSync.syncSettings(await store.getSettings());
-    cloudSync.syncMenu(await store.getMenuItems());
+    cloudSync.syncSettings(await req.store.getSettings());
+    cloudSync.syncMenu(await req.store.getMenuItems());
     res.json({ ok: true, orders: history.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -784,7 +973,7 @@ function sendTcpData(ip, port, data) {
 
 app.post('/api/print', async (req, res) => {
   try {
-    const settings    = await store.getSettings();
+    const settings    = await req.store.getSettings();
     const printerIp   = settings.printerIp;
     const printerPort = parseInt(settings.printerPort, 10) || 9100;
 
@@ -896,14 +1085,13 @@ function createCloudSync(uri) {
 
 let store; // assigned in start()
 
-async function cleanupStaleBills() {
+async function cleanupStaleBills(s) {
   try {
-    const bills = await store.getAllBills();
+    const bills = await s.getAllBills();
     for (const [table, bill] of Object.entries(bills)) {
       if (!bill.items || bill.items.length === 0) {
-        await store.deleteBill(table);
+        await s.deleteBill(table);
       }
-      // Served bills are kept — they await payment collection in the POS.
     }
     console.log('Stale bill cleanup complete');
   } catch (e) {
@@ -912,27 +1100,46 @@ async function cleanupStaleBills() {
 }
 
 async function start() {
-  store = process.env.MONGODB_URI ? createMongoStore() : createFileStore();
-  await store.connect();
-  await cleanupStaleBills();
+  if (isSaasMode) {
+    // ── SaaS multi-tenant mode ──
+    const { MongoClient } = require('mongodb');
+    saasClient = new MongoClient(process.env.MONGODB_URI);
+    await saasClient.connect();
+    saasDb = saasClient.db('saas');
+    await saasDb.collection('tenants').createIndex({ slug: 1 }, { unique: true });
+    console.log('SaaS mode: connected to MongoDB, multi-tenant active');
 
-  // Seed default super user if none exist
-  const existingUsers = await store.getUsers();
-  if (!existingUsers || existingUsers.length === 0) {
-    await store.saveUsers([{
-      id: 'user_default',
-      name: 'Admin',
-      pin: '1234',
-      role: 'super',
-    }]);
-    console.log('Seeded default super user (Admin / PIN 1234)');
-  }
+    // Pre-warm stores for all active tenants
+    const tenants = await getAllActiveTenants();
+    for (const t of tenants) {
+      const dbName = 'pos_' + t.slug.replace(/[^a-z0-9]/g, '_');
+      const ts = getTenantStore(t.slug, dbName);
+      await ts.connect();
+    }
+    console.log(`Pre-warmed ${tenants.length} tenant store(s)`);
+  } else {
+    // ── Single-tenant mode (original behavior) ──
+    store = process.env.MONGODB_URI ? createMongoStore() : createFileStore();
+    await store.connect();
+    await cleanupStaleBills(store);
 
-  // Cloud sync: when running locally (file store), sync to cloud MongoDB
-  const syncUri = process.env.SYNC_MONGODB_URI;
-  if (!process.env.MONGODB_URI && syncUri) {
-    cloudSync = createCloudSync(syncUri);
-    console.log('Cloud sync enabled (background backup to MongoDB)');
+    const existingUsers = await store.getUsers();
+    if (!existingUsers || existingUsers.length === 0) {
+      await store.saveUsers([{
+        id: 'user_default',
+        name: 'Admin',
+        pin: '1234',
+        role: 'super',
+      }]);
+      console.log('Seeded default super user (Admin / PIN 1234)');
+    }
+
+    // Cloud sync: when running locally (file store), sync to cloud MongoDB
+    const syncUri = process.env.SYNC_MONGODB_URI;
+    if (!process.env.MONGODB_URI && syncUri) {
+      cloudSync = createCloudSync(syncUri);
+      console.log('Cloud sync enabled (background backup to MongoDB)');
+    }
   }
 
   server.listen(PORT, '0.0.0.0', () => {

@@ -54,7 +54,8 @@ function connectKdsWS() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     kdsWS = new WebSocket(`${proto}://${location.host}`);
     kdsWS.onopen = () => {
-      kdsWS.send(JSON.stringify({ type: 'register', role: 'kds' }));
+      const _t = typeof getTenantSession === 'function' ? getTenantSession() : null;
+      kdsWS.send(JSON.stringify({ type: 'register', role: 'kds', tenantSlug: _t ? _t.slug : '_default' }));
       refresh(); // Full refresh on every (re)connect
     };
     kdsWS.onmessage = (e) => {

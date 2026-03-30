@@ -16,7 +16,8 @@ function connectWS() {
   ws = new WebSocket(`${proto}://${location.host}`);
 
   ws.onopen = async () => {
-    ws.send(JSON.stringify({ type: 'register', role: 'kds' }));
+    const _tSlug = new URLSearchParams(location.search).get('tenant') || '_default';
+    ws.send(JSON.stringify({ type: 'register', role: 'kds', tenantSlug: _tSlug }));
     setConnStatus(true);
     // Reload bills to catch any orders missed while disconnected
     await loadBills();

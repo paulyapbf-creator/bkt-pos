@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Tenant Management</title>
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg: #0f0f1a; --header: #1a1a2e; --panel: #2d2d44; --red: #C0392B; --green: #27ae60; --text: #fff; --muted: #aaa; --border: #3a3a55; --radius: 8px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+#header { background: var(--header); border-bottom: 1px solid var(--border); padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+#header h1 { font-size: 17px; font-weight: 700; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px 16px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+input[type="text"], input[type="password"] { background: var(--header); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; font-size: 14px; width: 100%; outline: none; }
+input:focus { border-color: var(--red); }
+label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+.field { margin-bottom: 12px; }
+.btn { background: var(--red); color: #fff; border: none; border-radius: var(--radius); padding: 10px 20px; font-size: 14px; cursor: pointer; }
+.btn:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-green { background: var(--green); }
+.btn-dim { background: var(--border); color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+.status-active { color: var(--green); }
+.status-disabled { color: var(--red); }
+.msg { font-size: 13px; margin-top: 8px; }
+.msg-ok { color: var(--green); }
+.msg-err { color: var(--red); }
+#auth-gate { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+#auth-form { max-width: 320px; width: 100%; }
+.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header id="header">
+    <h1>Tenant Admin</h1>
+    <a href="/" style="color:var(--muted);text-decoration:none;font-size:13px;">← Back to POS</a>
+  </header>
+
+  <!-- Auth gate -->
+  <div id="auth-gate">
+    <div id="auth-form" class="card">
+      <h2>Admin Access</h2>
+      <div class="field">
+        <label>Admin Key</label>
+        <input type="password" id="admin-key-input" placeholder="Enter SAAS_ADMIN_KEY">
+      </div>
+      <button class="btn" id="auth-btn">Login</button>
+      <div class="msg msg-err hidden" id="auth-err">Invalid admin key</div>
+    </div>
+  </div>
+
+  <!-- Main content (hidden until auth) -->
+  <div class="container hidden" id="main">
+    <div class="card">
+      <h2>Create Tenant</h2>
+      <div class="field">
+        <label>Store Name</label>
+        <input type="text" id="new-name" placeholder="e.g. BKT House KL">
+      </div>
+      <div class="field">
+        <label>Slug (URL-safe, lowercase)</label>
+        <input type="text" id="new-slug" placeholder="e.g. bkt-kl">
+      </div>
+      <button class="btn" id="create-btn">Create Tenant</button>
+      <div class="msg hidden" id="create-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Tenants</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Slug</th><th>DB</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="tenant-list"><tr><td colspan="5" style="color:var(--muted)">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

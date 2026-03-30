@@ -1,8 +1,29 @@
 'use strict';
 // ─── Shared Auth Module ──────────────────────────────────────────────────────
 // Shared between index.html and items.html for PIN-based user authentication.
+// Supports SaaS multi-tenant: tenant selection before user login.
 
 const AUTH_SESSION_KEY = 'bkt_auth_session';
+const TENANT_SESSION_KEY = 'bkt_tenant_session';
+
+// ─── Tenant session helpers ─────────────────────────────────────────────────
+
+function getTenantSession() {
+  try {
+    const raw = localStorage.getItem(TENANT_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setTenantSession(tenant) {
+  localStorage.setItem(TENANT_SESSION_KEY, JSON.stringify(tenant));
+  document.cookie = `bkt_tenant=${tenant.slug}; path=/; max-age=86400; SameSite=Strict`;
+}
+
+function clearTenantSession() {
+  localStorage.removeItem(TENANT_SESSION_KEY);
+  document.cookie = 'bkt_tenant=; path=/; max-age=0';
+}
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
 
@@ -14,11 +35,14 @@ function getSession() {
 }
 
 function setSession(user) {
+  const tenant = getTenantSession();
   const session = {
     userId: user.id,
     name: user.name,
     role: user.role,
     loginTime: Date.now(),
+    tenantSlug: tenant ? tenant.slug : null,
+    tenantName: tenant ? tenant.name : null,
   };
   localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
   return session;
@@ -26,6 +50,7 @@ function setSession(user) {
 
 function clearSession() {
   localStorage.removeItem(AUTH_SESSION_KEY);
+  clearTenantSession();
 }
 
 function isSuper() {
@@ -55,16 +80,28 @@ let _selectedUser = null;
 let _pinDigits = [];
 let _onLoginSuccess = null;
 
-function showLoginOverlay(onSuccess) {
+async function showLoginOverlay(onSuccess) {
   _onLoginSuccess = onSuccess;
   const overlay = document.getElementById('login-overlay');
   if (!overlay) return;
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  loadLoginUsers().then(users => {
-    _loginUsers = users;
-    renderLoginUserList();
-  });
+
+  // Check if SaaS mode: fetch tenants first
+  try {
+    const res = await fetch('/api/tenants');
+    if (res.ok) {
+      const tenants = await res.json();
+      if (tenants.length > 0) {
+        renderTenantSelector(tenants);
+        return;
+      }
+    }
+  } catch {}
+
+  // Single-tenant mode: go straight to user list
+  _loginUsers = await loadLoginUsers();
+  renderLoginUserList();
 }
 
 function hideLoginOverlay() {
@@ -73,12 +110,53 @@ function hideLoginOverlay() {
   document.body.style.overflow = '';
 }
 
+// ─── Tenant selector (SaaS mode) ────────────────────────────────────────────
+
+function renderTenantSelector(tenants) {
+  const container = document.getElementById('login-content');
+  if (!container) return;
+
+  const buttons = tenants.map(t => `
+    <button class="login-user-btn" data-tenant-slug="${t.slug}">
+      <span class="login-user-icon">🏪</span>
+      <span class="login-user-name">${t.name}</span>
+    </button>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="login-title">Select Store</div>
+    <div class="login-user-list">${buttons}</div>
+  `;
+
+  container.querySelectorAll('.login-user-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const slug = btn.dataset.tenantSlug;
+      const tenant = tenants.find(t => t.slug === slug);
+      // Set cookie server-side
+      await fetch('/api/tenants/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug }),
+      });
+      setTenantSession(tenant);
+      // Now load users for this tenant
+      _loginUsers = await loadLoginUsers();
+      renderLoginUserList();
+    });
+  });
+}
+
+// ─── User list ───────────────────────────────────────────────────────────────
+
 function renderLoginUserList() {
   const container = document.getElementById('login-content');
   if (!container) return;
 
   _selectedUser = null;
   _pinDigits = [];
+
+  const tenant = getTenantSession();
+  const hasTenant = tenant && tenant.slug;
 
   const userButtons = _loginUsers.length > 0
     ? _loginUsers.map(u => `
@@ -91,11 +169,26 @@ function renderLoginUserList() {
     : '<p style="text-align:center;color:#aaa;font-size:14px;">No users found. Check server connection.</p>';
 
   container.innerHTML = `
-    <div class="login-title">Who's working today?</div>
+    ${hasTenant ? `<button class="login-back-btn" id="tenant-back-btn">&larr; Change Store</button>` : ''}
+    <div class="login-title">${hasTenant ? tenant.name + ' — ' : ''}Who's working today?</div>
     <div class="login-user-list">
       ${userButtons}
     </div>
   `;
+
+  if (hasTenant) {
+    document.getElementById('tenant-back-btn').addEventListener('click', async () => {
+      clearTenantSession();
+      try {
+        const res = await fetch('/api/tenants');
+        if (res.ok) {
+          const tenants = await res.json();
+          if (tenants.length > 0) { renderTenantSelector(tenants); return; }
+        }
+      } catch {}
+      renderLoginUserList();
+    });
+  }
 
   container.querySelectorAll('.login-user-btn').forEach(btn => {
     btn.addEventListener('click', () => {

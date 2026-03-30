@@ -41,7 +41,8 @@ function connectWS() {
   } catch (e) { setTimeout(connectWS, 5000); return; }
 
   posWS.onopen = () => {
-    posWS.send(JSON.stringify({ type: 'register', role: 'pos' }));
+    const _t = typeof getTenantSession === 'function' ? getTenantSession() : null;
+    posWS.send(JSON.stringify({ type: 'register', role: 'pos', tenantSlug: _t ? _t.slug : '_default' }));
   };
 
   posWS.onclose = () => {
