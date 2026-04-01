@@ -171,8 +171,12 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
           </div>
           <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;display:none;" id="camera-review">
             <button class="btn btn-sm btn-dim" id="camera-retake-btn">Retake</button>
-            <button class="btn btn-sm btn-green" id="camera-use-btn">Use Photo & Extract</button>
+            <button class="btn btn-sm" id="camera-add-btn">+ Add Another Page</button>
+            <button class="btn btn-sm btn-green" id="camera-use-btn">Extract All</button>
           </div>
+          <!-- Captured thumbnails -->
+          <div id="camera-thumbnails" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;"></div>
+          <div id="camera-count" style="font-size:12px;color:var(--muted);margin-top:4px;display:none;"></div>
           <div class="msg hidden" id="camera-msg" style="margin-top:8px;"></div>
         </div>
         <div class="msg hidden" id="import-status" style="margin-top:8px;"></div>

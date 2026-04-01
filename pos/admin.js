@@ -403,15 +403,41 @@ document.getElementById('import-confirm-btn').addEventListener('click', async ()
   }
 });
 
-// ─── Camera Capture ─────────────────────────────────────────────────────────
+// ─── Camera Capture (Multi-page) ────────────────────────────────────────────
 
 let cameraStream = null;
+let capturedPages = []; // array of base64 strings
+
+function updateThumbnails() {
+  const container = document.getElementById('camera-thumbnails');
+  const countEl = document.getElementById('camera-count');
+  container.innerHTML = capturedPages.map((b64, i) => `
+    <div style="position:relative;display:inline-block;">
+      <img src="data:image/jpeg;base64,${b64}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">
+      <span style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="removePage(${i})">×</span>
+      <div style="text-align:center;font-size:10px;color:var(--muted);">Page ${i + 1}</div>
+    </div>
+  `).join('');
+  if (capturedPages.length > 0) {
+    countEl.textContent = `${capturedPages.length} page(s) captured`;
+    countEl.style.display = 'block';
+  } else {
+    countEl.style.display = 'none';
+  }
+}
+
+function removePage(idx) {
+  capturedPages.splice(idx, 1);
+  updateThumbnails();
+}
 
 document.getElementById('camera-btn').addEventListener('click', async () => {
   const modal = document.getElementById('camera-modal');
   const video = document.getElementById('camera-video');
   const msg = document.getElementById('camera-msg');
 
+  capturedPages = [];
+  updateThumbnails();
   modal.classList.remove('hidden');
   showCameraLive();
   msg.classList.add('hidden');
@@ -447,8 +473,7 @@ function stopCamera() {
     cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
   }
-  const video = document.getElementById('camera-video');
-  video.srcObject = null;
+  document.getElementById('camera-video').srcObject = null;
 }
 
 document.getElementById('camera-snap-btn').addEventListener('click', () => {
@@ -465,27 +490,41 @@ document.getElementById('camera-snap-btn').addEventListener('click', () => {
   showCameraReview();
 });
 
+// Add current photo to pages and go back to live camera
+document.getElementById('camera-add-btn').addEventListener('click', () => {
+  const canvas = document.getElementById('camera-canvas');
+  const b64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+  capturedPages.push(b64);
+  updateThumbnails();
+  showCameraLive();
+});
+
 document.getElementById('camera-retake-btn').addEventListener('click', () => {
   showCameraLive();
 });
 
 document.getElementById('camera-close-btn').addEventListener('click', () => {
   stopCamera();
+  capturedPages = [];
+  updateThumbnails();
   document.getElementById('camera-modal').classList.add('hidden');
 });
 
+// Extract all captured pages
 document.getElementById('camera-use-btn').addEventListener('click', async () => {
   if (!currentDetailSlug) return;
 
+  // Include current preview if not already added
   const canvas = document.getElementById('camera-canvas');
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-  const fileBase64 = dataUrl.split(',')[1];
+  const currentB64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+  // Add the current photo being reviewed (if it's not a retake of one already added)
+  const allPages = [...capturedPages, currentB64];
 
   stopCamera();
   document.getElementById('camera-modal').classList.add('hidden');
 
   const status = document.getElementById('import-status');
-  status.textContent = 'Extracting menu items from captured photo... please wait';
+  status.textContent = `Extracting menu items from ${allPages.length} photo(s)... please wait`;
   status.className = 'msg msg-ok';
   status.classList.remove('hidden');
 
@@ -494,7 +533,7 @@ document.getElementById('camera-use-btn').addEventListener('click', async () => 
       method: 'POST',
       headers: apiHeaders(),
       body: JSON.stringify({
-        fileBase64,
+        images: allPages,
         contentType: 'image/jpeg',
         fileName: 'camera-capture.jpg',
       }),
@@ -507,7 +546,7 @@ document.getElementById('camera-use-btn').addEventListener('click', async () => 
     }
 
     extractedItems = data.items;
-    status.textContent = `Extracted ${data.rawCount} items from photo. Review below and click Import.`;
+    status.textContent = `Extracted ${data.rawCount} items from ${allPages.length} photo(s). Review below and click Import.`;
     status.className = 'msg msg-ok';
 
     const tbody = document.getElementById('import-items');
@@ -526,6 +565,8 @@ document.getElementById('camera-use-btn').addEventListener('click', async () => 
     status.textContent = 'Error: ' + e.message;
     status.className = 'msg msg-err';
   }
+  capturedPages = [];
+  updateThumbnails();
 });
 
 // Period filter buttons

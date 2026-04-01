@@ -615,9 +615,9 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
   if (!apiKey) return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured in .env' });
 
   try {
-    // File sent as base64 JSON from frontend
-    const { fileBase64, contentType: ct, fileName } = req.body;
-    if (!fileBase64) return res.status(400).json({ error: 'No file data received' });
+    // Support both single file and multiple images
+    const { fileBase64, images, contentType: ct, fileName } = req.body;
+    if (!fileBase64 && (!images || !images.length)) return res.status(400).json({ error: 'No file data received' });
     const contentType = ct || 'image/png';
 
     // Build Claude API request
@@ -626,7 +626,16 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
 
     const userContent = [];
 
-    if (isImage) {
+    if (images && images.length > 0) {
+      // Multiple camera captures — send all as separate images
+      images.forEach((imgBase64, i) => {
+        if (images.length > 1) userContent.push({ type: 'text', text: `--- Menu page ${i + 1} of ${images.length} ---` });
+        userContent.push({
+          type: 'image',
+          source: { type: 'base64', media_type: 'image/jpeg', data: imgBase64 },
+        });
+      });
+    } else if (isImage) {
       userContent.push({
         type: 'image',
         source: { type: 'base64', media_type: contentType, data: fileBase64 },
@@ -642,9 +651,10 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
       userContent.push({ type: 'text', text: `File content (${fileName}):\n\n${textContent}` });
     }
 
+    const multiPage = images && images.length > 1;
     userContent.push({
       type: 'text',
-      text: `Extract ALL menu items from this document. For each item, extract:
+      text: `Extract ALL menu items from ${multiPage ? 'all pages of ' : ''}this ${multiPage ? 'multi-page menu' : 'document'}. For each item, extract:
 - name: English name
 - nameZh: Chinese name (if available, otherwise empty string)
 - price: numeric price (number, not string)
@@ -654,8 +664,8 @@ Return ONLY a valid JSON array of objects. Example format:
 [{"name":"Bak Kut Teh","nameZh":"肉骨茶","price":22.00,"category":"Main Course"}]
 
 Important:
-- Extract EVERY item, don't skip any
-- If price has variants (S/M/L), use the base/smallest price
+- Extract EVERY item from ${multiPage ? 'ALL pages' : 'the document'}, don't skip any
+${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicate items that appear on multiple pages\n' : ''}- If price has variants (S/M/L), use the base/smallest price
 - If no Chinese name exists, use empty string ""
 - Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Beverages", or "General"
 - Return ONLY the JSON array, no other text`
@@ -670,7 +680,7 @@ Important:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: 8192,
         messages: [{ role: 'user', content: userContent }],
       }),
     });
