@@ -100,6 +100,11 @@ function handleWSMessage(msg) {
       delete billsCache[msg.table];
       syncBillsToStorage();
       break;
+
+    case 'admin:refresh':
+      showToast('Admin updated data — reloading...');
+      setTimeout(() => location.reload(), 1500);
+      break;
   }
 }
 
@@ -1440,6 +1445,35 @@ function applySessionToUI(session) {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 async function init() {
+  // ── Handle tenant switch from admin links ──
+  const urlParams = new URLSearchParams(location.search);
+  const storeParam = urlParams.get('store');
+  const isFresh = urlParams.get('fresh');
+  if (storeParam && isFresh) {
+    // Admin link — clear ALL cached data and force re-login for this tenant
+    localStorage.removeItem('bkt_auth_session');
+    localStorage.removeItem('bkt_tenant_session');
+    localStorage.removeItem('bkt_menu_items');
+    localStorage.removeItem('bkt_settings');
+    localStorage.removeItem('bkt_active_bills');
+    localStorage.removeItem('bkt_order_history');
+    // Remove fresh param so the next reload after login doesn't clear again
+    urlParams.delete('fresh');
+    history.replaceState(null, '', `${location.pathname}?${urlParams.toString()}`);
+  } else if (storeParam) {
+    // Normal ?store= link — check if we need to switch tenant
+    const currentSession = getSession();
+    if (currentSession && currentSession.tenantSlug && currentSession.tenantSlug !== storeParam) {
+      // Different tenant — clear everything and force re-login
+      localStorage.removeItem('bkt_auth_session');
+      localStorage.removeItem('bkt_tenant_session');
+      localStorage.removeItem('bkt_menu_items');
+      localStorage.removeItem('bkt_settings');
+      localStorage.removeItem('bkt_active_bills');
+      localStorage.removeItem('bkt_order_history');
+    }
+  }
+
   // ── Auth gate: require login before loading POS ──
   const session = getSession();
   if (!session) {
@@ -1448,17 +1482,25 @@ async function init() {
   }
   applySessionToUI(session);
 
-  // ── Step 1: Load from localStorage immediately so UI renders right away ──
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
-    if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
-  } catch (e) { menuItems = [...MENU_ITEMS]; }
+  // ── Step 1: Load menu — from API if tenant link, else localStorage cache ──
+  const isTenantLink = !!urlParams.get('store');
+  if (isTenantLink) {
+    // Tenant link: always load fresh from API, don't trust localStorage
+    menuItems = [...MENU_ITEMS]; // fallback until API responds
+  } else {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
+      if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
+    } catch (e) { menuItems = [...MENU_ITEMS]; }
+  }
 
-  // Shop name from settings
-  const _s = loadSettings();
-  const headerName = document.getElementById('header-shop-name');
-  if (headerName && _s.shopName) headerName.textContent = _s.shopName;
+  // Shop name from settings (skip cache if tenant link — will load from API)
+  if (!isTenantLink) {
+    const _s = loadSettings();
+    const headerName = document.getElementById('header-shop-name');
+    if (headerName && _s.shopName) headerName.textContent = _s.shopName;
+  }
 
   // Search
   document.getElementById('search-input').addEventListener('input', e => {
@@ -1591,10 +1633,11 @@ async function init() {
     fetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiMenu => {
       if (apiMenu && apiMenu.length > 0) {
         menuItems = apiMenu;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
         renderCategoryBar();
         renderMenuList();
-      } else if (apiMenu !== null) {
-        // API has no menu yet — seed it
+      } else if (apiMenu !== null && !isTenantLink) {
+        // API has no menu yet — seed it (only in non-tenant mode to avoid cross-tenant contamination)
         fetch(`${API_BASE}/api/menu`, { method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(menuItems) }).catch(() => {});
@@ -1606,7 +1649,11 @@ async function init() {
 
     // Sync settings from API
     fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
-      if (s && Object.keys(s).length > 0) localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      if (s && Object.keys(s).length > 0) {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+        const headerName = document.getElementById('header-shop-name');
+        if (headerName && s.shopName) headerName.textContent = s.shopName;
+      }
     }).catch(() => {});
 
     // Connect WebSocket

@@ -63,7 +63,9 @@ function connectKdsWS() {
         const msg = JSON.parse(e.data);
         // Always fetch fresh data from the server — no local state juggling.
         // WS is used only as a "something changed" signal.
-        if (msg.type === 'bill:cleared' || msg.type === 'bill:allServed') {
+        if (msg.type === 'admin:refresh') {
+          location.reload();
+        } else if (msg.type === 'bill:cleared' || msg.type === 'bill:allServed') {
           refreshAll(); // need both bills + history
         } else {
           refresh();    // bills only

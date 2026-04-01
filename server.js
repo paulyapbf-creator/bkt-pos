@@ -19,6 +19,50 @@ const wss    = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+
+// ─── Admin routes (served independently, before tenant blocking) ─────────────
+app.get('/admin', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
+app.get('/admin.html', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
+app.get('/admin.js', (req, res) => res.sendFile(path.join(posPath, 'admin.js')));
+
+// ─── SaaS: Block disabled/missing tenants from accessing POS pages ───────────
+const BLOCKED_PAGE = (title, msg) => `<!DOCTYPE html><html><body style="background:#0f0f1a;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><h1>${title}</h1><p style="color:#aaa;">${msg}</p></div></body></html>`;
+
+app.use(async (req, res, next) => {
+  if (!isSaasMode) return next();
+  // Allow API calls through (tenant middleware handles those separately)
+  if (req.path.startsWith('/api/')) return next();
+
+  // Only gate HTML pages — let static assets (.js, .css, images, fonts) through
+  const ext = req.path.split('.').pop().toLowerCase();
+  const isPage = req.path === '/' || ['html', 'htm'].includes(ext);
+  if (!isPage) return next();
+
+  // URL param takes priority over cookie (cookie may be stale from a disabled tenant)
+  const qs = new URLSearchParams(req.url.split('?')[1] || '');
+  const slug = qs.get('store') || qs.get('tenant') || parseCookie(req.headers.cookie, 'bkt_tenant');
+
+  if (!slug) {
+    return res.status(403).send(BLOCKED_PAGE('Store Not Found', 'Please use the link provided by your administrator to access the POS.'));
+  }
+
+  const tenant = await saasDb?.collection('tenants').findOne({ slug });
+  if (!tenant) {
+    return res.status(404).send(BLOCKED_PAGE('Store Not Found', 'This store does not exist. Please check your link.'));
+  }
+  if (tenant.status === 'disabled') {
+    return res.status(403).send(BLOCKED_PAGE('Access Disabled', 'This store has been disabled. Please contact the administrator.'));
+  }
+
+  // Set/refresh tenant cookie so subsequent page navigations work without ?store=
+  const currentCookie = parseCookie(req.headers.cookie, 'bkt_tenant');
+  if (currentCookie !== slug) {
+    res.setHeader('Set-Cookie', `bkt_tenant=${slug}; Path=/; SameSite=Strict; Max-Age=86400`);
+  }
+
+  next();
+});
+
 app.use('/kds', express.static(path.join(__dirname, 'public')));
 // Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
 const { existsSync } = require('fs');
@@ -378,8 +422,10 @@ app.use('/api', async (req, res, next) => {
 // ─── REST API: Tenant endpoints (SaaS) ──────────────────────────────────────
 
 app.get('/api/tenants', async (req, res) => {
+  // Returns empty in non-SaaS mode; used internally to check if SaaS is active
   if (!isSaasMode) return res.json([]);
-  res.json(await getAllActiveTenants());
+  // Only return tenant count (not list) — tenants are assigned via URL, not selected
+  res.json([]);
 });
 
 app.post('/api/tenants/select', async (req, res) => {
@@ -409,10 +455,10 @@ app.get('/api/admin/tenants', adminAuth, async (req, res) => {
 
 app.post('/api/admin/tenants', adminAuth, async (req, res) => {
   if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
-  const { slug, name } = req.body;
+  const { slug, name, address } = req.body;
   if (!slug || !name) return res.status(400).json({ error: 'slug and name required' });
   const dbName = 'pos_' + slug.replace(/[^a-z0-9]/g, '_');
-  const tenant = { slug, name, dbName, status: 'active', createdAt: new Date(), updatedAt: new Date() };
+  const tenant = { slug, name, address: address || '', dbName, status: 'active', createdAt: new Date(), updatedAt: new Date() };
   try {
     await saasDb.collection('tenants').insertOne(tenant);
   } catch (e) {
@@ -421,13 +467,16 @@ app.post('/api/admin/tenants', adminAuth, async (req, res) => {
   }
   const tenantStore = getTenantStore(slug, dbName);
   await initTenantDb(tenantStore);
+  // Sync shop name/address to tenant settings
+  await tenantStore.saveSettings({ shopName: name, shopAddress: address || '' });
   res.json(tenant);
 });
 
 app.put('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
   if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
   const updates = {};
-  if (req.body.name) updates.name = req.body.name;
+  if (req.body.name !== undefined) updates.name = req.body.name;
+  if (req.body.address !== undefined) updates.address = req.body.address;
   if (req.body.status) updates.status = req.body.status;
   updates.updatedAt = new Date();
   const result = await saasDb.collection('tenants').findOneAndUpdate(
@@ -435,6 +484,15 @@ app.put('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
   );
   if (!result) return res.status(404).json({ error: 'Tenant not found' });
   if (updates.status === 'disabled') tenantStores.delete(req.params.slug);
+  // Sync shop name/address to tenant settings if changed
+  if (updates.name !== undefined || updates.address !== undefined) {
+    const ts = getTenantStore(result.slug, result.dbName);
+    const settings = await ts.getSettings();
+    if (updates.name !== undefined) settings.shopName = updates.name;
+    if (updates.address !== undefined) settings.shopAddress = updates.address;
+    await ts.saveSettings(settings);
+    broadcast(req.params.slug, ['pos', 'kds'], { type: 'admin:refresh', reason: 'settings:updated' });
+  }
   res.json(result);
 });
 
@@ -445,7 +503,255 @@ app.delete('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/admin', (req, res) => res.redirect('/admin.html'));
+// ─── Admin: Tenant sales summary ─────────────────────────────────────────────
+
+app.get('/api/admin/tenants/:slug/sales', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  const ts = getTenantStore(tenant.slug, tenant.dbName);
+  const from = req.query.from ? Number(req.query.from) : undefined;
+  const to   = req.query.to   ? Number(req.query.to)   : undefined;
+  const orders = await ts.getOrderHistory(from, to);
+
+  const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
+  const orderCount = orders.length;
+  const avgOrder = orderCount > 0 ? totalRevenue / orderCount : 0;
+
+  // Payment method breakdown
+  const byMethod = {};
+  orders.forEach(o => {
+    const m = (o.paymentMethod || 'cash').toLowerCase();
+    if (!byMethod[m]) byMethod[m] = { total: 0, count: 0 };
+    byMethod[m].total += o.total || 0;
+    byMethod[m].count++;
+  });
+
+  // Top items
+  const byItem = {};
+  orders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const key = it.nameZh || it.name || 'Unknown';
+      if (!byItem[key]) byItem[key] = { name: key, qty: 0, revenue: 0 };
+      byItem[key].qty += it.quantity || 1;
+      byItem[key].revenue += it.subtotal || 0;
+    });
+  });
+  const topItems = Object.values(byItem).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+  res.json({ totalRevenue, orderCount, avgOrder, byMethod, topItems, tenantName: tenant.name, tenantAddress: tenant.address || '', demoMenu: !!tenant.demoMenu });
+});
+
+// ─── Admin: Reset tenant data ────────────────────────────────────────────────
+
+app.post('/api/admin/tenants/:slug/reset', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  const ts = getTenantStore(tenant.slug, tenant.dbName);
+  const what = req.body.what || 'all'; // 'all', 'orders', 'bills', 'menu', 'settings'
+
+  if (what === 'all' || what === 'orders') await ts.deleteOrderHistory();
+  if (what === 'all' || what === 'bills') {
+    const bills = await ts.getAllBills();
+    await Promise.all(Object.keys(bills).map(t => ts.deleteBill(t)));
+  }
+  if (what === 'all' || what === 'kds') await ts.deleteKdsHistory();
+  if (what === 'all' || what === 'menu') await ts.saveMenuItems([]);
+  if (what === 'all' || what === 'settings') await ts.deleteSettings();
+  if (what === 'all') {
+    await ts.saveUsers([{ id: 'user_default', name: 'Admin', pin: '1234', role: 'super' }]);
+  }
+
+  // Force-refresh all connected POS/KDS clients for this tenant
+  broadcast(req.params.slug, ['pos', 'kds'], { type: 'admin:refresh', reason: `reset:${what}` });
+  res.json({ ok: true, reset: what });
+});
+
+// ─── Admin: Demo menu management ─────────────────────────────────────────────
+
+app.get('/api/admin/demo/menu', adminAuth, async (req, res) => {
+  if (!isSaasMode || !demoStore) return res.json([]);
+  res.json(await demoStore.getMenuItems());
+});
+
+app.put('/api/admin/demo/menu', adminAuth, async (req, res) => {
+  if (!isSaasMode || !demoStore) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  await demoStore.saveMenuItems(req.body);
+  res.json({ ok: true });
+});
+
+// Copy a tenant's menu to the demo database
+app.post('/api/admin/demo/copy-from/:slug', adminAuth, async (req, res) => {
+  if (!isSaasMode || !demoStore) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+  const ts = getTenantStore(tenant.slug, tenant.dbName);
+  const menu = await ts.getMenuItems();
+  await demoStore.saveMenuItems(menu);
+  res.json({ ok: true, items: menu.length });
+});
+
+// Toggle demo mode for a tenant
+app.put('/api/admin/tenants/:slug/demo', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const enabled = !!req.body.enabled;
+  const result = await saasDb.collection('tenants').findOneAndUpdate(
+    { slug: req.params.slug },
+    { $set: { demoMenu: enabled, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+  if (!result) return res.status(404).json({ error: 'Tenant not found' });
+  broadcast(req.params.slug, ['pos', 'kds'], { type: 'admin:refresh', reason: 'demo:toggled' });
+  res.json(result);
+});
+
+// ─── Admin: AI Menu Import (Claude API) ──────────────────────────────────────
+
+app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured in .env' });
+
+  try {
+    // File sent as base64 JSON from frontend
+    const { fileBase64, contentType: ct, fileName } = req.body;
+    if (!fileBase64) return res.status(400).json({ error: 'No file data received' });
+    const contentType = ct || 'image/png';
+
+    // Build Claude API request
+    const isImage = contentType.startsWith('image/');
+    const isPdf = contentType === 'application/pdf';
+
+    const userContent = [];
+
+    if (isImage) {
+      userContent.push({
+        type: 'image',
+        source: { type: 'base64', media_type: contentType, data: fileBase64 },
+      });
+    } else if (isPdf) {
+      userContent.push({
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: fileBase64 },
+      });
+    } else {
+      // For text/CSV/Excel — send as text content
+      const textContent = req.body.toString('utf8');
+      userContent.push({ type: 'text', text: `File content (${fileName}):\n\n${textContent}` });
+    }
+
+    userContent.push({
+      type: 'text',
+      text: `Extract ALL menu items from this document. For each item, extract:
+- name: English name
+- nameZh: Chinese name (if available, otherwise empty string)
+- price: numeric price (number, not string)
+- category: category/section it belongs to (e.g. "Main Course", "Drinks", "Appetizer", etc.)
+
+Return ONLY a valid JSON array of objects. Example format:
+[{"name":"Bak Kut Teh","nameZh":"肉骨茶","price":22.00,"category":"Main Course"}]
+
+Important:
+- Extract EVERY item, don't skip any
+- If price has variants (S/M/L), use the base/smallest price
+- If no Chinese name exists, use empty string ""
+- Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Beverages", or "General"
+- Return ONLY the JSON array, no other text`
+    });
+
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    });
+
+    if (!claudeRes.ok) {
+      const err = await claudeRes.text();
+      return res.status(500).json({ error: `Claude API error: ${err}` });
+    }
+
+    const claudeData = await claudeRes.json();
+    const responseText = claudeData.content[0]?.text || '';
+
+    // Extract JSON array from response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return res.status(400).json({ error: 'Could not extract menu items from document', raw: responseText });
+
+    const items = JSON.parse(jsonMatch[0]);
+
+    // Map AI category names to POS category IDs
+    const categoryMap = {
+      'main course': 'mains', 'main dishes': 'mains', 'main': 'mains', 'mains': 'mains',
+      'rice': 'mains', 'meat': 'mains', 'seafood': 'mains', 'chicken': 'mains', 'pork': 'mains',
+      'add-on': 'addons', 'add-ons': 'addons', 'addon': 'addons', 'addons': 'addons', 'side': 'addons', 'sides': 'addons', 'extras': 'addons',
+      'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables',
+      'noodle': 'noodles', 'noodles': 'noodles', 'pasta': 'noodles', 'mee': 'noodles',
+      'beverage': 'beverages', 'beverages': 'beverages', 'drink': 'beverages', 'drinks': 'beverages',
+      'dessert': 'beverages', 'soup': 'mains',
+    };
+
+    // Normalize items to match our menu format
+    const normalized = items.map((item, idx) => {
+      const rawCat = (item.category || 'General').toLowerCase().trim();
+      const category = categoryMap[rawCat] || 'mains';
+      return {
+        id: `mn${String(idx + 1).padStart(3, '0')}`,
+        name: item.name || '',
+        nameZh: item.nameZh || '',
+        price: parseFloat(item.price) || 0,
+        category,
+        isPopular: false,
+        isAvailable: true,
+        modifierGroups: [],
+      };
+    });
+
+    res.json({ items: normalized, rawCount: items.length });
+  } catch (e) {
+    res.status(500).json({ error: `Extraction failed: ${e.message}` });
+  }
+});
+
+// Import extracted items into a tenant's menu
+app.post('/api/admin/tenants/:slug/menu-import', adminAuth, async (req, res) => {
+  if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  const { items, mode } = req.body; // mode: 'replace' or 'append'
+  if (!items || !Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
+
+  const ts = getTenantStore(tenant.slug, tenant.dbName);
+
+  if (mode === 'append') {
+    const existing = await ts.getMenuItems();
+    // Re-number new items to avoid ID conflicts
+    const maxNum = existing.reduce((max, it) => {
+      const n = parseInt(it.id?.replace('mn', ''), 10);
+      return n > max ? n : max;
+    }, 0);
+    const renumbered = items.map((item, idx) => ({
+      ...item,
+      id: `mn${String(maxNum + idx + 1).padStart(3, '0')}`,
+    }));
+    await ts.saveMenuItems([...existing, ...renumbered]);
+  } else {
+    await ts.saveMenuItems(items);
+  }
+
+  broadcast(req.params.slug, ['pos', 'kds'], { type: 'admin:refresh', reason: 'menu:imported' });
+  res.json({ ok: true, count: items.length });
+});
 
 // ─── REST API: Bills ──────────────────────────────────────────────────────────
 
@@ -586,10 +892,22 @@ app.post('/api/history', async (req, res) => {
 });
 app.delete('/api/history', async (req, res) => { await req.store.deleteOrderHistory(); res.json({ ok: true }); });
 
-// ─── REST API: Menu ───────────────────────────────────────────────────────────
+// ─── REST API: Menu (with demo mode support) ─────────────────────────────────
 
-app.get('/api/menu', async (req, res) => res.json(await req.store.getMenuItems()));
+let demoStore = null; // initialized in start() if SaaS mode
+
+app.get('/api/menu', async (req, res) => {
+  // In SaaS mode, check if tenant has demo mode enabled
+  if (isSaasMode && req.tenant && req.tenant.demoMenu) {
+    if (demoStore) return res.json(await demoStore.getMenuItems());
+  }
+  res.json(await req.store.getMenuItems());
+});
 app.put('/api/menu', async (req, res) => {
+  // Block menu edits in demo mode
+  if (isSaasMode && req.tenant && req.tenant.demoMenu) {
+    return res.status(403).json({ error: 'Menu is read-only in demo mode' });
+  }
   await req.store.saveMenuItems(req.body);
   if (cloudSync) await cloudSync.syncMenu(req.body);
   res.json({ ok: true });
@@ -1109,14 +1427,25 @@ async function start() {
     await saasDb.collection('tenants').createIndex({ slug: 1 }, { unique: true });
     console.log('SaaS mode: connected to MongoDB, multi-tenant active');
 
-    // Pre-warm stores for all active tenants
-    const tenants = await getAllActiveTenants();
+    // Pre-warm stores for all active tenants and sync shop names
+    const tenants = await saasDb.collection('tenants').find({ status: 'active' }).toArray();
     for (const t of tenants) {
-      const dbName = 'pos_' + t.slug.replace(/[^a-z0-9]/g, '_');
-      const ts = getTenantStore(t.slug, dbName);
+      const ts = getTenantStore(t.slug, t.dbName);
       await ts.connect();
+      // Ensure shop name/address is synced to tenant settings
+      const settings = await ts.getSettings();
+      if (!settings.shopName || settings.shopName !== t.name) {
+        settings.shopName = t.name;
+        settings.shopAddress = t.address || settings.shopAddress || '';
+        await ts.saveSettings(settings);
+      }
     }
     console.log(`Pre-warmed ${tenants.length} tenant store(s)`);
+
+    // Initialize demo database
+    demoStore = createTenantStore('pos_demo');
+    await demoStore.connect();
+    console.log('Demo database ready (pos_demo)');
   } else {
     // ── Single-tenant mode (original behavior) ──
     store = process.env.MONGODB_URI ? createMongoStore() : createFileStore();

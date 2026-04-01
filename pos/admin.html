@@ -30,15 +30,24 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
 .msg { font-size: 13px; margin-top: 8px; }
 .msg-ok { color: var(--green); }
 .msg-err { color: var(--red); }
-#auth-gate { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.kpi { background: var(--header); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+.kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.kpi-value { font-size: 20px; font-weight: 700; }
+.kpi-value.green { color: var(--green); }
+.method-row, .item-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+.method-row:last-child, .item-row:last-child { border-bottom: none; }
+.detail-period.active { background: var(--red) !important; color: #fff !important; }
+#auth-gate { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 56px); padding: 20px; }
+#auth-gate.hidden { display: none; }
 #auth-form { max-width: 320px; width: 100%; }
-.hidden { display: none; }
+.hidden { display: none !important; }
   </style>
 </head>
 <body>
   <header id="header">
     <h1>Tenant Admin</h1>
-    <a href="/" style="color:var(--muted);text-decoration:none;font-size:13px;">← Back to POS</a>
+    <button onclick="sessionStorage.removeItem('saas_admin_key'); location.reload();" style="color:var(--muted);background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;font-size:13px;cursor:pointer;">Logout</button>
   </header>
 
   <!-- Auth gate -->
@@ -63,6 +72,10 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
         <input type="text" id="new-name" placeholder="e.g. BKT House KL">
       </div>
       <div class="field">
+        <label>Store Address</label>
+        <input type="text" id="new-address" placeholder="e.g. 123 Jalan Example, 50000 KL">
+      </div>
+      <div class="field">
         <label>Slug (URL-safe, lowercase)</label>
         <input type="text" id="new-slug" placeholder="e.g. bkt-kl">
       </div>
@@ -73,9 +86,135 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
     <div class="card">
       <h2>Tenants</h2>
       <table>
-        <thead><tr><th>Name</th><th>Slug</th><th>DB</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody id="tenant-list"><tr><td colspan="5" style="color:var(--muted)">Loading...</td></tr></tbody>
+        <thead><tr><th>Name</th><th>Links</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="tenant-list"><tr><td colspan="4" style="color:var(--muted)">Loading...</td></tr></tbody>
       </table>
+    </div>
+
+    <!-- Tenant detail panel (shown when clicking View) -->
+    <div class="card hidden" id="detail-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 id="detail-title" style="margin:0;">Tenant Details</h2>
+        <button class="btn btn-sm btn-dim" onclick="closeDetail()">Close</button>
+      </div>
+
+      <!-- Store info (editable) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="field" style="margin:0;">
+          <label>Store Name</label>
+          <input type="text" id="detail-name" placeholder="Store Name">
+        </div>
+        <div class="field" style="margin:0;">
+          <label>Store Address</label>
+          <input type="text" id="detail-address" placeholder="Store Address">
+        </div>
+      </div>
+      <button class="btn btn-sm" id="save-info-btn">Save Store Info</button>
+      <span class="msg msg-ok hidden" id="save-info-msg" style="margin-left:8px;">Saved</span>
+
+      <!-- Sales summary -->
+      <div id="detail-sales" style="margin-top:16px;">
+        <div class="kpi-row" id="detail-kpis"></div>
+        <div style="margin-top:12px;">
+          <h3 style="font-size:13px;color:var(--muted);margin-bottom:8px;">PAYMENT BREAKDOWN</h3>
+          <div id="detail-methods"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <h3 style="font-size:13px;color:var(--muted);margin-bottom:8px;">TOP ITEMS</h3>
+          <div id="detail-items"></div>
+        </div>
+      </div>
+
+      <!-- Date filter -->
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-dim detail-period active" data-period="today">Today</button>
+        <button class="btn btn-sm btn-dim detail-period" data-period="week">This Week</button>
+        <button class="btn btn-sm btn-dim detail-period" data-period="month">This Month</button>
+        <button class="btn btn-sm btn-dim detail-period" data-period="all">All Time</button>
+      </div>
+
+      <!-- Demo mode -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">DEMO MODE</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="checkbox" id="detail-demo" style="width:18px;height:18px;">
+          <label for="detail-demo" style="margin:0;cursor:pointer;">Use demo menu (read-only shared menu for testing)</label>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-sm btn-dim" onclick="copyMenuToDemo()">Copy this tenant's menu to demo DB</button>
+          <span class="msg hidden" id="copy-demo-msg" style="margin-left:8px;"></span>
+        </div>
+      </div>
+
+      <!-- Menu import -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">AI MENU IMPORT</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Upload any document (photo, PDF, Excel, CSV) and AI will extract menu items automatically.</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="file" id="import-file" accept="image/*,.pdf,.csv,.xlsx,.xls,.txt" style="font-size:13px;color:var(--muted);">
+          <button class="btn btn-sm" id="import-extract-btn" disabled>Extract Menu</button>
+          <span style="color:var(--muted);font-size:12px;">or</span>
+          <button class="btn btn-sm btn-green" id="camera-btn">📷 Capture Menu</button>
+        </div>
+
+        <!-- Camera modal -->
+        <div id="camera-modal" class="hidden" style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--header);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:600;">Camera Capture</span>
+            <button class="btn btn-sm btn-dim" id="camera-close-btn">Close</button>
+          </div>
+          <video id="camera-video" autoplay playsinline style="width:100%;border-radius:var(--radius);background:#000;display:block;"></video>
+          <canvas id="camera-canvas" style="display:none;"></canvas>
+          <img id="camera-preview" style="width:100%;border-radius:var(--radius);display:none;">
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;" id="camera-controls">
+            <button class="btn btn-sm btn-green" id="camera-snap-btn">Take Photo</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;display:none;" id="camera-review">
+            <button class="btn btn-sm btn-dim" id="camera-retake-btn">Retake</button>
+            <button class="btn btn-sm btn-green" id="camera-use-btn">Use Photo & Extract</button>
+          </div>
+          <div class="msg hidden" id="camera-msg" style="margin-top:8px;"></div>
+        </div>
+        <div class="msg hidden" id="import-status" style="margin-top:8px;"></div>
+
+        <!-- Preview table (shown after extraction) -->
+        <div class="hidden" id="import-preview" style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13px;color:var(--muted);" id="import-count">0 items extracted</span>
+            <div style="display:flex;gap:8px;">
+              <select id="import-mode" style="background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:12px;">
+                <option value="replace">Replace existing menu</option>
+                <option value="append">Append to existing menu</option>
+              </select>
+              <button class="btn btn-sm btn-green" id="import-confirm-btn">Import to Menu</button>
+            </div>
+          </div>
+          <div style="max-height:300px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>#</th><th>Name</th><th>Chinese</th><th>Price</th><th>Category</th></tr></thead>
+              <tbody id="import-items"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset section -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">RESET DATA</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-dim" onclick="resetTenant('orders')">Clear Orders</button>
+          <button class="btn btn-sm btn-dim" onclick="resetTenant('bills')">Clear Bills</button>
+          <button class="btn btn-sm btn-dim" onclick="resetTenant('kds')">Clear KDS</button>
+          <button class="btn btn-sm btn-dim" onclick="resetTenant('menu')">Clear Menu</button>
+          <button class="btn btn-sm" onclick="resetTenant('all')">Reset All Data</button>
+        </div>
+        <div class="msg hidden" id="reset-msg" style="margin-top:8px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Demo Menu Database</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Shared demo menu used by tenants with demo mode enabled. Copy a tenant's menu to populate it.</p>
+      <div id="demo-menu-info" style="font-size:13px;color:var(--muted);">Loading...</div>
     </div>
   </div>
 

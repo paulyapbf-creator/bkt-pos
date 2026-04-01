@@ -78,6 +78,11 @@ function handleWSMessage(msg) {
         else renderGrid();
       });
       break;
+
+    case 'admin:refresh':
+      showToast('Admin updated — reloading...');
+      setTimeout(() => location.reload(), 1500);
+      break;
   }
 }
 
