@@ -704,7 +704,7 @@ ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicat
       'main course': 'mains', 'main dishes': 'mains', 'main': 'mains', 'mains': 'mains',
       'rice': 'mains', 'meat': 'mains', 'seafood': 'mains', 'chicken': 'mains', 'pork': 'mains',
       'add-on': 'addons', 'add-ons': 'addons', 'addon': 'addons', 'addons': 'addons', 'side': 'addons', 'sides': 'addons', 'extras': 'addons',
-      'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables',
+      'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables', 'salad': 'vegetables', 'salads': 'vegetables',
       'noodle': 'noodles', 'noodles': 'noodles', 'pasta': 'noodles', 'mee': 'noodles',
       'soup': 'soup', 'soups': 'soup', 'broth': 'soup',
       'dessert': 'dessert', 'desserts': 'dessert', 'sweets': 'dessert', 'sweet': 'dessert', 'cake': 'dessert', 'pastry': 'dessert',
