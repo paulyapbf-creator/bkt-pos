@@ -10,6 +10,8 @@ const CATEGORIES = [
   { id: 'addons',     name: 'Add-ons',     nameZh: '加料' },
   { id: 'vegetables', name: 'Vegetables',  nameZh: '蔬菜' },
   { id: 'noodles',    name: 'Noodles',     nameZh: '面食' },
+  { id: 'soup',       name: 'Soup',        nameZh: '汤类' },
+  { id: 'dessert',    name: 'Dessert',     nameZh: '甜品' },
   { id: 'beverages',  name: 'Beverages',   nameZh: '饮料' },
 ];
 

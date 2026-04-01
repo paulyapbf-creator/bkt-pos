@@ -667,7 +667,7 @@ Important:
 - Extract EVERY item from ${multiPage ? 'ALL pages' : 'the document'}, don't skip any
 ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicate items that appear on multiple pages\n' : ''}- If price has variants (S/M/L), use the base/smallest price
 - If no Chinese name exists, use empty string ""
-- Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Beverages", or "General"
+- Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Soup", "Dessert", "Beverages", or "General"
 - Return ONLY the JSON array, no other text`
     });
 
@@ -706,8 +706,9 @@ ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicat
       'add-on': 'addons', 'add-ons': 'addons', 'addon': 'addons', 'addons': 'addons', 'side': 'addons', 'sides': 'addons', 'extras': 'addons',
       'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables',
       'noodle': 'noodles', 'noodles': 'noodles', 'pasta': 'noodles', 'mee': 'noodles',
+      'soup': 'soup', 'soups': 'soup', 'broth': 'soup',
+      'dessert': 'dessert', 'desserts': 'dessert', 'sweets': 'dessert', 'sweet': 'dessert', 'cake': 'dessert', 'pastry': 'dessert',
       'beverage': 'beverages', 'beverages': 'beverages', 'drink': 'beverages', 'drinks': 'beverages',
-      'dessert': 'beverages', 'soup': 'mains',
     };
 
     // Normalize items to match our menu format
