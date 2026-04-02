@@ -1231,9 +1231,9 @@ function buildEscPos(job) {
     const d = job.data;
     // Date/time left, table number large right
     printLR(parts, d.dateTime || '', d.table, { fontSize: LG, bold: true });
-    printLine(parts, d.isUpdate ? 'ORDER UPDATE' : 'NEW ORDER', { fontSize: S, bold: true, align: 'left' });
-    if (d.cashier) printLine(parts, `Cashier: ${d.cashier}`, { fontSize: SM });
-    if (d.pax > 0) printLine(parts, `Pax: ${d.pax}`, { fontSize: SM });
+    printLine(parts, d.isUpdate ? (d.lang === 'zh' ? '订单更新' : 'ORDER UPDATE') : (d.lang === 'zh' ? '新订单' : 'NEW ORDER'), { fontSize: S, bold: true, align: 'left' });
+    if (d.cashier) printLine(parts, `${d.lang === 'zh' ? '收银员' : 'Cashier'}: ${d.cashier}`, { fontSize: SM });
+    if (d.pax > 0) printLine(parts, `${d.lang === 'zh' ? '人数' : 'Pax'}: ${d.pax}`, { fontSize: SM });
     printDash(parts);
     (d.items || []).forEach((item, idx) => {
       // Qty + Chinese name (large, bold) on first line
@@ -1258,14 +1258,14 @@ function buildEscPos(job) {
     const d = job.data;
     printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
     if (d.shopAddress) printLine(parts, d.shopAddress, { fontSize: SM, align: 'center' });
-    printLine(parts, 'Official Receipt', { fontSize: S, align: 'center' });
-    printLine(parts, 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '正式收据' : 'Official Receipt', { fontSize: S, align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '收据' : 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
     printDash(parts);
-    printLR(parts, 'Receipt No', d.receiptNo, { fontSize: S });
-    printLR(parts, 'Table', d.table, { fontSize: S });
-    printLR(parts, 'Date', d.dateStr, { fontSize: S });
-    printLR(parts, 'Time', d.timeStr, { fontSize: S });
-    if (d.cashier) printLR(parts, 'Served by', d.cashier, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '收据号' : 'Receipt No', d.receiptNo, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '桌号' : 'Table', d.table, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '日期' : 'Date', d.dateStr, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '时间' : 'Time', d.timeStr, { fontSize: S });
+    if (d.cashier) printLR(parts, d.lang === 'zh' ? '服务员' : 'Served by', d.cashier, { fontSize: S });
     printDash(parts);
     (d.items || []).forEach(item => {
       printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`, { fontSize: S, bold: true });
@@ -1274,15 +1274,15 @@ function buildEscPos(job) {
       if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
     });
     printDash(parts);
-    printLR(parts, 'Subtotal', `RM${d.subtotal || d.total}`, { fontSize: S });
-    if (d.sst) printLR(parts, `SST (${d.sstRate || 6}%)`, `RM${d.sst}`, { fontSize: S });
-    if (d.svc) printLR(parts, `Service (${d.svcRate || 10}%)`, `RM${d.svc}`, { fontSize: S });
-    printLR(parts, 'TOTAL', `RM${d.total}`, { fontSize: 40, bold: true });
+    printLR(parts, d.lang === 'zh' ? '小计' : 'Subtotal', `RM${d.subtotal || d.total}`, { fontSize: S });
+    if (d.sst) printLR(parts, `${d.lang === 'zh' ? '销售税' : 'SST'} (${d.sstRate || 6}%)`, `RM${d.sst}`, { fontSize: S });
+    if (d.svc) printLR(parts, `${d.lang === 'zh' ? '服务费' : 'Service'} (${d.svcRate || 10}%)`, `RM${d.svc}`, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '总计' : 'TOTAL', `RM${d.total}`, { fontSize: 40, bold: true });
     printDash(parts);
-    printLR(parts, 'Payment', d.payLabel, { fontSize: S });
+    printLR(parts, d.lang === 'zh' ? '付款方式' : 'Payment', d.payLabel, { fontSize: S });
     push(LF_BYTE);
-    printLine(parts, 'Thank you for dining with us!', { fontSize: S, align: 'center' });
-    printLine(parts, 'Please come again :)', { fontSize: S, align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { fontSize: S, align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { fontSize: S, align: 'center' });
     feed(3); cut();
   }
 

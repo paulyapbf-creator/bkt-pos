@@ -71,12 +71,12 @@ function handleWSMessage(msg) {
       }
       syncBillsToStorage(); // keep localStorage in sync so orders.html/kds.html can read it
       if (msg.status === 'ready') {
-        showToast(`🍳 ${msg.item.nameZh || msg.item.name} ready · ${msg.table}`);
+        showToast(`🍳 ${msg.item.nameZh || msg.item.name} ${t('item_ready')} · ${msg.table}`);
       }
       break;
 
     case 'table:allReady':
-      showToast(`✅ All items ready for ${msg.table}!`);
+      showToast(t('all_items_ready', { table: msg.table }));
       break;
 
     case 'order:new':
@@ -93,7 +93,7 @@ function handleWSMessage(msg) {
         syncBillsToStorage();
         updateTableBtn();
       }
-      showToast(`✅ All items served · ${msg.table} — ready for payment`);
+      showToast(t('all_items_served', { table: msg.table }));
       break;
 
     case 'bill:cleared':
@@ -102,7 +102,7 @@ function handleWSMessage(msg) {
       break;
 
     case 'admin:refresh':
-      showToast('Admin updated data — reloading...');
+      showToast(t('admin_reloading'));
       setTimeout(() => location.reload(), 1500);
       break;
   }
@@ -374,7 +374,7 @@ function updateTableBtn() {
   if (state.tableNumber) {
     btn.innerHTML = `${state.tableNumber}${hasAct ? ' <span class="tbl-dot">●</span>' : ''} <span class="tbl-arrow">▾</span>`;
   } else {
-    btn.innerHTML = `Select Table <span class="tbl-arrow">▾</span>`;
+    btn.innerHTML = `${t('select_table')} <span class="tbl-arrow">▾</span>`;
   }
   btn.classList.toggle('tbl-btn-no-table',    !state.tableNumber);
   btn.classList.toggle('tbl-btn-active-bill',  !!hasAct);
@@ -384,7 +384,7 @@ function updateTableBtn() {
 
 function updateCartPanelHeader() {
   const sendBtn = document.getElementById('send-btn');
-  if (sendBtn) sendBtn.textContent = state.editingActiveBill ? 'Update Kitchen Order' : 'Send to Kitchen';
+  if (sendBtn) sendBtn.textContent = state.editingActiveBill ? t('update_kitchen_order') : t('send_to_kitchen');
 }
 
 function renderCartPanel() {
@@ -488,7 +488,7 @@ function renderMenuList() {
   const items = getFilteredItems();
 
   if (items.length === 0) {
-    list.innerHTML = '<div class="mli-empty">No items found</div>';
+    list.innerHTML = `<div class="mli-empty">${t('no_items_found')}</div>`;
     return;
   }
 
@@ -531,7 +531,7 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
   document.getElementById('modal-name-zh').textContent = item.nameZh;
   document.getElementById('modal-name-en').textContent = item.name;
   document.getElementById('modal-add-btn').textContent =
-    state.editingOrderItemId ? 'Update Order' : 'Add to Order';
+    state.editingOrderItemId ? t('update_order') : t('add_to_order');
 
   let html = '';
   if (item.descriptionZh) html += `<p class="modal-desc-zh">${item.descriptionZh}</p>`;
@@ -562,7 +562,7 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
   html += `
     <div class="modifier-group">
       <div class="group-header"><span class="group-name-zh">备注 / Notes</span></div>
-      <textarea id="modal-notes-input" placeholder="Special requests, allergies…" rows="2"></textarea>
+      <textarea id="modal-notes-input" placeholder="${t('special_requests')}" rows="2"></textarea>
     </div>`;
 
   const body = document.getElementById('modal-body');
@@ -613,7 +613,7 @@ function syncAddButton() {
 function closeModifierModal() {
   document.getElementById('modifier-modal').classList.add('hidden');
   document.body.style.overflow = '';
-  document.getElementById('modal-add-btn').textContent = 'Add to Order';
+  document.getElementById('modal-add-btn').textContent = t('add_to_order');
   state.modalItem = null; state.modalSelections = {}; state.modalNotes = '';
   state.editingOrderItemId = null;
 }
@@ -646,9 +646,9 @@ function renderBillingStep() {
   confirmBtn.classList.add('hidden');
 
   if (state.payStep === 'list') {
-    titleEl.textContent = 'Unpaid Bills'; subEl.textContent = '';
+    titleEl.textContent = t('unpaid_bills'); subEl.textContent = '';
     const bills = loadActiveBills(); const tables = Object.keys(bills);
-    if (tables.length === 0) { bodyEl.innerHTML = '<div class="empty-state">No unpaid bills</div>'; return; }
+    if (tables.length === 0) { bodyEl.innerHTML = `<div class="empty-state">${t('no_unpaid_bills')}</div>`; return; }
     const billSettings = loadSettings();
     bodyEl.innerHTML = tables.map(table => {
       const bill = bills[table]; const subtotal = getActiveBillTotal(bill.items);
@@ -675,11 +675,11 @@ function renderBillingStep() {
     const subtotal = getActiveBillTotal(bill.items); const billSettings = loadSettings();
     const bd = calcBillBreakdown(subtotal, billSettings);
     const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
-    titleEl.textContent = `Bill — ${table}`; subEl.textContent = `${itemQty} item(s)`;
-    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">Subtotal</td><td class="bill-total-amt">RM ${bd.subtotal.toFixed(2)}</td></tr>`;
-    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">SST (${bd.sstRate}%)</td><td class="bill-total-amt">RM ${bd.sst.toFixed(2)}</td></tr>`;
-    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">Service (${bd.svcRate}%)</td><td class="bill-total-amt">RM ${bd.svc.toFixed(2)}</td></tr>`;
-    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">TOTAL</td><td class="bill-total-amt" style="font-weight:bold;">RM ${bd.total.toFixed(2)}</td></tr>`;
+    titleEl.textContent = `${t('bill')} — ${table}`; subEl.textContent = `${itemQty} ${t('item_s')}`;
+    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('subtotal')}</td><td class="bill-total-amt">RM ${bd.subtotal.toFixed(2)}</td></tr>`;
+    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td class="bill-total-amt">RM ${bd.sst.toFixed(2)}</td></tr>`;
+    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td class="bill-total-amt">RM ${bd.svc.toFixed(2)}</td></tr>`;
+    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">${t('total')}</td><td class="bill-total-amt" style="font-weight:bold;">RM ${bd.total.toFixed(2)}</td></tr>`;
     bodyEl.innerHTML = `<table class="hist-items-table bill-table">
       ${bill.items.map(bi => `<tr>
         <td class="hi-name">${bi.nameZh} <span class="hi-en">${bi.name}</span>
@@ -688,18 +688,18 @@ function renderBillingStep() {
         <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">RM ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
       ${breakdownRows}
     </table>`;
-    confirmBtn.textContent = 'Proceed to Payment →'; confirmBtn.classList.remove('hidden');
+    confirmBtn.textContent = t('proceed_to_payment'); confirmBtn.classList.remove('hidden');
 
   } else if (state.payStep === 'method') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = 'Select Payment'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    titleEl.textContent = t('select_payment'); subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
     bodyEl.innerHTML = `<div class="pay-methods">
-      <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">Touch &amp; Go eWallet</span></button>
-      ${cardConfigured ? '<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">Credit / Debit Card</span></button>' : ''}
-      <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">Cash</span></button>
+      <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">${t('tng_ewallet')}</span></button>
+      ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
+      <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
     </div>`;
     bodyEl.querySelectorAll('.pay-method-btn').forEach(btn => {
       btn.addEventListener('click', () => { state.payMethod = btn.dataset.method; state.payStep = 'qr'; renderBillingStep(); });
@@ -709,7 +709,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash Payment', card: 'Credit Card' };
+    const titles = { tng: t('tng_ewallet'), duitnow: t('duitnow'), cash: t('cash'), card: t('credit_card') };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -720,7 +720,7 @@ function renderBillingStep() {
       } else if (qrImgUrl) {
         body = `<div class="qr-container"><img src="${qrImgUrl}" class="qr-img" alt="QR"></div>`;
       } else {
-        body = `<div class="qr-placeholder">No QR or payment link configured.<br>Go to <b>Items → System Settings</b>.</div>`;
+        body = `<div class="qr-placeholder">${t('no_qr_configured')}<br>${t('go_to_settings')}</div>`;
       }
       if (payLink) {
         body += `<div class="pay-link-row" style="text-align:center;margin:10px 0;">
@@ -755,9 +755,9 @@ function renderBillingStep() {
     } else {
       const settings2 = loadSettings();
       if (settings2.verifyEwallet && method !== 'cash') {
-        confirmBtn.textContent = 'Verify Receipt →';
+        confirmBtn.textContent = t('verify_receipt_btn');
       } else {
-        confirmBtn.textContent = method === 'cash' ? 'Confirm Cash' : 'Payment Received';
+        confirmBtn.textContent = method === 'cash' ? t('confirm_cash') : t('payment_received');
       }
       confirmBtn.classList.remove('hidden');
     }
@@ -765,7 +765,7 @@ function renderBillingStep() {
   } else if (state.payStep === 'verify') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const settings = loadSettings(); const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = 'Verify Receipt'; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    titleEl.textContent = t('verify_receipt'); subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
 
     bodyEl.innerHTML = `
       <div class="verify-container">
@@ -791,7 +791,7 @@ function renderBillingStep() {
         <button id="verify-skip-btn" class="verify-skip-btn">Skip Verification →</button>
       </div>`;
 
-    confirmBtn.textContent = 'Confirm Payment';
+    confirmBtn.textContent = t('confirm_payment');
     confirmBtn.classList.add('hidden');
 
     const expectedTotal = bd.total;
@@ -824,7 +824,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
   // Show progress
   progressEl.classList.remove('hidden');
   resultEl.classList.add('hidden');
-  progressText.textContent = 'Processing OCR...';
+  progressText.textContent = t('processing_ocr');
 
   try {
     const { data } = await Tesseract.recognize(file, 'eng', {
@@ -855,7 +855,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
       resultEl.innerHTML = `<div class="verify-result-icon">⚠️</div>
         <div class="verify-result-text">No RM amounts detected in receipt.</div>
         <div class="verify-result-hint">You can still confirm payment.</div>`;
-      confirmBtn.textContent = 'Confirm Payment';
+      confirmBtn.textContent = t('confirm_payment');
       confirmBtn.classList.remove('hidden');
     } else {
       // Find closest amount to expected
@@ -871,7 +871,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
         resultEl.className = 'verify-result verify-result--match';
         resultEl.innerHTML = `<div class="verify-result-icon">✅</div>
           <div class="verify-result-text">Amount matches: <strong>RM ${closest.toFixed(2)}</strong></div>`;
-        confirmBtn.textContent = 'Confirm Payment';
+        confirmBtn.textContent = t('confirm_payment');
         confirmBtn.classList.remove('hidden');
       } else {
         // Mismatch
@@ -879,7 +879,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
         resultEl.innerHTML = `<div class="verify-result-icon">❌</div>
           <div class="verify-result-text">Amount mismatch: receipt shows <strong>RM ${closest.toFixed(2)}</strong>, expected <strong>RM ${expectedTotal.toFixed(2)}</strong></div>
           <div class="verify-result-hint">Difference: RM ${Math.abs(closest - expectedTotal).toFixed(2)}</div>`;
-        confirmBtn.textContent = 'Confirm Anyway';
+        confirmBtn.textContent = t('confirm_anyway');
         confirmBtn.classList.remove('hidden');
       }
     }
@@ -890,7 +890,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
     resultEl.innerHTML = `<div class="verify-result-icon">⚠️</div>
       <div class="verify-result-text">OCR failed: ${err.message}</div>
       <div class="verify-result-hint">You can still confirm payment.</div>`;
-    confirmBtn.textContent = 'Confirm Payment';
+    confirmBtn.textContent = t('confirm_payment');
     confirmBtn.classList.remove('hidden');
   }
 }
@@ -1006,8 +1006,8 @@ async function confirmTablePayment() {
   await clearActiveBill(table);
   closeBillingModal();
   updateTableBtn();
-  const labels = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
-  showToast(`✓ Payment confirmed · ${table} · ${labels[method] || method}`);
+  const labels = { tng: t('tng'), duitnow: t('duitnow'), cash: t('cash'), card: t('credit_card') };
+  showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
 }
 
@@ -1015,7 +1015,7 @@ async function confirmTablePayment() {
 
 async function openHistoryModal() {
   const sel = document.getElementById('hist-table-filter');
-  sel.innerHTML = '<option value="all">All Tables</option>';
+  sel.innerHTML = `<option value="all">${t('all_tables')}</option>`;
   for (let i = 1; i <= 20; i++) {
     const o = document.createElement('option'); o.value = `T${i}`; o.textContent = `T${i}`;
     sel.appendChild(o);
@@ -1043,7 +1043,7 @@ async function renderHistoryList(tableFilter) {
 
   const list = tableFilter === 'all' ? history : history.filter(o => o.table === tableFilter);
   const body = document.getElementById('history-body');
-  if (list.length === 0) { body.innerHTML = '<div class="empty-state">No orders found</div>'; return; }
+  if (list.length === 0) { body.innerHTML = `<div class="empty-state">${t('no_orders_found')}</div>`; return; }
   const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
   body.innerHTML = list.map(ord => {
     const d = new Date(ord.timestamp);
@@ -1089,7 +1089,7 @@ async function renderHistoryList(tableFilter) {
         if (mi && mi.isAvailable) addItem(mi, hi.selectedModifiers || [], hi.notes || '');
       });
       closeHistoryModal(); renderMenuList(); renderCartPanel();
-      showToast('↺ Items added to order');
+      showToast(t('items_added_to_order'));
     });
   });
 }
@@ -1118,6 +1118,7 @@ function buildOrderSlipJob(table, items, isUpdate) {
   const sess = getSession();
   return buildPrintJob('orderSlip', {
     table,
+    lang: typeof getLang === 'function' ? getLang() : 'en',
     dateTime: `${dd}/${mm} ${hh}:${mi}`,
     cashier: sess ? sess.name : '',
     pax: state.pax || 0,
@@ -1138,6 +1139,7 @@ function buildReceiptJob(table, items, bd, method, orderId) {
   const sess     = getSession();
   const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
   return buildPrintJob('receipt', {
+    lang: typeof getLang === 'function' ? getLang() : 'en',
     shopName:   settings.shopName || 'BKT House',
     shopAddress: settings.shopAddress || '',
     cashier:    sess ? sess.name : '',
@@ -1210,7 +1212,7 @@ function printOrderSlip(table, items, isUpdate) {
     const job = buildOrderSlipJob(table, items, isUpdate);
     sendToPrinter(job).then(ok => {
       if (!ok) {
-        showToast('⚠ Thermal print failed — opening browser print');
+        showToast(t('print_failed'));
         printOrderSlipHTML(table, items, isUpdate);
       }
     });
@@ -1297,7 +1299,7 @@ function printOrderSlipHTML(table, items, isUpdate) {
 </body></html>`;
 
   const w = window.open('', '_blank', 'width=420,height=600,menubar=no,toolbar=no,location=no');
-  if (!w) { showToast('⚠ Allow pop-ups to print order slip'); return; }
+  if (!w) { showToast(t('allow_popups')); return; }
   w.document.write(html);
   w.document.close();
 }
@@ -1312,7 +1314,7 @@ function printPaymentReceipt(table, items, bd, method, orderId) {
     const job = buildReceiptJob(table, items, bd, method, orderId);
     sendToPrinter(job).then(ok => {
       if (!ok) {
-        showToast('⚠ Thermal print failed — opening browser print');
+        showToast(t('print_failed'));
         printPaymentReceiptHTML(table, items, bd, method, orderId);
       }
     });
@@ -1553,11 +1555,11 @@ async function init() {
       renderCartPanel();
       renderMenuList();
       updateTableBtn();
-      showToast(wasEditing ? `✓ Order updated · ${sentTable}` : `✓ Order sent to kitchen · ${sentTable}`);
+      showToast(wasEditing ? t('order_updated', { table: sentTable }) : t('order_sent', { table: sentTable }));
       const _ps = loadSettings();
       if (_ps.printOrderSlip !== false) printOrderSlip(sentTable, slipItems, wasEditing);
     } catch (e) {
-      showToast('Error sending order — please try again');
+      showToast(t('order_send_error'));
     }
   });
 
@@ -1614,6 +1616,20 @@ async function init() {
     else if (!document.getElementById('table-picker-modal').classList.contains('hidden') && state.tableNumber)
       closeTablePicker();
   });
+
+  // i18n: add language switcher to header and translate static elements
+  const headerRight = document.getElementById('header-right');
+  if (headerRight && typeof createLangSwitcher === 'function') {
+    headerRight.insertBefore(createLangSwitcher(), headerRight.firstChild);
+    onLangChange(() => {
+      translatePage();
+      renderCategoryBar();
+      renderMenuList();
+      renderCartPanel();
+      updateTableBtn();
+    });
+  }
+  translatePage();
 
   renderCategoryBar();
   renderMenuList();

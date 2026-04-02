@@ -13,12 +13,12 @@
     <span id="app-title">🍲 <span class="app-txt" id="header-shop-name">BKT House</span></span>
     <div id="header-right">
       <button id="user-btn" class="user-chip" title="Logged in user">👤 <span id="user-btn-name">User</span></button>
-      <button id="history-btn" class="nav-link" title="Order History">🕐 <span class="nav-txt">History</span></button>
-      <a href="orders.html" class="nav-link" title="Active Orders">📋 <span class="nav-txt">Orders</span></a>
-      <a href="kds.html" class="nav-link" title="Kitchen Status">👨‍🍳 <span class="nav-txt">Kitchen Status</span></a>
-      <a href="report.html" class="nav-link" title="Reports">📊 <span class="nav-txt">Reports</span></a>
-      <a href="items.html?tab=maintenance" class="nav-link" title="Maintenance">🔧 <span class="nav-txt">Maint.</span></a>
-      <button id="pay-bills-btn" class="pay-bills-btn" title="Pay Bills">💰 <span class="nav-txt">Pay</span></button>
+      <button id="history-btn" class="nav-link" title="Order History">🕐 <span class="nav-txt" data-i18n="history">History</span></button>
+      <a href="orders.html" class="nav-link" title="Active Orders">📋 <span class="nav-txt" data-i18n="orders">Orders</span></a>
+      <a href="kds.html" class="nav-link" title="Kitchen Status">👨‍🍳 <span class="nav-txt" data-i18n="kitchen_status">Kitchen Status</span></a>
+      <a href="report.html" class="nav-link" title="Reports">📊 <span class="nav-txt" data-i18n="reports">Reports</span></a>
+      <a href="items.html?tab=maintenance" class="nav-link" title="Maintenance">🔧 <span class="nav-txt" data-i18n="maintenance">Maint.</span></a>
+      <button id="pay-bills-btn" class="pay-bills-btn" title="Pay Bills">💰 <span class="nav-txt" data-i18n="pay">Pay</span></button>
     </div>
   </header>
 
@@ -29,20 +29,20 @@
     <div id="cart-panel">
       <div id="cp-head">
         <div class="cp-head-row">
-          <button id="table-select-btn" class="table-select-btn tbl-btn-no-table">Select Table <span class="tbl-arrow">▾</span></button>
+          <button id="table-select-btn" class="table-select-btn tbl-btn-no-table"><span data-i18n="select_table">Select Table</span> <span class="tbl-arrow">▾</span></button>
           <div class="pax-inline">
             <button class="pax-inline-btn" id="pax-minus">−</button>
             <span class="pax-inline-val" id="pax-display">1</span>
             <button class="pax-inline-btn" id="pax-plus">+</button>
-            <span class="pax-inline-label">pax</span>
+            <span class="pax-inline-label" data-i18n="pax">pax</span>
           </div>
         </div>
         <div id="cp-head-top">
           <div style="display:flex;align-items:center;gap:6px;">
-            <span class="cp-title">Order</span>
+            <span class="cp-title" data-i18n="order">Order</span>
             <span id="cp-item-count" class="cp-item-count"></span>
           </div>
-          <button id="cp-clear-btn" class="cp-clear-btn">Clear</button>
+          <button id="cp-clear-btn" class="cp-clear-btn" data-i18n="clear">Clear</button>
         </div>
       </div>
 
@@ -50,17 +50,17 @@
 
       <div id="cp-foot">
         <div class="cp-total-row">
-          <span class="cp-total-label">Subtotal</span>
+          <span class="cp-total-label" data-i18n="subtotal">Subtotal</span>
           <span id="cp-total">RM 0.00</span>
         </div>
-        <button id="send-btn" class="send-btn" disabled>Send to Kitchen</button>
+        <button id="send-btn" class="send-btn" disabled data-i18n="send_to_kitchen">Send to Kitchen</button>
       </div>
     </div>
 
     <!-- Right: Menu panel -->
     <div id="menu-panel">
       <div id="search-wrap">
-        <input type="search" id="search-input" placeholder="🔍  Search…" autocomplete="off">
+        <input type="search" id="search-input" data-i18n-placeholder="search" placeholder="🔍  Search…" autocomplete="off">
       </div>
       <div id="category-bar"></div>
       <div id="menu-area">
@@ -74,7 +74,7 @@
   <div id="table-picker-modal" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="sheet table-picker-sheet">
       <div class="sheet-header">
-        <div class="sheet-title">Select Table</div>
+        <div class="sheet-title" data-i18n="select_table">Select Table</div>
         <button class="close-btn" id="table-picker-close" aria-label="Close">✕</button>
       </div>
       <div class="sheet-body" id="table-picker-body"></div>
@@ -94,7 +94,7 @@
       <div class="sheet-body" id="modal-body"></div>
       <div class="sheet-footer">
         <span id="modal-price" class="footer-price"></span>
-        <button id="modal-add-btn" class="add-btn">Add to Order</button>
+        <button id="modal-add-btn" class="add-btn" data-i18n="add_to_order">Add to Order</button>
       </div>
     </div>
   </div>
@@ -104,15 +104,15 @@
     <div class="sheet pay-sheet">
       <div class="sheet-header">
         <div>
-          <div id="pay-modal-title" class="sheet-title">Unpaid Bills</div>
+          <div id="pay-modal-title" class="sheet-title" data-i18n="unpaid_bills">Unpaid Bills</div>
           <div id="pay-subtitle" class="sheet-subtitle"></div>
         </div>
         <button class="close-btn" id="pay-close-btn" aria-label="Close">✕</button>
       </div>
       <div class="sheet-body" id="pay-body"></div>
       <div class="sheet-footer pay-footer">
-        <button id="pay-back-btn" class="secondary-btn hidden">← Back</button>
-        <button id="pay-confirm-btn" class="send-btn hidden">Confirm</button>
+        <button id="pay-back-btn" class="secondary-btn hidden" data-i18n="back">← Back</button>
+        <button id="pay-confirm-btn" class="send-btn hidden" data-i18n="confirm">Confirm</button>
       </div>
     </div>
   </div>
@@ -122,9 +122,9 @@
     <div class="sheet hist-sheet">
       <div class="sheet-header">
         <div>
-          <div class="sheet-title">Order History</div>
+          <div class="sheet-title" data-i18n="order_history">Order History</div>
           <div class="sheet-subtitle hist-filter-row">
-            Table: <select id="hist-table-filter"></select>
+            <span data-i18n="table">Table</span>: <select id="hist-table-filter"></select>
           </div>
         </div>
         <button class="close-btn" id="hist-close-btn" aria-label="Close">✕</button>
@@ -146,6 +146,7 @@
   <script src="https://checkout.airwallex.com/assets/elements.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="qrcode.min.js"></script>
+  <script src="i18n.js"></script>
   <script src="menuDefaults.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
