@@ -151,10 +151,24 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
         <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">AI MENU IMPORT</h3>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Upload any document (photo, PDF, Excel, CSV) and AI will extract menu items automatically.</p>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input type="file" id="import-file" accept="image/*,.pdf,.csv,.xlsx,.xls,.txt" style="font-size:13px;color:var(--muted);">
+          <input type="file" id="import-file" accept="image/*,.pdf,.csv,.xlsx,.xls,.txt" multiple style="display:none;">
+          <button class="btn btn-sm btn-dim" id="import-file-btn">📁 Choose Files</button>
+          <span id="import-file-count" style="font-size:12px;color:var(--muted);"></span>
           <button class="btn btn-sm" id="import-extract-btn" disabled>Extract Menu</button>
           <span style="color:var(--muted);font-size:12px;">or</span>
           <button class="btn btn-sm btn-green" id="camera-btn">📷 Capture Menu</button>
+        </div>
+        <div id="import-file-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+        <div style="margin-top:10px;">
+          <span style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Translate to (English is always included):</span>
+          <div id="import-lang-picks" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="zh" checked> 中文</label>
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="th"> ไทย</label>
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="vi"> Tiếng Việt</label>
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="ms"> Melayu</label>
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="km"> ខ្មែរ</label>
+            <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="id"> Indonesia</label>
+          </div>
         </div>
 
         <!-- Camera modal -->
@@ -195,7 +209,7 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
           </div>
           <div style="max-height:300px;overflow-y:auto;">
             <table>
-              <thead><tr><th>#</th><th>Name</th><th>Chinese</th><th>Price</th><th>Category</th></tr></thead>
+              <thead id="import-thead"><tr><th>#</th><th>Name (EN)</th><th>Price</th><th>Category</th></tr></thead>
               <tbody id="import-items"></tbody>
             </table>
           </div>

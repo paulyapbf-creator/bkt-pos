@@ -13,16 +13,19 @@
       <a href="index.html" class="back-link">← POS</a>
       <span id="app-title">📋 Item Master</span>
     </div>
-    <button id="add-item-btn" class="add-btn" style="padding:8px 18px;font-size:14px;">+ Add Item</button>
-    <button id="user-btn" class="user-chip" title="Logged in user">👤 <span id="user-btn-name">User</span></button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="header-lang"></div>
+      <button id="add-item-btn" class="add-btn" style="padding:8px 18px;font-size:14px;">+ <span data-i18n="add_item">Add Item</span></button>
+      <button id="user-btn" class="user-chip" title="Logged in user">👤 <span id="user-btn-name">User</span></button>
+    </div>
   </header>
 
   <!-- ── Admin tabs ── -->
   <div id="admin-tabs">
-    <button class="admin-tab active" data-tab="items">📋 Items</button>
-    <button class="admin-tab" data-tab="users">👥 Users</button>
-    <button class="admin-tab" data-tab="settings">⚙️ System Settings</button>
-    <button class="admin-tab" data-tab="maintenance">🔧 Maintenance</button>
+    <button class="admin-tab active" data-tab="items">📋 <span data-i18n="items">Items</span></button>
+    <button class="admin-tab" data-tab="users">👥 <span data-i18n="users">Users</span></button>
+    <button class="admin-tab" data-tab="settings">⚙️ <span data-i18n="system_settings">System Settings</span></button>
+    <button class="admin-tab" data-tab="maintenance">🔧 <span data-i18n="maintenance">Maintenance</span></button>
   </div>
 
   <!-- ── Items panel ── -->
@@ -36,9 +39,9 @@
     <table id="im-table">
       <thead>
         <tr>
-          <th>Category</th>
+          <th data-i18n="category">Category</th>
           <th>Item</th>
-          <th class="th-price">Base Price</th>
+          <th class="th-price" data-i18n="base_price">Base Price</th>
           <th class="th-center">Status</th>
           <th class="th-center">Pop.</th>
           <th class="th-center">Modifiers</th>
@@ -54,10 +57,10 @@
   <!-- ── Users panel ── -->
   <div id="panel-users" class="hidden">
     <div id="users-wrap" style="max-width:700px;margin:0 auto;padding:20px 16px;">
-      <h2 class="settings-title">User Management</h2>
-      <p class="settings-hint">Manage POS users. Super users have full access; cashiers can only use POS and view items.</p>
+      <h2 class="settings-title" data-i18n="user_management">User Management</h2>
+      <p class="settings-hint" data-i18n="user_management_hint">Manage POS users. Super users have full access; cashiers can only use POS and view items.</p>
       <div style="margin-bottom:12px;">
-        <button id="add-user-btn" class="add-btn" style="padding:8px 18px;font-size:13px;">+ Add User</button>
+        <button id="add-user-btn" class="add-btn" style="padding:8px 18px;font-size:13px;">+ <span data-i18n="add_user">Add User</span></button>
       </div>
       <div id="users-list"></div>
     </div>
@@ -66,29 +69,29 @@
   <!-- ── Payment Settings panel ── -->
   <div id="panel-settings" class="hidden">
     <div id="settings-wrap">
-      <h2 class="settings-title">General Settings</h2>
+      <h2 class="settings-title" data-i18n="general_settings">General Settings</h2>
 
       <div class="settings-field">
-        <label>Shop Name (managed by administrator)</label>
+        <label><span data-i18n="shop_name">Shop Name</span> (<span data-i18n="managed_by_admin">managed by administrator</span>)</label>
         <input type="text" id="s-shop-name" placeholder="BKT House" maxlength="40" readonly style="opacity:0.6;cursor:not-allowed;">
       </div>
 
       <div class="settings-field">
-        <label>Shop Address (managed by administrator)</label>
+        <label><span data-i18n="shop_address">Shop Address</span> (<span data-i18n="managed_by_admin">managed by administrator</span>)</label>
         <input type="text" id="s-shop-address" placeholder="" maxlength="80" readonly style="opacity:0.6;cursor:not-allowed;">
       </div>
 
-      <h2 class="settings-title" style="margin-top:24px;">Payment Settings</h2>
-      <p class="settings-hint">Configure payment links and QR codes for e-wallet payments.</p>
+      <h2 class="settings-title" style="margin-top:24px;" data-i18n="payment_settings">Payment Settings</h2>
+      <p class="settings-hint" data-i18n="payment_settings_hint">Configure payment links and QR codes for e-wallet payments.</p>
 
       <div class="settings-field">
-        <label>Touch &amp; Go eWallet — Payment Link</label>
+        <label data-i18n="tng_payment_link">Touch &amp; Go eWallet — Payment Link</label>
         <input type="url" id="s-tng-link" placeholder="https://payment.tngdigital.com.my/sc/…">
         <p class="settings-hint" style="margin-top:4px;">Paste your TNG eWallet payment link. A QR code will be generated automatically.</p>
       </div>
 
       <div class="settings-field">
-        <label>Touch &amp; Go eWallet — QR Image URL (optional)</label>
+        <label data-i18n="tng_qr_image">Touch &amp; Go eWallet — QR Image URL (optional)</label>
         <input type="url" id="s-tng-url" placeholder="https://…">
         <p class="settings-hint" style="margin-top:4px;">Override with a custom QR image if preferred. Leave empty to auto-generate from payment link.</p>
         <div class="qr-preview-wrap">
@@ -97,90 +100,90 @@
       </div>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <label class="check-label"><input type="checkbox" id="s-verify-ewallet"> Enable e-Wallet Receipt Verification</label>
+        <label class="check-label"><input type="checkbox" id="s-verify-ewallet"> <span data-i18n="enable_ewallet_verify">Enable e-Wallet Receipt Verification</span></label>
         <p class="settings-hint" style="margin:0;">Cashier photographs the customer's payment receipt for OCR amount verification before confirming.</p>
       </div>
 
-      <h2 class="settings-title" style="margin-top:24px;">Airwallex Card Payments</h2>
-      <p class="settings-hint">Configure Airwallex credentials for credit/debit card payments. Use demo mode for testing.</p>
+      <h2 class="settings-title" style="margin-top:24px;" data-i18n="airwallex_card">Airwallex Card Payments</h2>
+      <p class="settings-hint" data-i18n="airwallex_hint">Configure Airwallex credentials for credit/debit card payments. Use demo mode for testing.</p>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <label class="check-label"><input type="checkbox" id="s-aw-enabled"> Enable Credit / Debit Card Payments</label>
+        <label class="check-label"><input type="checkbox" id="s-aw-enabled"> <span data-i18n="enable_card">Enable Credit / Debit Card Payments</span></label>
         <p class="settings-hint" style="margin:0;">Show the card payment option on the payment screen.</p>
       </div>
 
       <div class="settings-field">
-        <label>Client ID</label>
+        <label data-i18n="client_id">Client ID</label>
         <input type="text" id="s-aw-client-id" placeholder="Your Airwallex Client ID">
       </div>
 
       <div class="settings-field">
-        <label>API Key</label>
+        <label data-i18n="api_key">API Key</label>
         <input type="password" id="s-aw-api-key" placeholder="Your Airwallex API Key">
       </div>
 
       <div class="settings-field">
-        <label>Environment</label>
+        <label data-i18n="environment">Environment</label>
         <select id="s-aw-env">
           <option value="demo">Demo (testing)</option>
           <option value="production">Production (live)</option>
         </select>
       </div>
 
-      <h2 class="settings-title" style="margin-top:24px;">Tax &amp; Service Charge</h2>
-      <p class="settings-hint">Configure SST and service charge. These appear as a breakdown on bills and receipts.</p>
+      <h2 class="settings-title" style="margin-top:24px;" data-i18n="tax_service">Tax &amp; Service Charge</h2>
+      <p class="settings-hint" data-i18n="tax_service_hint">Configure SST and service charge. These appear as a breakdown on bills and receipts.</p>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <label class="check-label" style="flex:none;"><input type="checkbox" id="s-sst-enabled"> Enable SST</label>
+        <label class="check-label" style="flex:none;"><input type="checkbox" id="s-sst-enabled"> <span data-i18n="enable_sst">Enable SST</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="number" id="s-sst-rate" style="width:70px;" min="0" max="100" step="0.5" placeholder="6"> <span>%</span>
         </div>
       </div>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <label class="check-label" style="flex:none;"><input type="checkbox" id="s-svc-enabled"> Enable Service Charge</label>
+        <label class="check-label" style="flex:none;"><input type="checkbox" id="s-svc-enabled"> <span data-i18n="enable_service">Enable Service Charge</span></label>
         <div style="display:flex;align-items:center;gap:4px;">
           <input type="number" id="s-svc-rate" style="width:70px;" min="0" max="100" step="0.5" placeholder="10"> <span>%</span>
         </div>
       </div>
 
-      <h2 class="settings-title" style="margin-top:24px;">Printer Settings</h2>
-      <p class="settings-hint">Configure a LAN thermal printer (ESC/POS, 80mm). Leave IP empty to use browser print dialog.</p>
+      <h2 class="settings-title" style="margin-top:24px;" data-i18n="printer_settings">Printer Settings</h2>
+      <p class="settings-hint" data-i18n="printer_hint">Configure a LAN thermal printer (ESC/POS, 80mm). Leave IP empty to use browser print dialog.</p>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
         <input type="checkbox" id="s-print-order-slip" style="width:18px;height:18px;">
-        <label for="s-print-order-slip" style="margin:0;cursor:pointer;">Print order slip (kitchen)</label>
+        <label for="s-print-order-slip" style="margin:0;cursor:pointer;" data-i18n="print_order_slip">Print order slip (kitchen)</label>
         <p class="settings-hint" style="margin:0;">Print a slip when an order is sent to the kitchen.</p>
       </div>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
         <input type="checkbox" id="s-print-receipt" style="width:18px;height:18px;">
-        <label for="s-print-receipt" style="margin:0;cursor:pointer;">Print payment receipt</label>
+        <label for="s-print-receipt" style="margin:0;cursor:pointer;" data-i18n="print_receipt">Print payment receipt</label>
         <p class="settings-hint" style="margin:0;">Print a receipt when payment is confirmed.</p>
       </div>
 
       <div class="settings-field">
-        <label>Printer IP Address</label>
+        <label data-i18n="printer_ip">Printer IP Address</label>
         <input type="text" id="s-printer-ip" placeholder="e.g. 192.168.1.100">
       </div>
 
       <div class="settings-field">
-        <label>Printer Port</label>
+        <label data-i18n="printer_port">Printer Port</label>
         <input type="number" id="s-printer-port" placeholder="9100" min="1" max="65535">
       </div>
 
       <div class="settings-field">
-        <label>Local Relay URL (for cloud server)</label>
+        <label data-i18n="relay_url">Local Relay URL (for cloud server)</label>
         <input type="url" id="s-relay-url" placeholder="http://localhost:9101">
       </div>
 
       <div class="settings-field">
-        <button id="s-test-print-btn" class="add-btn" style="padding:8px 18px;font-size:13px;background:#555;">Test Print</button>
+        <button id="s-test-print-btn" class="add-btn" style="padding:8px 18px;font-size:13px;background:#555;" data-i18n="test_print">Test Print</button>
         <span id="s-test-msg" style="margin-left:10px;font-size:13px;color:#888;"></span>
       </div>
 
       <div class="settings-actions">
-        <button id="s-save-btn" class="add-btn" style="padding:10px 28px;">Save Settings</button>
+        <button id="s-save-btn" class="add-btn" style="padding:10px 28px;" data-i18n="save_settings">Save Settings</button>
         <span id="s-saved-msg" class="s-saved-msg hidden">✓ Saved</span>
       </div>
     </div>
@@ -189,34 +192,34 @@
   <!-- ── Maintenance panel ── -->
   <div id="panel-maintenance" class="hidden">
     <div id="maintenance-wrap">
-      <h2 class="settings-title">Maintenance</h2>
-      <p class="settings-hint">Use before going live or at the start of a new day to ensure a clean slate.</p>
+      <h2 class="settings-title" data-i18n="maintenance">Maintenance</h2>
+      <p class="settings-hint" data-i18n="reset_desc">Use before going live or at the start of a new day to ensure a clean slate.</p>
 
       <div class="maint-card" id="network-info-card">
         <div class="maint-card-info">
-          <div class="maint-card-title">🌐 Network Info</div>
-          <div class="maint-card-desc">Connect other devices on the same WiFi using these addresses:</div>
+          <div class="maint-card-title">🌐 <span data-i18n="network_info">Network Info</span></div>
+          <div class="maint-card-desc" data-i18n="network_desc">Connect other devices on the same WiFi using these addresses:</div>
           <div id="network-urls" style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.8;">Loading...</div>
         </div>
       </div>
 
       <div class="maint-card">
         <div class="maint-card-info">
-          <div class="maint-card-title">☁️ Sync to Cloud</div>
-          <div class="maint-card-desc">Manually push all local order history, settings and menu to cloud MongoDB backup. Use this if automatic sync missed any data.</div>
+          <div class="maint-card-title">☁️ <span data-i18n="sync_cloud">Sync to Cloud</span></div>
+          <div class="maint-card-desc" data-i18n="sync_desc">Manually push all local order history, settings and menu to cloud MongoDB backup.</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <button id="maint-sync-btn" class="add-btn" style="padding:10px 20px;white-space:nowrap;">Sync Now</button>
+          <button id="maint-sync-btn" class="add-btn" style="padding:10px 20px;white-space:nowrap;" data-i18n="sync_now">Sync Now</button>
           <span id="maint-sync-msg" style="font-size:13px;color:#888;"></span>
         </div>
       </div>
 
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
-          <div class="maint-card-title">🚀 Reset &amp; Go Live</div>
-          <div class="maint-card-desc">Clears all active orders, kitchen data, sales history and KDS history. Menu items and payment settings are kept. Use this to start fresh before going live.</div>
+          <div class="maint-card-title">🚀 <span data-i18n="reset_go_live">Reset &amp; Go Live</span></div>
+          <div class="maint-card-desc" data-i18n="reset_desc">Clears all active orders, kitchen data, sales history and KDS history. Menu items and payment settings are kept.</div>
         </div>
-        <button id="maint-reset-live-btn" class="maint-reset-btn">Reset &amp; Go Live</button>
+        <button id="maint-reset-live-btn" class="maint-reset-btn" data-i18n="reset_go_live">Reset &amp; Go Live</button>
       </div>
     </div>
   </div>
@@ -225,17 +228,17 @@
   <div id="maint-confirm-modal" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="sheet maint-confirm-sheet">
       <div class="sheet-header">
-        <div class="sheet-title" id="maint-confirm-title">Confirm Action</div>
+        <div class="sheet-title" id="maint-confirm-title" data-i18n="confirm_action">Confirm Action</div>
         <button class="close-btn" id="maint-confirm-close">✕</button>
       </div>
       <div class="sheet-body">
         <p id="maint-confirm-msg" class="maint-confirm-msg"></p>
         <div id="maint-table-picker" class="maint-table-picker hidden"></div>
-        <p class="maint-confirm-warn">⚠️ This action cannot be undone.</p>
+        <p class="maint-confirm-warn">⚠️ <span data-i18n="cannot_undo">This action cannot be undone.</span></p>
       </div>
       <div class="sheet-footer" style="justify-content:flex-end;gap:10px;">
-        <button id="maint-confirm-cancel" class="secondary-btn" style="flex:unset;padding:12px 24px;">Cancel</button>
-        <button id="maint-confirm-ok" class="maint-danger-btn" style="min-width:140px;">Yes, Delete</button>
+        <button id="maint-confirm-cancel" class="secondary-btn" style="flex:unset;padding:12px 24px;" data-i18n="cancel">Cancel</button>
+        <button id="maint-confirm-ok" class="maint-danger-btn" style="min-width:140px;" data-i18n="yes_delete">Yes, Delete</button>
       </div>
     </div>
   </div>
@@ -251,40 +254,40 @@
       <div class="sheet-body im-form-body">
         <div class="im-form-grid">
           <div class="form-field">
-            <label>Name (EN) <span class="req">*</span></label>
+            <label><span data-i18n="name_en">Name (EN)</span> <span class="req">*</span></label>
             <input type="text" id="f-name" placeholder="e.g. Bak Kut Teh">
           </div>
           <div class="form-field">
-            <label>Name (ZH) <span class="req">*</span></label>
+            <label><span data-i18n="name_zh">Name (ZH)</span> <span class="req">*</span></label>
             <input type="text" id="f-namezh" placeholder="e.g. 肉骨茶">
           </div>
           <div class="form-field">
-            <label>Category <span class="req">*</span></label>
+            <label><span data-i18n="category">Category</span> <span class="req">*</span></label>
             <select id="f-category">
-              <option value="mains">Main Dishes</option>
-              <option value="addons">Add-ons</option>
-              <option value="vegetables">Vegetables</option>
-              <option value="noodles">Noodles</option>
-              <option value="soup">Soup</option>
-              <option value="dessert">Dessert</option>
-              <option value="beverages">Beverages</option>
+              <option value="mains" data-i18n="cat_mains">Main Dishes</option>
+              <option value="addons" data-i18n="cat_addons">Add-ons</option>
+              <option value="vegetables" data-i18n="cat_vegetables">Vegetables</option>
+              <option value="noodles" data-i18n="cat_noodles">Noodles</option>
+              <option value="soup" data-i18n="cat_soup">Soup</option>
+              <option value="dessert" data-i18n="cat_dessert">Dessert</option>
+              <option value="beverages" data-i18n="cat_beverages">Beverages</option>
             </select>
           </div>
           <div class="form-field">
-            <label>Base Price (RM) <span class="req">*</span></label>
+            <label><span data-i18n="base_price">Base Price</span> (RM) <span class="req">*</span></label>
             <input type="number" id="f-price" min="0" step="0.5" placeholder="0.00">
           </div>
           <div class="form-field full-col">
-            <label>Description (EN)</label>
+            <label data-i18n="description_en">Description (EN)</label>
             <input type="text" id="f-desc" placeholder="Short description">
           </div>
           <div class="form-field full-col">
-            <label>Description (ZH)</label>
+            <label data-i18n="description_zh">Description (ZH)</label>
             <input type="text" id="f-desczh" placeholder="中文描述">
           </div>
           <div class="form-field full-col form-checks">
-            <label class="check-label"><input type="checkbox" id="f-popular"> Mark as Popular ⭐</label>
-            <label class="check-label"><input type="checkbox" id="f-available" checked> Available (show on POS)</label>
+            <label class="check-label"><input type="checkbox" id="f-popular"> <span data-i18n="popular">Popular</span> ⭐</label>
+            <label class="check-label"><input type="checkbox" id="f-available" checked> <span data-i18n="available">Available</span></label>
           </div>
         </div>
 
@@ -296,8 +299,8 @@
       </div>
 
       <div class="sheet-footer" style="justify-content:flex-end;gap:10px;">
-        <button id="im-cancel-btn" class="secondary-btn" style="flex:unset;padding:12px 24px;">Cancel</button>
-        <button id="im-save-btn"   class="add-btn"       style="flex:unset;padding:12px 28px;">Save Item</button>
+        <button id="im-cancel-btn" class="secondary-btn" style="flex:unset;padding:12px 24px;" data-i18n="cancel">Cancel</button>
+        <button id="im-save-btn"   class="add-btn"       style="flex:unset;padding:12px 28px;" data-i18n="save">Save</button>
       </div>
     </div>
   </div>
@@ -313,35 +316,46 @@
   <div id="user-modal" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="sheet" style="max-width:400px;">
       <div class="sheet-header">
-        <div class="sheet-title" id="user-modal-title">Add User</div>
+        <div class="sheet-title" id="user-modal-title" data-i18n="add_user">Add User</div>
         <button class="close-btn" id="user-modal-close">✕</button>
       </div>
       <div class="sheet-body" style="padding:16px 20px;">
         <div class="form-field">
-          <label>Name <span class="req">*</span></label>
+          <label><span data-i18n="name">Name</span> <span class="req">*</span></label>
           <input type="text" id="uf-name" placeholder="e.g. Ali" maxlength="30">
         </div>
         <div class="form-field">
-          <label>PIN (4 digits) <span class="req">*</span></label>
+          <label><span data-i18n="pin">PIN (4 digits)</span> <span class="req">*</span></label>
           <input type="password" id="uf-pin" placeholder="e.g. 1234" maxlength="4" inputmode="numeric" pattern="[0-9]*">
         </div>
         <div class="form-field">
-          <label>Role <span class="req">*</span></label>
+          <label><span data-i18n="role">Role</span> <span class="req">*</span></label>
           <select id="uf-role">
-            <option value="cashier">Cashier</option>
-            <option value="super">Super (Admin)</option>
+            <option value="cashier" data-i18n="cashier_role">Cashier</option>
+            <option value="super" data-i18n="super_role">Super (Admin)</option>
           </select>
         </div>
       </div>
       <div class="sheet-footer" style="justify-content:flex-end;gap:10px;">
-        <button id="user-modal-cancel" class="secondary-btn" style="flex:unset;padding:12px 24px;">Cancel</button>
-        <button id="user-modal-save" class="add-btn" style="flex:unset;padding:12px 28px;">Save User</button>
+        <button id="user-modal-cancel" class="secondary-btn" style="flex:unset;padding:12px 24px;" data-i18n="cancel">Cancel</button>
+        <button id="user-modal-save" class="add-btn" style="flex:unset;padding:12px 28px;" data-i18n="save_user">Save User</button>
       </div>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="menuDefaults.js"></script>
   <script src="auth.js"></script>
   <script src="items.js"></script>
+  <script>
+    (function() {
+      const lc = document.getElementById('header-lang');
+      if (lc && typeof createLangSwitcher === 'function') {
+        lc.appendChild(createLangSwitcher());
+        onLangChange(() => translatePage());
+      }
+      translatePage();
+    })();
+  </script>
 </body>
 </html>

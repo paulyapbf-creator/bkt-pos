@@ -48,15 +48,28 @@ function persist() {
 
 // ─── Table ────────────────────────────────────────────────────────────────────
 
+const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
+
+function localName(item) {
+  if (typeof getLang === 'function') {
+    const lang = getLang();
+    const field = LANG_NAME_FIELDS[lang];
+    if (field && item[field]) return item[field];
+  }
+  // Fallback: nameZh → name
+  return item.nameZh || item.name || '';
+}
+
 function catName(id) {
+  if (typeof t === 'function') return t('cat_' + id);
   return CATEGORIES.find(c => c.id === id)?.name || id;
 }
 
 function renderTable() {
   const q = searchQ.toLowerCase();
   const filtered = q
-    ? items.filter(i => i.name.toLowerCase().includes(q) || i.nameZh.includes(q) ||
-                        catName(i.category).toLowerCase().includes(q))
+    ? items.filter(i => i.name.toLowerCase().includes(q) || (i.nameZh || '').includes(q) ||
+                        localName(i).toLowerCase().includes(q) || catName(i.category).toLowerCase().includes(q))
     : items;
 
   document.getElementById('im-count').textContent =
@@ -72,7 +85,7 @@ function renderTable() {
     <tr class="${item.isAvailable ? '' : 'row-dim'}">
       <td><span class="cat-chip">${catName(item.category)}</span></td>
       <td class="td-name">
-        <div class="td-name-zh">${item.nameZh}</div>
+        <div class="td-name-zh">${localName(item)}</div>
         <div class="td-name-en">${item.name}</div>
       </td>
       <td class="td-price">RM ${item.price.toFixed(2)}</td>
@@ -242,7 +255,7 @@ function saveItem() {
 function deleteItem(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
-  if (!confirm(`Delete "${item.nameZh} / ${item.name}"?\nThis cannot be undone.`)) return;
+  if (!confirm(`Delete "${localName(item)} / ${item.name}"?\nThis cannot be undone.`)) return;
   items = items.filter(i => i.id !== id);
   persist();
   renderTable();

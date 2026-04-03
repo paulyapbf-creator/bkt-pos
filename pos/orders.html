@@ -11,19 +11,31 @@
   <header id="header">
     <div style="display:flex;align-items:center;gap:10px;">
       <a href="index.html" class="back-link">← <span class="nav-txt">POS</span></a>
-      <span id="app-title">📋 <span class="app-txt">Active Orders</span></span>
+      <span id="app-title">📋 <span class="app-txt" data-i18n="orders">Active Orders</span></span>
       <span id="active-count" class="active-count-badge hidden"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <div id="header-lang"></div>
       <span class="esc-hint">Esc to exit</span>
-      <button id="refresh-btn" class="nav-link refresh-btn">↺ Refresh</button>
+      <button id="refresh-btn" class="nav-link refresh-btn">↺ <span data-i18n="refresh">Refresh</span></button>
     </div>
   </header>
 
   <div id="last-updated" class="last-updated"></div>
   <div id="orders-wrap"></div>
 
+  <script src="i18n.js"></script>
   <script src="menuDefaults.js"></script>
   <script src="orders.js"></script>
+  <script>
+    (function() {
+      const lc = document.getElementById('header-lang');
+      if (lc && typeof createLangSwitcher === 'function') {
+        lc.appendChild(createLangSwitcher());
+        onLangChange(() => translatePage());
+      }
+      translatePage();
+    })();
+  </script>
 </body>
 </html>

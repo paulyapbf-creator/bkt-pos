@@ -3,6 +3,15 @@
 
 const HISTORY_KEY      = 'bkt_order_history';
 const SETTINGS_KEY     = 'bkt_settings';
+
+const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
+function localName(item) {
+  if (typeof getLang === 'function') {
+    const field = LANG_NAME_FIELDS[getLang()];
+    if (field && item[field]) return item[field];
+  }
+  return item.nameZh || item.name || '';
+}
 const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
 // ─── API + WebSocket CONFIG ──────────────────────────────────────────────────
@@ -71,7 +80,7 @@ function handleWSMessage(msg) {
       }
       syncBillsToStorage(); // keep localStorage in sync so orders.html/kds.html can read it
       if (msg.status === 'ready') {
-        showToast(`🍳 ${msg.item.nameZh || msg.item.name} ${t('item_ready')} · ${msg.table}`);
+        showToast(`🍳 ${localName(msg.item)} ${t('item_ready')} · ${msg.table}`);
       }
       break;
 
@@ -144,8 +153,8 @@ function getFilteredItems() {
   return menuItems.filter(item => {
     if (!item.isAvailable) return false;
     if (state.selectedCategory !== 'all' && item.category !== state.selectedCategory) return false;
-    if (q) return item.name.toLowerCase().includes(q) || item.nameZh.includes(q) ||
-                   (item.description && item.description.toLowerCase().includes(q));
+    if (q) return item.name.toLowerCase().includes(q) || (item.nameZh || '').includes(q) ||
+                   localName(item).toLowerCase().includes(q) || (item.description && item.description.toLowerCase().includes(q));
     return true;
   });
 }
@@ -178,7 +187,9 @@ async function fetchBillsFromAPI() {
 function billRow(oi, existingStatus) {
   return {
     id: oi.id, menuItemId: oi.menuItem.id,
-    nameZh: oi.menuItem.nameZh, name: oi.menuItem.name,
+    nameZh: oi.menuItem.nameZh, nameTh: oi.menuItem.nameTh, nameVi: oi.menuItem.nameVi,
+    nameMs: oi.menuItem.nameMs, nameKm: oi.menuItem.nameKm, nameId: oi.menuItem.nameId,
+    name: oi.menuItem.name,
     quantity: oi.quantity, unitPrice: oi.unitPrice, subtotal: oi.subtotal,
     selectedModifiers: oi.selectedModifiers, notes: oi.notes,
     status: existingStatus || 'cooking',
@@ -416,13 +427,13 @@ function renderCartPanel() {
   let lastCat = null;
   body.innerHTML = state.items.map(oi => {
     const cat     = oi.menuItem.category;
-    const catName = CATEGORIES.find(c => c.id === cat)?.name || cat;
+    const catName = typeof t === 'function' ? t('cat_' + cat) : (CATEGORIES.find(c => c.id === cat)?.name || cat);
     let divider   = '';
     if (cat !== lastCat) { divider = `<div class="cp-cat-divider">${catName}</div>`; lastCat = cat; }
     return `${divider}
       <div class="cp-item">
         <div class="cp-item-top">
-          <span class="cp-item-zh">${oi.menuItem.nameZh}</span>
+          <span class="cp-item-zh">${localName(oi.menuItem)}</span>
           <button class="cp-amend-btn" data-id="${oi.id}" title="Edit options">✎</button>
         </div>
         <span class="cp-item-en">${oi.menuItem.name}</span>
@@ -469,7 +480,7 @@ function renderCategoryBar() {
   const bar = document.getElementById('category-bar');
   bar.innerHTML = CATEGORIES.map(cat => `
     <button class="cat-btn${cat.id === state.selectedCategory ? ' active' : ''}" data-cat="${cat.id}">
-      ${cat.name}
+      ${typeof t === 'function' ? t('cat_' + cat.id) : cat.name}
     </button>
   `).join('');
   bar.querySelectorAll('.cat-btn').forEach(btn => {
@@ -498,7 +509,7 @@ function renderMenuList() {
     return `
       <button class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
         ${count > 0 ? `<span class="mli-badge">${count}</span>` : ''}
-        <span class="mli-zh">${item.nameZh}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
+        <span class="mli-zh">${localName(item)}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
         <span class="mli-price">RM ${item.price.toFixed(2)}</span>
         <span class="mli-en">${item.name}${hasMods ? ' <span class="mli-opts">+Options</span>' : ''}</span>
       </button>`;
@@ -528,7 +539,7 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
   state.modalNotes      = prefillNotes;
 
   const groups = item.modifierGroups || [];
-  document.getElementById('modal-name-zh').textContent = item.nameZh;
+  document.getElementById('modal-name-zh').textContent = localName(item);
   document.getElementById('modal-name-en').textContent = item.name;
   document.getElementById('modal-add-btn').textContent =
     state.editingOrderItemId ? t('update_order') : t('add_to_order');
@@ -541,7 +552,7 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
     html += `
       <div class="modifier-group">
         <div class="group-header">
-          <span class="group-name-zh">${group.nameZh}</span>
+          <span class="group-name-zh">${localName(group)}</span>
           <span class="group-name-en">${group.name}</span>
           ${group.required ? '<span class="required-badge">Required</span>' : ''}
         </div>
@@ -682,7 +693,7 @@ function renderBillingStep() {
     breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">${t('total')}</td><td class="bill-total-amt" style="font-weight:bold;">RM ${bd.total.toFixed(2)}</td></tr>`;
     bodyEl.innerHTML = `<table class="hist-items-table bill-table">
       ${bill.items.map(bi => `<tr>
-        <td class="hi-name">${bi.nameZh} <span class="hi-en">${bi.name}</span>
+        <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span>
           ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
         </td>
         <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">RM ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
@@ -1063,7 +1074,7 @@ async function renderHistoryList(tableFilter) {
       <div class="hist-detail hidden" id="hd-${ord.id}">
         <table class="hist-items-table">
           ${ord.items.map(oi => `<tr>
-            <td class="hi-name">${oi.nameZh} <span class="hi-en">${oi.name}</span></td>
+            <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
             <td class="hi-qty">×${oi.quantity}</td>
             <td class="hi-price">RM ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
         </table>
@@ -1125,8 +1136,8 @@ function buildOrderSlipJob(table, items, isUpdate) {
     isUpdate,
     items: items.map(item => ({
       qty:    item.quantity,
-      nameZh: item.menuItem?.nameZh || item.nameZh || '',
-      nameEn: item.menuItem?.name   || item.name   || '',
+      nameZh: localName(item.menuItem || item),
+      nameEn: (item.menuItem || item).name || '',
       mods:   (item.selectedModifiers || []).map(m => m.optionLabel),
       notes:  item.notes ? item.notes.trim() : '',
     })),
@@ -1156,7 +1167,7 @@ function buildReceiptJob(table, items, bd, method, orderId) {
     payLabel:   methodLabel[method] || method,
     items: items.map(item => ({
       qty:    item.quantity,
-      nameZh: item.nameZh || '',
+      nameZh: localName(item),
       nameEn: item.name || '',
       price:  item.subtotal.toFixed(2),
       mods:   (item.selectedModifiers || []).map(m => m.optionLabel).join(', '),
@@ -1235,15 +1246,16 @@ function printOrderSlipHTML(table, items, isUpdate) {
   const shopName = settings.shopName || 'BKT House';
 
   const itemRows = items.map((item, idx) => {
-    const nameZh = item.menuItem?.nameZh || item.nameZh || '';
-    const nameEn = item.menuItem?.name   || item.name   || '';
+    const itemObj = item.menuItem || item;
+    const nameLocal = localName(itemObj);
+    const nameEn = itemObj.name || '';
     const mods   = (item.selectedModifiers || []).map(m => m.optionLabel);
     const notes  = item.notes ? item.notes.trim() : '';
     return `
       <div class="item-block${idx > 0 ? ' item-border' : ''}">
         <div class="item-row">
           <span class="item-qty">${item.quantity}</span>
-          <span class="item-name">${nameEn} ${nameZh}</span>
+          <span class="item-name">${nameEn} ${nameLocal}</span>
           <span class="item-chk">☐</span>
         </div>
         ${mods.map(m => `<div class="item-sub">-${m}</div>`).join('')}
@@ -1345,7 +1357,7 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
       <tr>
         <td class="td-qty">${item.quantity}</td>
         <td class="td-name">
-          <div class="item-zh">${item.nameZh || ''}</div>
+          <div class="item-zh">${localName(item)}</div>
           <div class="item-en">${item.name || ''}</div>
           ${mods  ? `<div class="item-mod">${mods}</div>`      : ''}
           ${notes ? `<div class="item-note">📝 ${notes}</div>` : ''}

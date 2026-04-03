@@ -473,7 +473,8 @@ body {
   <header id="header">
     <span id="app-title"><a href="/" class="back-link">← <span class="app-txt" id="shop-name">BKT House</span></a></span>
     <div id="header-right">
-      <span class="report-page-title">📊 Reports</span>
+      <div id="header-lang"></div>
+      <span class="report-page-title">📊 <span data-i18n="reports">Reports</span></span>
       <button id="settings-btn" class="settings-btn" title="API Settings">⚙️</button>
       <button id="print-btn" class="nav-link" onclick="window.print()">🖨️ <span class="nav-txt">Print</span></button>
     </div>
@@ -490,11 +491,11 @@ body {
   <!-- ── Date filter bar ── -->
   <div id="report-filter-bar">
     <div class="filter-presets">
-      <button class="preset-btn active" data-preset="today">Today</button>
-      <button class="preset-btn" data-preset="yesterday">Yesterday</button>
-      <button class="preset-btn" data-preset="week">This Week</button>
-      <button class="preset-btn" data-preset="month">This Month</button>
-      <button class="preset-btn" data-preset="custom">Custom</button>
+      <button class="preset-btn active" data-preset="today" data-i18n="today">Today</button>
+      <button class="preset-btn" data-preset="yesterday" data-i18n="yesterday">Yesterday</button>
+      <button class="preset-btn" data-preset="week" data-i18n="this_week">This Week</button>
+      <button class="preset-btn" data-preset="month" data-i18n="this_month">This Month</button>
+      <button class="preset-btn" data-preset="custom" data-i18n="custom">Custom</button>
     </div>
     <div class="filter-dates hidden" id="custom-dates">
       <input type="date" id="date-from">
@@ -506,10 +507,10 @@ body {
 
   <!-- ── Tab bar ── -->
   <div id="report-tabs">
-    <button class="report-tab active" data-tab="summary">Sales Summary</button>
-    <button class="report-tab" data-tab="detail">Sales Detail</button>
-    <button class="report-tab" data-tab="collection">Collection</button>
-    <button class="report-tab" data-tab="items">Item Sales</button>
+    <button class="report-tab active" data-tab="summary" data-i18n="sales_summary">Sales Summary</button>
+    <button class="report-tab" data-tab="detail" data-i18n="sales_detail">Sales Detail</button>
+    <button class="report-tab" data-tab="collection" data-i18n="collection">Collection</button>
+    <button class="report-tab" data-tab="items" data-i18n="item_sales">Item Sales</button>
   </div>
 
   <!-- ── Report panels ── -->
@@ -520,6 +521,17 @@ body {
     <div id="panel-items" class="report-panel"></div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="report.js"></script>
+  <script>
+    (function() {
+      const lc = document.getElementById('header-lang');
+      if (lc && typeof createLangSwitcher === 'function') {
+        lc.appendChild(createLangSwitcher());
+        onLangChange(() => translatePage());
+      }
+      translatePage();
+    })();
+  </script>
 </body>
 </html>

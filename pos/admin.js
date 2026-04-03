@@ -308,38 +308,126 @@ function openTenantPOS(slug) {
 
 let extractedItems = [];
 
-document.getElementById('import-file').addEventListener('change', (e) => {
-  document.getElementById('import-extract-btn').disabled = !e.target.files.length;
-  document.getElementById('import-preview').classList.add('hidden');
-  extractedItems = [];
+// Custom file picker button
+document.getElementById('import-file-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
 });
 
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  document.getElementById('import-extract-btn').disabled = !files.length;
+  document.getElementById('import-preview').classList.add('hidden');
+  extractedItems = [];
+
+  // Show count
+  const countEl = document.getElementById('import-file-count');
+  countEl.textContent = files.length ? `${files.length} file(s) selected` : '';
+
+  // Show file list with thumbnails
+  const listEl = document.getElementById('import-file-list');
+  listEl.innerHTML = '';
+  files.forEach(file => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:12px;color:var(--text);';
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0;';
+      img.src = URL.createObjectURL(file);
+      item.appendChild(img);
+    } else {
+      const icon = document.createElement('span');
+      icon.textContent = file.name.endsWith('.pdf') ? '📄' : '📋';
+      icon.style.fontSize = '20px';
+      item.appendChild(icon);
+    }
+    const name = document.createElement('span');
+    name.textContent = file.name;
+    name.style.cssText = 'max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    item.appendChild(name);
+    listEl.appendChild(item);
+  });
+});
+
+function toBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+}
+
+const LANG_META = {
+  zh: { field: 'nameZh', label: '中文' },
+  th: { field: 'nameTh', label: 'ไทย' },
+  vi: { field: 'nameVi', label: 'Việt' },
+  ms: { field: 'nameMs', label: 'Melayu' },
+  km: { field: 'nameKm', label: 'ខ្មែរ' },
+  id: { field: 'nameId', label: 'Indo' },
+};
+
+function getSelectedLangs() {
+  return Array.from(document.querySelectorAll('#import-lang-picks input:checked')).map(cb => cb.value);
+}
+
+function renderImportPreview(items) {
+  const langs = getSelectedLangs();
+
+  // Build dynamic header
+  const thead = document.getElementById('import-thead');
+  thead.innerHTML = `<tr><th>#</th><th>Name (EN)</th>${langs.map(l => `<th>${LANG_META[l].label}</th>`).join('')}<th>Price</th><th>Category</th></tr>`;
+
+  const tbody = document.getElementById('import-items');
+  tbody.innerHTML = items.map((it, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${it.name}</td>
+      ${langs.map(l => `<td>${it[LANG_META[l].field] || ''}</td>`).join('')}
+      <td>RM ${it.price.toFixed(2)}</td>
+      <td>${it.category}</td>
+    </tr>
+  `).join('');
+  document.getElementById('import-count').textContent = `${items.length} items extracted`;
+  document.getElementById('import-preview').classList.remove('hidden');
+}
+
 document.getElementById('import-extract-btn').addEventListener('click', async () => {
-  const file = document.getElementById('import-file').files[0];
-  if (!file || !currentDetailSlug) return;
+  const files = Array.from(document.getElementById('import-file').files);
+  if (!files.length || !currentDetailSlug) return;
 
   const status = document.getElementById('import-status');
-  status.textContent = 'Extracting menu items with AI... please wait';
+  status.textContent = `Extracting menu items from ${files.length} file(s) with AI... please wait`;
   status.className = 'msg msg-ok';
   status.classList.remove('hidden');
   document.getElementById('import-extract-btn').disabled = true;
 
   try {
-    // Convert file to base64
-    const arrayBuf = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuf);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    const fileBase64 = btoa(binary);
+    // Convert all files to base64
+    const images = [];
+    let singleFileBase64 = null;
+    let singleContentType = null;
+    let singleFileName = null;
+
+    if (files.length === 1 && !files[0].type.startsWith('image/')) {
+      // Single non-image file (PDF, CSV, etc.)
+      singleFileBase64 = await toBase64(files[0]);
+      singleContentType = files[0].type || 'application/octet-stream';
+      singleFileName = files[0].name;
+    } else {
+      // Multiple files or single image — send as images array
+      for (const file of files) {
+        images.push(await toBase64(file));
+      }
+    }
+
+    const langs = getSelectedLangs();
+    const body = images.length > 0
+      ? { images, contentType: 'image/jpeg', fileName: 'file-upload.jpg', langs }
+      : { fileBase64: singleFileBase64, contentType: singleContentType, fileName: singleFileName, langs };
 
     const res = await fetch('/api/admin/menu-import/extract', {
       method: 'POST',
       headers: apiHeaders(),
-      body: JSON.stringify({
-        fileBase64,
-        contentType: file.type || 'application/octet-stream',
-        fileName: file.name,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -350,22 +438,9 @@ document.getElementById('import-extract-btn').addEventListener('click', async ()
     }
 
     extractedItems = data.items;
-    status.textContent = `Extracted ${data.rawCount} items. Review below and click Import.`;
+    status.textContent = `Extracted ${data.rawCount} items from ${files.length} file(s). Review below and click Import.`;
     status.className = 'msg msg-ok';
-
-    // Render preview table
-    const tbody = document.getElementById('import-items');
-    tbody.innerHTML = extractedItems.map((it, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${it.name}</td>
-        <td>${it.nameZh || ''}</td>
-        <td>RM ${it.price.toFixed(2)}</td>
-        <td>${it.category}</td>
-      </tr>
-    `).join('');
-    document.getElementById('import-count').textContent = `${extractedItems.length} items extracted`;
-    document.getElementById('import-preview').classList.remove('hidden');
+    renderImportPreview(extractedItems);
   } catch (e) {
     status.textContent = 'Error: ' + e.message;
     status.className = 'msg msg-err';
@@ -536,6 +611,7 @@ document.getElementById('camera-use-btn').addEventListener('click', async () => 
         images: allPages,
         contentType: 'image/jpeg',
         fileName: 'camera-capture.jpg',
+        langs: getSelectedLangs(),
       }),
     });
     const data = await res.json();
@@ -548,19 +624,7 @@ document.getElementById('camera-use-btn').addEventListener('click', async () => 
     extractedItems = data.items;
     status.textContent = `Extracted ${data.rawCount} items from ${allPages.length} photo(s). Review below and click Import.`;
     status.className = 'msg msg-ok';
-
-    const tbody = document.getElementById('import-items');
-    tbody.innerHTML = extractedItems.map((it, i) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${it.name}</td>
-        <td>${it.nameZh || ''}</td>
-        <td>RM ${it.price.toFixed(2)}</td>
-        <td>${it.category}</td>
-      </tr>
-    `).join('');
-    document.getElementById('import-count').textContent = `${extractedItems.length} items extracted`;
-    document.getElementById('import-preview').classList.remove('hidden');
+    renderImportPreview(extractedItems);
   } catch (e) {
     status.textContent = 'Error: ' + e.message;
     status.className = 'msg msg-err';

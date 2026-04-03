@@ -616,7 +616,7 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
 
   try {
     // Support both single file and multiple images
-    const { fileBase64, images, contentType: ct, fileName } = req.body;
+    const { fileBase64, images, contentType: ct, fileName, langs: requestedLangs } = req.body;
     if (!fileBase64 && (!images || !images.length)) return res.status(400).json({ error: 'No file data received' });
     const contentType = ct || 'image/png';
 
@@ -652,21 +652,35 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
     }
 
     const multiPage = images && images.length > 1;
+    const langDefs = {
+      zh: { field: 'nameZh', desc: 'Chinese (Simplified) name' },
+      th: { field: 'nameTh', desc: 'Thai name' },
+      vi: { field: 'nameVi', desc: 'Vietnamese name' },
+      ms: { field: 'nameMs', desc: 'Malay name' },
+      km: { field: 'nameKm', desc: 'Khmer (Cambodian) name' },
+      id: { field: 'nameId', desc: 'Indonesian name' },
+    };
+    const langs = (requestedLangs && requestedLangs.length > 0) ? requestedLangs.filter(l => langDefs[l]) : ['zh'];
+    const langFields = langs.map(l => `- ${langDefs[l].field}: ${langDefs[l].desc}`).join('\n');
+    const exampleObj = { name: 'Bak Kut Teh', price: 22.00, category: 'Main Course' };
+    langs.forEach(l => { exampleObj[langDefs[l].field] = l === 'zh' ? '肉骨茶' : 'Bak Kut Teh'; });
+
     userContent.push({
       type: 'text',
       text: `Extract ALL menu items from ${multiPage ? 'all pages of ' : ''}this ${multiPage ? 'multi-page menu' : 'document'}. For each item, extract:
 - name: English name
-- nameZh: Chinese name (if available, otherwise empty string)
+${langFields}
 - price: numeric price (number, not string)
 - category: category/section it belongs to (e.g. "Main Course", "Drinks", "Appetizer", etc.)
 
+If the source document has a name in a specific language, use it directly. For languages not in the document, translate the item name accurately. Use empty string "" only if translation is truly not possible.
+
 Return ONLY a valid JSON array of objects. Example format:
-[{"name":"Bak Kut Teh","nameZh":"肉骨茶","price":22.00,"category":"Main Course"}]
+[${JSON.stringify(exampleObj)}]
 
 Important:
 - Extract EVERY item from ${multiPage ? 'ALL pages' : 'the document'}, don't skip any
 ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicate items that appear on multiple pages\n' : ''}- If price has variants (S/M/L), use the base/smallest price
-- If no Chinese name exists, use empty string ""
 - Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Soup", "Dessert", "Beverages", or "General"
 - Return ONLY the JSON array, no other text`
     });
@@ -715,16 +729,18 @@ ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicat
     const normalized = items.map((item, idx) => {
       const rawCat = (item.category || 'General').toLowerCase().trim();
       const category = categoryMap[rawCat] || 'mains';
-      return {
+      const entry = {
         id: `mn${String(idx + 1).padStart(3, '0')}`,
         name: item.name || '',
-        nameZh: item.nameZh || '',
         price: parseFloat(item.price) || 0,
         category,
         isPopular: false,
         isAvailable: true,
         modifierGroups: [],
       };
+      // Only include requested language fields
+      langs.forEach(l => { entry[langDefs[l].field] = item[langDefs[l].field] || ''; });
+      return entry;
     });
 
     res.json({ items: normalized, rawCount: items.length });
