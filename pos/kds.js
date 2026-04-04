@@ -2,6 +2,15 @@
 
 const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
+const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
+function localName(item) {
+  if (typeof getLang === 'function') {
+    const field = LANG_NAME_FIELDS[getLang()];
+    if (field && item[field]) return item[field];
+  }
+  return item.nameZh || item.name || '';
+}
+
 const STATUS_LABEL = { pending: 'Pending', cooking: 'Cooking', preparing: 'Cooking', ready: 'Ready', served: 'Served' };
 
 // Normalise legacy 'preparing' → 'cooking'
@@ -123,7 +132,7 @@ function renderCard(bill, table) {
           return `
             <div class="kds-item kds-item--${st}">
               <div class="kds-item-info">
-                <span class="kds-item-zh">${item.nameZh}</span>
+                <span class="kds-item-zh">${localName(item)}</span>
                 <span class="kds-item-en">${item.name}</span>
                 ${item.selectedModifiers && item.selectedModifiers.length
                   ? `<span class="kds-item-mods">${item.selectedModifiers.map(m => m.optionLabel).join(' · ')}</span>` : ''}

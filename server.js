@@ -321,8 +321,8 @@ async function saveKdsHistory(reqStore, tenantSlug, table, bill) {
     table,
     servedAt,
     startedAt: bill.startedAt,
-    items: bill.items.map(({ id, name, nameZh, quantity, sentAt, readyAt }) => ({
-      id, name, nameZh, quantity, sentAt, readyAt: readyAt || servedAt,
+    items: bill.items.map(({ id, name, nameZh, nameTh, nameVi, nameMs, nameKm, nameId, quantity, sentAt, readyAt }) => ({
+      id, name, nameZh, nameTh, nameVi, nameMs, nameKm, nameId, quantity, sentAt, readyAt: readyAt || servedAt,
     })),
   });
   broadcast(tenantSlug, ['pos', 'kds'], { type: 'bill:allServed', table });

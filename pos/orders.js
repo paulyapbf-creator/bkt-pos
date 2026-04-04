@@ -2,6 +2,15 @@
 
 const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
+const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
+function localName(item) {
+  if (typeof getLang === 'function') {
+    const field = LANG_NAME_FIELDS[getLang()];
+    if (field && item[field]) return item[field];
+  }
+  return item.nameZh || item.name || '';
+}
+
 const STATUS_LABELS   = { cooking: 'Cooking', ready: 'Ready', served: 'Served' };
 const STATUS_SEQUENCE = ['cooking', 'ready', 'served'];
 
@@ -126,7 +135,7 @@ function renderOrders() {
             return `
               <div class="oi-row">
                 <div class="oi-info">
-                  <span class="oi-zh">${item.nameZh}</span>
+                  <span class="oi-zh">${localName(item)}</span>
                   <span class="oi-en">${item.name}</span>
                   ${item.selectedModifiers && item.selectedModifiers.length
                     ? `<span class="oi-mods">${item.selectedModifiers.map(m => m.optionLabel).join(' · ')}</span>`
