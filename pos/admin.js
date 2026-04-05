@@ -137,7 +137,7 @@ async function toggleTenant(slug, status) {
 
 // ─── View tenant detail ──────────────────────────────────────────────────────
 
-const fmtRM = n => `RM ${n.toFixed(2)}`;
+const fmtRM = n => `${typeof getCurrency === 'function' ? getCurrency() : 'RM'} ${n.toFixed(2)}`;
 
 function getDateRange(period) {
   const now = new Date();
@@ -382,7 +382,7 @@ function renderImportPreview(items) {
       <td>${i + 1}</td>
       <td>${it.name}</td>
       ${langs.map(l => `<td>${it[LANG_META[l].field] || ''}</td>`).join('')}
-      <td>RM ${it.price.toFixed(2)}</td>
+      <td>${typeof getCurrency === 'function' ? getCurrency() : 'RM'} ${it.price.toFixed(2)}</td>
       <td>${it.category}</td>
     </tr>
   `).join('');

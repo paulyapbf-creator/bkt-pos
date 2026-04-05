@@ -404,7 +404,7 @@ function renderCartPanel() {
   const total    = totalPrice();
   const hasItems = state.items.length > 0;
 
-  document.getElementById('cp-total').textContent = `RM ${total.toFixed(2)}`;
+  document.getElementById('cp-total').textContent = `${getCurrency()} ${total.toFixed(2)}`;
   document.getElementById('cp-item-count').textContent =
     hasItems ? `${totalItems()} item${totalItems() !== 1 ? 's' : ''}` : '';
 
@@ -447,7 +447,7 @@ function renderCartPanel() {
             <span class="cp-qty">${oi.quantity}</span>
             <button class="cp-qty-btn" data-action="inc" data-id="${oi.id}">+</button>
           </div>
-          <span class="cp-item-price">RM ${oi.subtotal.toFixed(2)}</span>
+          <span class="cp-item-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</span>
         </div>
       </div>`;
   }).join('');
@@ -510,7 +510,7 @@ function renderMenuList() {
       <button class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
         ${count > 0 ? `<span class="mli-badge">${count}</span>` : ''}
         <span class="mli-zh">${localName(item)}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
-        <span class="mli-price">RM ${item.price.toFixed(2)}</span>
+        <span class="mli-price">${getCurrency()} ${item.price.toFixed(2)}</span>
         <span class="mli-en">${item.name}${hasMods ? ' <span class="mli-opts">+Options</span>' : ''}</span>
       </button>`;
   }).join('');
@@ -564,7 +564,7 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
               <div class="option-label-en">${opt.label}</div>
             </div>
             ${opt.priceAdjustment !== 0
-              ? `<span class="option-price">${opt.priceAdjustment > 0 ? '+' : ''}RM ${opt.priceAdjustment.toFixed(2)}</span>`
+              ? `<span class="option-price">${opt.priceAdjustment > 0 ? '+' : ''}${getCurrency()} ${opt.priceAdjustment.toFixed(2)}</span>`
               : ''}
           </div>`).join('')}
       </div>`;
@@ -611,7 +611,7 @@ function syncModalPrice() {
       const opt = g.options.find(o => o.id === state.modalSelections[g.id]);
       return sum + (opt ? opt.priceAdjustment : 0);
     }, 0);
-  document.getElementById('modal-price').textContent = `RM ${(item.price + adj).toFixed(2)}`;
+  document.getElementById('modal-price').textContent = `${getCurrency()} ${(item.price + adj).toFixed(2)}`;
 }
 
 function syncAddButton() {
@@ -672,7 +672,7 @@ function renderBillingStep() {
           <div class="bill-meta"><span class="bill-items">${itemQty} item${itemQty > 1 ? 's' : ''}</span><span class="bill-since">Since ${timeStr}</span></div>
         </div>
         <div class="bill-card-right">
-          <span class="bill-total">RM ${bd.total.toFixed(2)}</span>
+          <span class="bill-total">${getCurrency()} ${bd.total.toFixed(2)}</span>
           <button class="pay-table-btn" data-table="${table}">Pay ▶</button>
         </div></div>`;
     }).join('');
@@ -687,16 +687,16 @@ function renderBillingStep() {
     const bd = calcBillBreakdown(subtotal, billSettings);
     const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
     titleEl.textContent = `${t('bill')} — ${table}`; subEl.textContent = `${itemQty} ${t('item_s')}`;
-    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('subtotal')}</td><td class="bill-total-amt">RM ${bd.subtotal.toFixed(2)}</td></tr>`;
-    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td class="bill-total-amt">RM ${bd.sst.toFixed(2)}</td></tr>`;
-    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td class="bill-total-amt">RM ${bd.svc.toFixed(2)}</td></tr>`;
-    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">${t('total')}</td><td class="bill-total-amt" style="font-weight:bold;">RM ${bd.total.toFixed(2)}</td></tr>`;
+    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('subtotal')}</td><td class="bill-total-amt">${getCurrency()} ${bd.subtotal.toFixed(2)}</td></tr>`;
+    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td class="bill-total-amt">${getCurrency()} ${bd.sst.toFixed(2)}</td></tr>`;
+    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td class="bill-total-amt">${getCurrency()} ${bd.svc.toFixed(2)}</td></tr>`;
+    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">${t('total')}</td><td class="bill-total-amt" style="font-weight:bold;">${getCurrency()} ${bd.total.toFixed(2)}</td></tr>`;
     bodyEl.innerHTML = `<table class="hist-items-table bill-table">
       ${bill.items.map(bi => `<tr>
         <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span>
           ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
         </td>
-        <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">RM ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
+        <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
       ${breakdownRows}
     </table>`;
     confirmBtn.textContent = t('proceed_to_payment'); confirmBtn.classList.remove('hidden');
@@ -705,7 +705,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = t('select_payment'); subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    titleEl.textContent = t('select_payment'); subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
     bodyEl.innerHTML = `<div class="pay-methods">
       <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">${t('tng_ewallet')}</span></button>
@@ -721,7 +721,7 @@ function renderBillingStep() {
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
     const titles = { tng: t('tng_ewallet'), duitnow: t('duitnow'), cash: t('cash'), card: t('credit_card') };
-    titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
     if (method === 'tng') {
@@ -738,8 +738,8 @@ function renderBillingStep() {
           <a href="${payLink}" target="_blank" style="color:#3498db;font-size:14px;text-decoration:underline;">Open Payment Link ↗</a>
         </div>`;
       }
-      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">RM ${bd.total.toFixed(2)}</span></div>`;
-      body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>RM ${bd.total.toFixed(2)}</b> received in TNG app before confirming</div>`;
+      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
+      body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>${getCurrency()} ${bd.total.toFixed(2)}</b> received in TNG app before confirming</div>`;
     } else if (method === 'card') {
       body = `<div class="card-pay-container">
         <div class="card-pay-loading" id="card-loading"><div class="card-spinner"></div><div>Setting up card payment...</div></div>
@@ -747,7 +747,7 @@ function renderBillingStep() {
         <div class="card-pay-error hidden" id="card-error"><span id="card-error-msg"></span><button class="retry-btn" id="card-retry-btn">Retry</button></div>
       </div>`;
     } else {
-      body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">RM ${bd.total.toFixed(2)}</div></div>`;
+      body = `<div class="cash-pay-display"><div class="cash-pay-label">Amount to Collect</div><div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div></div>`;
     }
     bodyEl.innerHTML = body;
     // Render QR code from payment link
@@ -776,11 +776,11 @@ function renderBillingStep() {
   } else if (state.payStep === 'verify') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const settings = loadSettings(); const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = t('verify_receipt'); subEl.textContent = `${state.payingTable} · RM ${bd.total.toFixed(2)}`;
+    titleEl.textContent = t('verify_receipt'); subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
 
     bodyEl.innerHTML = `
       <div class="verify-container">
-        <div class="verify-expected">Expected: <strong>RM ${bd.total.toFixed(2)}</strong></div>
+        <div class="verify-expected">Expected: <strong>${getCurrency()} ${bd.total.toFixed(2)}</strong></div>
         <div class="verify-capture-area">
           <label class="verify-capture-btn">
             📷 Take Photo of Receipt
@@ -881,15 +881,15 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
         // Match
         resultEl.className = 'verify-result verify-result--match';
         resultEl.innerHTML = `<div class="verify-result-icon">✅</div>
-          <div class="verify-result-text">Amount matches: <strong>RM ${closest.toFixed(2)}</strong></div>`;
+          <div class="verify-result-text">Amount matches: <strong>${getCurrency()} ${closest.toFixed(2)}</strong></div>`;
         confirmBtn.textContent = t('confirm_payment');
         confirmBtn.classList.remove('hidden');
       } else {
         // Mismatch
         resultEl.className = 'verify-result verify-result--mismatch';
         resultEl.innerHTML = `<div class="verify-result-icon">❌</div>
-          <div class="verify-result-text">Amount mismatch: receipt shows <strong>RM ${closest.toFixed(2)}</strong>, expected <strong>RM ${expectedTotal.toFixed(2)}</strong></div>
-          <div class="verify-result-hint">Difference: RM ${Math.abs(closest - expectedTotal).toFixed(2)}</div>`;
+          <div class="verify-result-text">Amount mismatch: receipt shows <strong>${getCurrency()} ${closest.toFixed(2)}</strong>, expected <strong>${getCurrency()} ${expectedTotal.toFixed(2)}</strong></div>
+          <div class="verify-result-hint">Difference: ${getCurrency()} ${Math.abs(closest - expectedTotal).toFixed(2)}</div>`;
         confirmBtn.textContent = t('confirm_anyway');
         confirmBtn.classList.remove('hidden');
       }
@@ -1067,7 +1067,7 @@ async function renderHistoryList(tableFilter) {
           <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
         </div>
         <div class="hist-right">
-          <span class="hist-total">RM ${ord.total.toFixed(2)}</span>
+          <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
           <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
         </div>
       </div>
@@ -1076,7 +1076,7 @@ async function renderHistoryList(tableFilter) {
           ${ord.items.map(oi => `<tr>
             <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
             <td class="hi-qty">×${oi.quantity}</td>
-            <td class="hi-price">RM ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
+            <td class="hi-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
         </table>
         <button class="reorder-btn" data-id="${ord.id}">↺ Re-order</button>
       </div></div>`;

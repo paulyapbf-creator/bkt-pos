@@ -54,7 +54,7 @@ async function fetchOrders(from, to) {
 }
 
 // ─── Format helpers ──────────────────────────────────────────────────────────
-const fmtRM   = n => `RM ${n.toFixed(2)}`;
+const fmtRM   = n => `${typeof getCurrency === 'function' ? getCurrency() : 'RM'} ${n.toFixed(2)}`;
 const fmtPct  = n => `${n.toFixed(1)}%`;
 const fmtDate = ts => new Date(ts).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtTime = ts => new Date(ts).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', hour12: true });

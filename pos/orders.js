@@ -124,7 +124,7 @@ function renderOrders() {
           </div>
           <div class="order-head-right">
             <span class="elapsed-badge elapsed--${level}">${elapsedText}</span>
-            <span class="order-head-total">RM ${total.toFixed(2)}</span>
+            <span class="order-head-total">${getCurrency()} ${total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -148,7 +148,7 @@ function renderOrders() {
                     title="${canAdvance ? 'Tap to advance status' : 'Served'}"
                   >${STATUS_LABELS[st]}</span>
                   <span class="oi-qty">×${item.quantity}</span>
-                  <span class="oi-price">RM ${item.subtotal.toFixed(2)}</span>
+                  <span class="oi-price">${getCurrency()} ${item.subtotal.toFixed(2)}</span>
                 </div>
               </div>`;
           }).join('')}
@@ -157,7 +157,7 @@ function renderOrders() {
         <div class="order-card-foot">
           <div>
             <span class="order-foot-label">Total</span>
-            <span class="order-foot-total">RM ${total.toFixed(2)}</span>
+            <span class="order-foot-total">${getCurrency()} ${total.toFixed(2)}</span>
           </div>
           <button class="edit-order-btn" data-table="${table}">Edit Order →</button>
         </div>

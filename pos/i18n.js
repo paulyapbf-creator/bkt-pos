@@ -1523,6 +1523,19 @@ function onLangChange(fn) {
   _onLangChange.push(fn);
 }
 
+// ─── Currency per language ──────────────────────────────────────────────────
+const LANG_CURRENCY = { en: 'RM', zh: 'RM', th: '฿', vi: '₫', ms: 'RM', km: '៛', id: 'Rp' };
+
+function getCurrency() {
+  return LANG_CURRENCY[_currentLang] || 'RM';
+}
+
+function fmtPrice(amount) {
+  const c = getCurrency();
+  const n = typeof amount === 'number' ? amount.toFixed(2) : amount;
+  return `${c} ${n}`;
+}
+
 // ─── Auto-translate DOM elements with data-i18n ─────────────────────────────
 // Add data-i18n="key" to any element to auto-translate its textContent
 // Add data-i18n-placeholder="key" for placeholder attributes

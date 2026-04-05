@@ -88,7 +88,7 @@ function renderTable() {
         <div class="td-name-zh">${localName(item)}</div>
         <div class="td-name-en">${item.name}</div>
       </td>
-      <td class="td-price">RM ${item.price.toFixed(2)}</td>
+      <td class="td-price">${getCurrency()} ${item.price.toFixed(2)}</td>
       <td class="td-center">
         <span class="status-dot ${item.isAvailable ? 'dot-on' : 'dot-off'}">
           ${item.isAvailable ? 'Active' : 'Inactive'}
