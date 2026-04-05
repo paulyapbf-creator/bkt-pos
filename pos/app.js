@@ -1130,6 +1130,7 @@ function buildOrderSlipJob(table, items, isUpdate) {
   return buildPrintJob('orderSlip', {
     table,
     lang: typeof getLang === 'function' ? getLang() : 'en',
+    currency: typeof getCurrency === 'function' ? getCurrency() : 'RM',
     dateTime: `${dd}/${mm} ${hh}:${mi}`,
     cashier: sess ? sess.name : '',
     pax: state.pax || 0,
@@ -1149,8 +1150,18 @@ function buildReceiptJob(table, items, bd, method, orderId) {
   const settings = loadSettings();
   const sess     = getSession();
   const methodLabel = { tng: 'Touch & Go', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
   return buildPrintJob('receipt', {
     lang: typeof getLang === 'function' ? getLang() : 'en',
+    currency: cur,
+    labels: {
+      officialReceipt: t('official_receipt'), receipt: t('receipt'),
+      receiptNo: t('receipt_no'), table: t('table'), date: t('date'), time: t('time'),
+      servedBy: t('served_by'), subtotal: t('subtotal'), sst: t('sst'),
+      service: t('service'), total: t('total'), payment: t('payment'),
+      thankYou: t('thank_you'), comeAgain: t('come_again'),
+      newOrder: t('new_order'), orderUpdate: t('order_update'), cashier: t('cashier'),
+    },
     shopName:   settings.shopName || 'BKT House',
     shopAddress: settings.shopAddress || '',
     cashier:    sess ? sess.name : '',
@@ -1255,9 +1266,10 @@ function printOrderSlipHTML(table, items, isUpdate) {
       <div class="item-block${idx > 0 ? ' item-border' : ''}">
         <div class="item-row">
           <span class="item-qty">${item.quantity}</span>
-          <span class="item-name">${nameEn} ${nameLocal}</span>
+          <span class="item-name">${nameLocal}</span>
           <span class="item-chk">☐</span>
         </div>
+        ${nameEn !== nameLocal ? `<div class="item-sub">${nameEn}</div>` : ''}
         ${mods.map(m => `<div class="item-sub">-${m}</div>`).join('')}
         ${notes ? `<div class="item-sub">*${notes}</div>` : ''}
       </div>`;
@@ -1297,7 +1309,7 @@ function printOrderSlipHTML(table, items, isUpdate) {
   <div class="header">
     <div class="header-left">
       ${dateTime}<br>
-      ${isUpdate ? 'ORDER UPDATE' : 'NEW ORDER'}
+      ${isUpdate ? t('order_update') : t('new_order')}
     </div>
     <div class="header-right">
       <div class="table-no">${table}</div>
@@ -1347,8 +1359,9 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
   const shopName    = settings.shopName || 'BKT House';
   const shopAddress = settings.shopAddress || '';
   const receiptNo   = orderId || `RCP-${Date.now()}`;
-  const methodLabel = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: 'Cash', card: 'Credit Card' };
+  const methodLabel = { tng: 'Touch & Go eWallet', duitnow: 'DuitNow QR', cash: t('cash'), card: t('credit_card') };
   const payLabel   = methodLabel[method] || method;
+  const cur = getCurrency();
 
   const itemRows = items.map(item => {
     const mods  = (item.selectedModifiers || []).map(m => m.optionLabel).join(', ');
@@ -1362,7 +1375,7 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
           ${mods  ? `<div class="item-mod">${mods}</div>`      : ''}
           ${notes ? `<div class="item-note">📝 ${notes}</div>` : ''}
         </td>
-        <td class="td-price">RM&nbsp;${item.subtotal.toFixed(2)}</td>
+        <td class="td-price">${cur}&nbsp;${item.subtotal.toFixed(2)}</td>
       </tr>`;
   }).join('');
 
@@ -1401,28 +1414,28 @@ function printPaymentReceiptHTML(table, items, bd, method, orderId) {
 </style></head><body>
   <div class="shop-name">${shopName}</div>
   ${shopAddress ? `<div class="shop-sub">${shopAddress}</div>` : ''}
-  <div class="shop-sub">Official Receipt</div>
-  <div class="receipt-lbl">RECEIPT</div>
+  <div class="shop-sub">${t('official_receipt')}</div>
+  <div class="receipt-lbl">${t('receipt')}</div>
   <hr class="divider">
-  <div class="meta-row"><span class="lbl">Receipt No</span><span>${receiptNo}</span></div>
-  <div class="meta-row"><span class="lbl">Table</span><span>${table}</span></div>
-  <div class="meta-row"><span class="lbl">Date</span><span>${dateStr}</span></div>
-  <div class="meta-row"><span class="lbl">Time</span><span>${timeStr}</span></div>
-  ${cashierName ? `<div class="meta-row"><span class="lbl">Served by</span><span>${cashierName}</span></div>` : ''}
+  <div class="meta-row"><span class="lbl">${t('receipt_no')}</span><span>${receiptNo}</span></div>
+  <div class="meta-row"><span class="lbl">${t('table')}</span><span>${table}</span></div>
+  <div class="meta-row"><span class="lbl">${t('date')}</span><span>${dateStr}</span></div>
+  <div class="meta-row"><span class="lbl">${t('time')}</span><span>${timeStr}</span></div>
+  ${cashierName ? `<div class="meta-row"><span class="lbl">${t('served_by')}</span><span>${cashierName}</span></div>` : ''}
   <hr class="divider">
   <table><tbody>${itemRows}</tbody></table>
   <hr class="divider">
   <div class="summary">
-    <div class="sum-row"><span>Subtotal</span><span>RM&nbsp;${bd.subtotal.toFixed(2)}</span></div>
-    ${bd.sst ? `<div class="sum-row"><span>SST (${bd.sstRate}%)</span><span>RM&nbsp;${bd.sst.toFixed(2)}</span></div>` : ''}
-    ${bd.svc ? `<div class="sum-row"><span>Service (${bd.svcRate}%)</span><span>RM&nbsp;${bd.svc.toFixed(2)}</span></div>` : ''}
-    <div class="sum-row total"><span>TOTAL</span><span>RM&nbsp;${bd.total.toFixed(2)}</span></div>
+    <div class="sum-row"><span>${t('subtotal')}</span><span>${cur}&nbsp;${bd.subtotal.toFixed(2)}</span></div>
+    ${bd.sst ? `<div class="sum-row"><span>${t('sst')} (${bd.sstRate}%)</span><span>${cur}&nbsp;${bd.sst.toFixed(2)}</span></div>` : ''}
+    ${bd.svc ? `<div class="sum-row"><span>${t('service')} (${bd.svcRate}%)</span><span>${cur}&nbsp;${bd.svc.toFixed(2)}</span></div>` : ''}
+    <div class="sum-row total"><span>${t('total')}</span><span>${cur}&nbsp;${bd.total.toFixed(2)}</span></div>
   </div>
   <hr class="divider">
-  <div class="pay-row"><span class="lbl">Payment</span><span>${payLabel}</span></div>
+  <div class="pay-row"><span class="lbl">${t('payment')}</span><span>${payLabel}</span></div>
   <div class="footer">
-    Thank you for dining with us!<br>
-    Please come again ☺
+    ${t('thank_you')}<br>
+    ${t('come_again')}
   </div>
 <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); };<\/script>
 </body></html>`;

@@ -498,9 +498,23 @@ app.put('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
 
 app.delete('/api/admin/tenants/:slug', adminAuth, async (req, res) => {
   if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });
-  await saasDb.collection('tenants').updateOne({ slug: req.params.slug }, { $set: { status: 'disabled', updatedAt: new Date() } });
-  tenantStores.delete(req.params.slug);
-  res.json({ ok: true });
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+  try {
+    // Drop the tenant's database to free cloud storage
+    if (tenant.dbName) {
+      const tenantDb = saasClient.db(tenant.dbName);
+      await tenantDb.dropDatabase();
+    }
+    // Remove tenant record
+    await saasDb.collection('tenants').deleteOne({ slug: req.params.slug });
+    // Remove from in-memory cache
+    tenantStores.delete(req.params.slug);
+    res.json({ ok: true, deleted: tenant.name, dbDropped: tenant.dbName });
+  } catch (e) {
+    res.status(500).json({ error: `Failed to delete tenant: ${e.message}` });
+  }
 });
 
 // ─── Admin: Tenant sales summary ─────────────────────────────────────────────
@@ -1247,9 +1261,10 @@ function buildEscPos(job) {
     const d = job.data;
     // Date/time left, table number large right
     printLR(parts, d.dateTime || '', d.table, { fontSize: LG, bold: true });
-    printLine(parts, d.isUpdate ? (d.lang === 'zh' ? '订单更新' : 'ORDER UPDATE') : (d.lang === 'zh' ? '新订单' : 'NEW ORDER'), { fontSize: S, bold: true, align: 'left' });
-    if (d.cashier) printLine(parts, `${d.lang === 'zh' ? '收银员' : 'Cashier'}: ${d.cashier}`, { fontSize: SM });
-    if (d.pax > 0) printLine(parts, `${d.lang === 'zh' ? '人数' : 'Pax'}: ${d.pax}`, { fontSize: SM });
+    const ol = d.labels || {};
+    printLine(parts, d.isUpdate ? (ol.orderUpdate || 'ORDER UPDATE') : (ol.newOrder || 'NEW ORDER'), { fontSize: S, bold: true, align: 'left' });
+    if (d.cashier) printLine(parts, `${ol.cashier || 'Cashier'}: ${d.cashier}`, { fontSize: SM });
+    if (d.pax > 0) printLine(parts, `Pax: ${d.pax}`, { fontSize: SM });
     printDash(parts);
     (d.items || []).forEach((item, idx) => {
       // Qty + Chinese name (large, bold) on first line
@@ -1274,28 +1289,30 @@ function buildEscPos(job) {
     const d = job.data;
     printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
     if (d.shopAddress) printLine(parts, d.shopAddress, { fontSize: SM, align: 'center' });
-    printLine(parts, d.lang === 'zh' ? '正式收据' : 'Official Receipt', { fontSize: S, align: 'center' });
-    printLine(parts, d.lang === 'zh' ? '收据' : 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
+    const rl = d.labels || {};
+    const cur = d.currency || 'RM';
+    printLine(parts, rl.officialReceipt || 'Official Receipt', { fontSize: S, align: 'center' });
+    printLine(parts, rl.receipt || 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
     printDash(parts);
-    printLR(parts, d.lang === 'zh' ? '收据号' : 'Receipt No', d.receiptNo, { fontSize: S });
-    printLR(parts, d.lang === 'zh' ? '桌号' : 'Table', d.table, { fontSize: S });
-    printLR(parts, d.lang === 'zh' ? '日期' : 'Date', d.dateStr, { fontSize: S });
-    printLR(parts, d.lang === 'zh' ? '时间' : 'Time', d.timeStr, { fontSize: S });
-    if (d.cashier) printLR(parts, d.lang === 'zh' ? '服务员' : 'Served by', d.cashier, { fontSize: S });
+    printLR(parts, rl.receiptNo || 'Receipt No', d.receiptNo, { fontSize: S });
+    printLR(parts, rl.table || 'Table', d.table, { fontSize: S });
+    printLR(parts, rl.date || 'Date', d.dateStr, { fontSize: S });
+    printLR(parts, rl.time || 'Time', d.timeStr, { fontSize: S });
+    if (d.cashier) printLR(parts, rl.servedBy || 'Served by', d.cashier, { fontSize: S });
     printDash(parts);
     (d.items || []).forEach(item => {
-      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `RM${item.price}`, { fontSize: S, bold: true });
+      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { fontSize: S, bold: true });
       if (item.nameEn) printLine(parts, `   ${item.nameEn}`, { fontSize: SM });
       if (item.mods)   printLine(parts, `   [${item.mods}]`, { fontSize: SM });
       if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
     });
     printDash(parts);
-    printLR(parts, d.lang === 'zh' ? '小计' : 'Subtotal', `RM${d.subtotal || d.total}`, { fontSize: S });
-    if (d.sst) printLR(parts, `${d.lang === 'zh' ? '销售税' : 'SST'} (${d.sstRate || 6}%)`, `RM${d.sst}`, { fontSize: S });
-    if (d.svc) printLR(parts, `${d.lang === 'zh' ? '服务费' : 'Service'} (${d.svcRate || 10}%)`, `RM${d.svc}`, { fontSize: S });
-    printLR(parts, d.lang === 'zh' ? '总计' : 'TOTAL', `RM${d.total}`, { fontSize: 40, bold: true });
+    printLR(parts, rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`, { fontSize: S });
+    if (d.sst) printLR(parts, `${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`, { fontSize: S });
+    if (d.svc) printLR(parts, `${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`, { fontSize: S });
+    printLR(parts, rl.total || 'TOTAL', `${cur}${d.total}`, { fontSize: 40, bold: true });
     printDash(parts);
-    printLR(parts, d.lang === 'zh' ? '付款方式' : 'Payment', d.payLabel, { fontSize: S });
+    printLR(parts, rl.payment || 'Payment', d.payLabel, { fontSize: S });
     push(LF_BYTE);
     printLine(parts, d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { fontSize: S, align: 'center' });
     printLine(parts, d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { fontSize: S, align: 'center' });

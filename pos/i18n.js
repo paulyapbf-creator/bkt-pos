@@ -194,6 +194,10 @@ const LANG_STRINGS = {
     printer_port: 'Printer Port',
     relay_url: 'Local Relay URL (for cloud server)',
     save_settings: 'Save Settings',
+    currency_settings: 'Currency Settings',
+    currency_hint: 'Set the currency symbol shown on prices. Choose to follow the selected language or use a fixed symbol.',
+    currency_follow_lang: 'Follow language default',
+    currency_fixed: 'Fixed currency symbol',
     network_info: 'Network Info',
     network_desc: 'Connect other devices on the same WiFi using these addresses:',
     sync_cloud: 'Sync to Cloud',
@@ -405,6 +409,10 @@ const LANG_STRINGS = {
     printer_port: '打印机端口',
     relay_url: '本地中继URL（用于云服务器）',
     save_settings: '保存设置',
+    currency_settings: '货币设置',
+    currency_hint: '设置价格显示的货币符号。选择跟随语言默认或使用固定符号。',
+    currency_follow_lang: '跟随语言默认',
+    currency_fixed: '固定货币符号',
     network_info: '网络信息',
     network_desc: '使用以下地址连接同一WiFi上的其他设备：',
     sync_cloud: '同步到云端',
@@ -616,6 +624,10 @@ const LANG_STRINGS = {
     printer_port: 'พอร์ตเครื่องพิมพ์',
     relay_url: 'URL รีเลย์ (สำหรับเซิร์ฟเวอร์คลาวด์)',
     save_settings: 'บันทึกการตั้งค่า',
+    currency_settings: 'ตั้งค่าสกุลเงิน',
+    currency_hint: 'ตั้งค่าสัญลักษณ์สกุลเงินที่แสดงบนราคา เลือกตามภาษาหรือใช้สัญลักษณ์คงที่',
+    currency_follow_lang: 'ตามภาษาที่เลือก',
+    currency_fixed: 'สัญลักษณ์คงที่',
     network_info: 'ข้อมูลเครือข่าย',
     network_desc: 'เชื่อมต่ออุปกรณ์อื่นบน WiFi เดียวกันด้วยที่อยู่เหล่านี้:',
     sync_cloud: 'ซิงค์ไปคลาวด์',
@@ -827,6 +839,10 @@ const LANG_STRINGS = {
     printer_port: 'Cổng máy in',
     relay_url: 'URL relay nội bộ (cho máy chủ cloud)',
     save_settings: 'Lưu cài đặt',
+    currency_settings: 'Cài đặt tiền tệ',
+    currency_hint: 'Đặt ký hiệu tiền tệ hiển thị trên giá. Chọn theo ngôn ngữ hoặc dùng ký hiệu cố định.',
+    currency_follow_lang: 'Theo ngôn ngữ mặc định',
+    currency_fixed: 'Ký hiệu cố định',
     network_info: 'Thông tin mạng',
     network_desc: 'Kết nối thiết bị khác trên cùng WiFi bằng địa chỉ này:',
     sync_cloud: 'Đồng bộ lên cloud',
@@ -1038,6 +1054,10 @@ const LANG_STRINGS = {
     printer_port: 'Port Pencetak',
     relay_url: 'URL Relay Tempatan (untuk pelayan awan)',
     save_settings: 'Simpan Tetapan',
+    currency_settings: 'Tetapan Mata Wang',
+    currency_hint: 'Tetapkan simbol mata wang pada harga. Pilih ikut bahasa atau guna simbol tetap.',
+    currency_follow_lang: 'Ikut bahasa lalai',
+    currency_fixed: 'Simbol mata wang tetap',
     network_info: 'Maklumat Rangkaian',
     network_desc: 'Sambungkan peranti lain pada WiFi yang sama menggunakan alamat ini:',
     sync_cloud: 'Segerak ke Awan',
@@ -1249,6 +1269,10 @@ const LANG_STRINGS = {
     printer_port: 'ច្រកម៉ាស៊ីនបោះពុម្ព',
     relay_url: 'URL Relay មូលដ្ឋាន (សម្រាប់ម៉ាស៊ីនមេពពក)',
     save_settings: 'រក្សាទុកការកំណត់',
+    currency_settings: 'ការកំណត់រូបិយប័ណ្ណ',
+    currency_hint: 'កំណត់និមិត្តសញ្ញារូបិយប័ណ្ណលើតម្លៃ។ ជ្រើសតាមភាសា ឬប្រើនិមិត្តសញ្ញាថេរ។',
+    currency_follow_lang: 'តាមភាសាលំនាំដើម',
+    currency_fixed: 'និមិត្តសញ្ញាថេរ',
     network_info: 'ព័ត៌មានបណ្តាញ',
     network_desc: 'ភ្ជាប់ឧបករណ៍ផ្សេងលើ WiFi តែមួយដោយប្រើអាសយដ្ឋានទាំងនេះ:',
     sync_cloud: 'ធ្វើសមកាលកម្មទៅពពក',
@@ -1460,6 +1484,10 @@ const LANG_STRINGS = {
     printer_port: 'Port Printer',
     relay_url: 'URL Relay Lokal (untuk server cloud)',
     save_settings: 'Simpan Pengaturan',
+    currency_settings: 'Pengaturan Mata Uang',
+    currency_hint: 'Atur simbol mata uang pada harga. Pilih ikut bahasa atau gunakan simbol tetap.',
+    currency_follow_lang: 'Ikut bahasa default',
+    currency_fixed: 'Simbol mata uang tetap',
     network_info: 'Info Jaringan',
     network_desc: 'Hubungkan perangkat lain di WiFi yang sama menggunakan alamat ini:',
     sync_cloud: 'Sinkronkan ke Cloud',
@@ -1527,7 +1555,18 @@ function onLangChange(fn) {
 const LANG_CURRENCY = { en: 'RM', zh: 'RM', th: '฿', vi: '₫', ms: 'RM', km: '៛', id: 'Rp' };
 
 function getCurrency() {
+  try {
+    const saved = localStorage.getItem('bkt_currency');
+    if (saved) {
+      const cfg = JSON.parse(saved);
+      if (cfg.mode === 'fixed' && cfg.symbol) return cfg.symbol;
+    }
+  } catch {}
   return LANG_CURRENCY[_currentLang] || 'RM';
+}
+
+function _applyCurrencyOverride() {
+  _onLangChange.forEach(fn => fn(_currentLang));
 }
 
 function fmtPrice(amount) {

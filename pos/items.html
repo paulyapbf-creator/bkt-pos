@@ -195,6 +195,33 @@
       <h2 class="settings-title" data-i18n="maintenance">Maintenance</h2>
       <p class="settings-hint" data-i18n="reset_desc">Use before going live or at the start of a new day to ensure a clean slate.</p>
 
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">💱 <span data-i18n="currency_settings">Currency Settings</span></div>
+          <div class="maint-card-desc" data-i18n="currency_hint">Set the currency symbol shown on prices. Choose to follow the selected language or use a fixed symbol.</div>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+              <input type="radio" name="currency-mode" id="currency-auto" value="auto" checked>
+              <span data-i18n="currency_follow_lang">Follow language default</span>
+            </label>
+            <span id="currency-auto-preview" style="font-size:12px;color:var(--muted);background:var(--header);padding:2px 8px;border-radius:4px;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+              <input type="radio" name="currency-mode" id="currency-fixed" value="fixed">
+              <span data-i18n="currency_fixed">Fixed currency symbol</span>
+            </label>
+            <input type="text" id="currency-symbol-input" maxlength="5" placeholder="e.g. RM, $, ฿" style="width:80px;background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 8px;font-size:13px;text-align:center;" disabled>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button id="currency-save-btn" class="add-btn" style="padding:6px 18px;font-size:13px;" data-i18n="save">Save</button>
+            <span id="currency-save-msg" style="font-size:13px;color:#888;"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="maint-card" id="network-info-card">
         <div class="maint-card-info">
           <div class="maint-card-title">🌐 <span data-i18n="network_info">Network Info</span></div>
@@ -352,9 +379,58 @@
       const lc = document.getElementById('header-lang');
       if (lc && typeof createLangSwitcher === 'function') {
         lc.appendChild(createLangSwitcher());
-        onLangChange(() => translatePage());
+        onLangChange(() => {
+          translatePage();
+          updateCurrencyPreview();
+        });
       }
       translatePage();
+
+      // ── Currency settings ──
+      const autoRadio = document.getElementById('currency-auto');
+      const fixedRadio = document.getElementById('currency-fixed');
+      const symbolInput = document.getElementById('currency-symbol-input');
+      const saveBtn = document.getElementById('currency-save-btn');
+      const saveMsg = document.getElementById('currency-save-msg');
+
+      function loadCurrencySetting() {
+        const saved = localStorage.getItem('bkt_currency');
+        if (saved) {
+          try {
+            const cfg = JSON.parse(saved);
+            if (cfg.mode === 'fixed' && cfg.symbol) {
+              fixedRadio.checked = true;
+              symbolInput.value = cfg.symbol;
+              symbolInput.disabled = false;
+            }
+          } catch {}
+        }
+        updateCurrencyPreview();
+      }
+
+      function updateCurrencyPreview() {
+        const preview = document.getElementById('currency-auto-preview');
+        if (preview && typeof getCurrency === 'function') {
+          const saved = localStorage.getItem('bkt_currency');
+          let autoSymbol = (typeof LANG_CURRENCY !== 'undefined') ? LANG_CURRENCY[getLang()] || 'RM' : 'RM';
+          preview.textContent = autoSymbol;
+        }
+      }
+
+      autoRadio.addEventListener('change', () => { symbolInput.disabled = true; });
+      fixedRadio.addEventListener('change', () => { symbolInput.disabled = false; symbolInput.focus(); });
+
+      saveBtn.addEventListener('click', () => {
+        const mode = fixedRadio.checked ? 'fixed' : 'auto';
+        const symbol = symbolInput.value.trim() || 'RM';
+        const cfg = { mode, symbol: mode === 'fixed' ? symbol : '' };
+        localStorage.setItem('bkt_currency', JSON.stringify(cfg));
+        if (typeof _applyCurrencyOverride === 'function') _applyCurrencyOverride();
+        saveMsg.textContent = '✓';
+        setTimeout(() => { saveMsg.textContent = ''; }, 2000);
+      });
+
+      loadCurrencySetting();
     })();
   </script>
 </body>

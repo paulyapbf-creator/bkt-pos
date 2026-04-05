@@ -81,6 +81,7 @@ async function loadTenants() {
             ? `<button class="btn btn-sm btn-dim" onclick="toggleTenant('${t.slug}', 'disabled')">Disable</button>`
             : `<button class="btn btn-sm btn-green" onclick="toggleTenant('${t.slug}', 'active')">Enable</button>`
           }
+          <button class="btn btn-sm" style="background:var(--red);" onclick="deleteTenant('${t.slug}', '${t.name.replace(/'/g, "\\'")}')">Delete</button>
         </td>
       </tr>`;
     }).join('');
@@ -133,6 +134,30 @@ async function toggleTenant(slug, status) {
     body: JSON.stringify({ status }),
   });
   loadTenants();
+}
+
+// ─── Delete tenant ───────────────────────────────────────────────────────────
+
+async function deleteTenant(slug, name) {
+  if (!confirm(`⚠️ PERMANENTLY DELETE "${name}" (${slug})?\n\nThis will:\n• Drop the entire database\n• Remove all orders, menu, settings\n• Free up cloud storage\n\nThis CANNOT be undone!`)) return;
+  if (!confirm(`Are you absolutely sure? Type the slug to confirm.\n\nDeleting: ${slug}`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/tenants/${slug}`, {
+      method: 'DELETE',
+      headers: apiHeaders(),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Tenant "${name}" deleted. Database ${data.dbDropped} dropped.`);
+      if (currentDetailSlug === slug) closeDetail();
+      loadTenants();
+    } else {
+      alert(`Failed: ${data.error}`);
+    }
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
 }
 
 // ─── View tenant detail ──────────────────────────────────────────────────────
