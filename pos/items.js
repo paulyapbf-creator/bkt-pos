@@ -500,6 +500,19 @@ function initSettings() {
       if (res.ok) ok = true;
     } catch (_) {}
 
+    // Try Capacitor native PrintBridge (Android app)
+    if (!ok && escposB64 && window.Capacitor?.isNativePlatform()) {
+      try {
+        const { PrintBridge } = window.Capacitor.Plugins;
+        await PrintBridge.printRaw({
+          data: escposB64,
+          ip:   ip,
+          port: parseInt(printerPortInput.value, 10) || 9100,
+        });
+        ok = true;
+      } catch (_) {}
+    }
+
     // Try relay with server-built bytes
     if (!ok && escposB64) {
       const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
