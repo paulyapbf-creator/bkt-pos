@@ -3,8 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2026041002">
+  <script>
+    // Cache-bust: reload CSS & JS if stale
+    document.addEventListener('DOMContentLoaded', () => {
+      const v = Date.now();
+      document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
+        if (l.href.includes('style.css') && !l.href.includes(String(v).slice(0,8))) {
+          l.href = l.href.replace(/\?.*/, '') + '?v=' + v;
+        }
+      });
+    });
+  </script>
 </head>
 <body>
 
@@ -59,6 +73,17 @@
 
     <!-- Right: Menu panel -->
     <div id="menu-panel">
+      <!-- Mobile-only table/pax selector at top of menu -->
+      <div id="mobile-table-bar" class="mobile-table-bar">
+        <button id="mobile-table-btn" class="table-select-btn tbl-btn-no-table" type="button"><span data-i18n="select_table">Select Table</span> <span class="tbl-arrow">▾</span></button>
+        <div class="pax-inline">
+          <button class="pax-inline-btn" id="mobile-pax-minus" type="button">−</button>
+          <span class="pax-inline-val" id="mobile-pax-display">1</span>
+          <button class="pax-inline-btn" id="mobile-pax-plus" type="button">+</button>
+          <span class="pax-inline-label" data-i18n="pax">pax</span>
+        </div>
+        <button id="mobile-pay-btn" class="mobile-pay-btn" type="button" title="Pay">💰</button>
+      </div>
       <div id="search-wrap">
         <input type="search" id="search-input" data-i18n-placeholder="search" placeholder="🔍  Search…" autocomplete="off">
       </div>
@@ -69,6 +94,14 @@
     </div>
 
   </div><!-- /main-layout -->
+
+  <!-- ── Mobile floating basket bar (visible only on mobile) ── -->
+  <button id="mobile-basket-bar" class="mobile-basket-bar hidden" type="button">
+    <span class="mobile-basket-left">
+      <span class="mobile-basket-count" id="mobile-basket-count">0</span>
+    </span>
+    <span class="mobile-basket-right" id="mobile-basket-total">RM 0.00</span>
+  </button>
 
   <!-- ── Table picker modal ── -->
   <div id="table-picker-modal" class="overlay hidden" role="dialog" aria-modal="true">
@@ -149,6 +182,6 @@
   <script src="i18n.js"></script>
   <script src="menuDefaults.js"></script>
   <script src="auth.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2026041002"></script>
 </body>
 </html>

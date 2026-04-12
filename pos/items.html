@@ -84,6 +84,10 @@
       <h2 class="settings-title" style="margin-top:24px;" data-i18n="payment_settings">Payment Settings</h2>
       <p class="settings-hint" data-i18n="payment_settings_hint">Configure payment links and QR codes for e-wallet payments.</p>
 
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-tng-enabled"> <span data-i18n="enable_tng">Enable Touch &amp; Go eWallet Payment</span></label>
+      </div>
+
       <div class="settings-field">
         <label data-i18n="tng_payment_link">Touch &amp; Go eWallet — Payment Link</label>
         <input type="url" id="s-tng-link" placeholder="https://payment.tngdigital.com.my/sc/…">
@@ -100,8 +104,30 @@
       </div>
 
       <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <label class="check-label"><input type="checkbox" id="s-verify-ewallet"> <span data-i18n="enable_ewallet_verify">Enable e-Wallet Receipt Verification</span></label>
-        <p class="settings-hint" style="margin:0;">Cashier photographs the customer's payment receipt for OCR amount verification before confirming.</p>
+        <label class="check-label"><input type="checkbox" id="s-duitnow-enabled"> <span data-i18n="enable_duitnow">Enable DuitNow QR Payment</span></label>
+      </div>
+
+      <div class="settings-field">
+        <label>Wallet Service URL</label>
+        <input type="url" id="s-wallet-url" placeholder="http://localhost:4568">
+        <p class="settings-hint" style="margin-top:4px;">URL of the wallet payment gateway service. Provides multi-tenant DuitNow/AmpersandPay/ECPI gateways.</p>
+      </div>
+
+      <div class="settings-field">
+        <label>Payment Gateway Profile</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="s-duitnow-profile" style="flex:1;background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-size:14px;">
+            <option value="">-- Select profile --</option>
+          </select>
+          <button type="button" id="s-wallet-reload-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;">Reload</button>
+        </div>
+        <p class="settings-hint" style="margin-top:4px;" id="s-duitnow-profile-hint">Pick a tenant profile configured in the wallet admin. Each profile has its own merchant credentials.</p>
+      </div>
+
+      <div class="settings-field">
+        <label>Terminal Code (optional)</label>
+        <input type="text" id="s-duitnow-terminal" placeholder="POS01">
+        <p class="settings-hint" style="margin-top:4px;">Override the profile's default terminal code. Leave empty to use profile default.</p>
       </div>
 
       <h2 class="settings-title" style="margin-top:24px;" data-i18n="airwallex_card">Airwallex Card Payments</h2>

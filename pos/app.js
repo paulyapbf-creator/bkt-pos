@@ -379,16 +379,21 @@ function renderTablePickerBody() {
 }
 
 function updateTableBtn() {
-  const btn    = document.getElementById('table-select-btn');
+  const btns = [document.getElementById('table-select-btn'), document.getElementById('mobile-table-btn')].filter(Boolean);
   const bills  = loadActiveBills();
   const hasAct = state.tableNumber && !!bills[state.tableNumber];
-  if (state.tableNumber) {
-    btn.innerHTML = `${state.tableNumber}${hasAct ? ' <span class="tbl-dot">●</span>' : ''} <span class="tbl-arrow">▾</span>`;
-  } else {
-    btn.innerHTML = `${t('select_table')} <span class="tbl-arrow">▾</span>`;
-  }
-  btn.classList.toggle('tbl-btn-no-table',    !state.tableNumber);
-  btn.classList.toggle('tbl-btn-active-bill',  !!hasAct);
+  btns.forEach(btn => {
+    if (state.tableNumber) {
+      btn.innerHTML = `${state.tableNumber}${hasAct ? ' <span class="tbl-dot">●</span>' : ''} <span class="tbl-arrow">▾</span>`;
+    } else {
+      btn.innerHTML = `${t('select_table')} <span class="tbl-arrow">▾</span>`;
+    }
+    btn.classList.toggle('tbl-btn-no-table',    !state.tableNumber);
+    btn.classList.toggle('tbl-btn-active-bill',  !!hasAct);
+  });
+  // Sync mobile pax display
+  const mp = document.getElementById('mobile-pax-display');
+  if (mp) mp.textContent = state.pax;
 }
 
 // ─── RENDER: Cart panel (left) ────────────────────────────────────────────────
@@ -407,6 +412,24 @@ function renderCartPanel() {
   document.getElementById('cp-total').textContent = `${getCurrency()} ${total.toFixed(2)}`;
   document.getElementById('cp-item-count').textContent =
     hasItems ? `${totalItems()} item${totalItems() !== 1 ? 's' : ''}` : '';
+
+  // Mobile basket bar — always visible, positioned at search bar level
+  const mb = document.getElementById('mobile-basket-bar');
+  if (mb) {
+    mb.classList.remove('hidden');
+    document.getElementById('mobile-basket-count').textContent = totalItems();
+    document.getElementById('mobile-basket-total').textContent = `${getCurrency()} ${total.toFixed(2)}`;
+    mb.classList.toggle('mobile-basket-empty', !hasItems);
+    // Position at search bar level
+    const sw = document.getElementById('search-wrap');
+    if (sw && window.innerWidth <= 640) {
+      const rect = sw.getBoundingClientRect();
+      mb.style.top = rect.top + 'px';
+      mb.style.height = rect.height + 'px';
+      mb.style.display = 'inline-flex';
+      mb.style.alignItems = 'center';
+    }
+  }
 
   const sendBtn = document.getElementById('send-btn');
   sendBtn.disabled = !hasItems;
@@ -641,6 +664,7 @@ async function openBillingModal() {
 
 function closeBillingModal() {
   destroyAirwallexElement();
+  if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; }
   document.getElementById('payment-modal').classList.add('hidden');
   document.body.style.overflow = '';
   state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
@@ -707,8 +731,11 @@ function renderBillingStep() {
     const bd = calcBillBreakdown(subtotal, settings);
     titleEl.textContent = t('select_payment'); subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
+    const tngEnabled = settings.tngEnabled !== false; // default on
+    const duitnowEnabled = !!settings.duitnowEnabled;
     bodyEl.innerHTML = `<div class="pay-methods">
-      <button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">${t('tng_ewallet')}</span></button>
+      ${tngEnabled ? `<button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">${t('tng_ewallet')}</span></button>` : ''}
+      ${duitnowEnabled ? `<button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">${t('duitnow')}</span></button>` : ''}
       ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
       <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
     </div>`;
@@ -740,6 +767,11 @@ function renderBillingStep() {
       }
       body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
       body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>${getCurrency()} ${bd.total.toFixed(2)}</b> received in TNG app before confirming</div>`;
+    } else if (method === 'duitnow') {
+      // Dynamic DuitNow QR via wallet gateway
+      body = `<div class="qr-container"><div id="pay-qr-el" style="display:inline-block;"><div class="card-spinner"></div><div style="color:var(--muted);font-size:13px;margin-top:8px;">Creating DuitNow transaction...</div></div></div>`;
+      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
+      body += `<div id="duitnow-status" style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">Waiting for customer to scan QR…</div>`;
     } else if (method === 'card') {
       body = `<div class="card-pay-container">
         <div class="card-pay-loading" id="card-loading"><div class="card-spinner"></div><div>Setting up card payment...</div></div>
@@ -752,7 +784,7 @@ function renderBillingStep() {
     bodyEl.innerHTML = body;
     // Render QR code from payment link
     const qrEl = document.getElementById('pay-qr-el');
-    if (qrEl && payLink && typeof qrcode === 'function') {
+    if (method === 'tng' && qrEl && payLink && typeof qrcode === 'function') {
       try {
         const qr = qrcode(0, 'M'); qr.addData(payLink); qr.make();
         qrEl.innerHTML = qr.createSvgTag(6, 0);
@@ -763,13 +795,12 @@ function renderBillingStep() {
     if (method === 'card') {
       confirmBtn.classList.add('hidden');
       initAirwallexPayment(bd.total, state.payingTable, settings, bd);
+    } else if (method === 'duitnow') {
+      confirmBtn.textContent = t('payment_received');
+      confirmBtn.classList.remove('hidden');
+      initDuitNowPayment(bd.total, state.payingTable, settings);
     } else {
-      const settings2 = loadSettings();
-      if (settings2.verifyEwallet && method !== 'cash') {
-        confirmBtn.textContent = t('verify_receipt_btn');
-      } else {
-        confirmBtn.textContent = method === 'cash' ? t('confirm_cash') : t('payment_received');
-      }
+      confirmBtn.textContent = method === 'cash' ? t('confirm_cash') : t('payment_received');
       confirmBtn.classList.remove('hidden');
     }
 
@@ -916,20 +947,111 @@ function handleBillingBack() {
 
 function handleBillingConfirm() {
   if (state.payStep === 'bill') { state.payStep = 'method'; renderBillingStep(); }
-  else if (state.payStep === 'qr') {
-    const settings = loadSettings();
-    if (settings.verifyEwallet && state.payMethod !== 'cash') {
-      state.payStep = 'verify'; renderBillingStep();
-    } else {
-      confirmTablePayment();
-    }
-  }
-  else if (state.payStep === 'verify') confirmTablePayment();
+  else if (state.payStep === 'qr') confirmTablePayment();
 }
 
 // ─── AIRWALLEX CARD PAYMENT ───────────────────────────────────────────────────
 
 let airwallexElement = null;
+
+// ─── DUITNOW PAYMENT (via wallet gateway) ──────────────────────────────────
+
+let _duitnowPollController = null;
+let _duitnowRefNo = null;
+
+async function initDuitNowPayment(amount, table, settings) {
+  const qrEl = document.getElementById('pay-qr-el');
+  const statusEl = document.getElementById('duitnow-status');
+  if (!qrEl) return;
+
+  const profile = settings.duitnowProfile || '';
+  const terminalCode = settings.duitnowTerminal || '';
+
+  if (!settings.walletUrl) {
+    qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Wallet URL not configured.<br>Go to Items → System Settings.</div>`;
+    return;
+  }
+  if (!profile) {
+    qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">No payment profile selected.<br>Go to Items → System Settings.</div>`;
+    return;
+  }
+
+  // Cancel any previous polling
+  if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; }
+
+  const referenceNo = `${table}-${Date.now()}`;
+  _duitnowRefNo = referenceNo;
+
+  try {
+    const body = { tenantId: profile, amount: parseFloat(amount.toFixed(2)), referenceNo };
+    if (terminalCode) body.terminalCode = terminalCode;
+
+    const res = await fetch(`${API_BASE}/api/wallet/duitnow/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Failed: ${data.message || data.error || 'Unknown error'}</div>`;
+      if (statusEl) statusEl.style.display = 'none';
+      return;
+    }
+
+    // Render QR from returned EMV data
+    if (data.qrData && typeof qrcode === 'function') {
+      try {
+        const qr = qrcode(0, 'M'); qr.addData(data.qrData); qr.make();
+        qrEl.innerHTML = qr.createSvgTag(6, 0);
+        const svg = qrEl.querySelector('svg');
+        if (svg) svg.style.cssText = 'width:260px;height:260px;border-radius:12px;background:#fff;padding:8px;';
+      } catch (e) {
+        // Fallback to image endpoint via proxy
+        qrEl.innerHTML = `<img src="${API_BASE}/api/wallet/qr?data=${encodeURIComponent(data.qrData)}" style="width:260px;height:260px;border-radius:12px;background:#fff;padding:8px;">`;
+      }
+    } else {
+      qrEl.innerHTML = `<img src="${API_BASE}/api/wallet/qr?data=${encodeURIComponent(data.qrData || '')}" style="width:260px;height:260px;border-radius:12px;background:#fff;padding:8px;">`;
+    }
+
+    // Start polling for status
+    _duitnowPollController = new AbortController();
+    pollDuitNowStatus(profile, referenceNo, _duitnowPollController.signal);
+  } catch (e) {
+    qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Error: ${e.message}</div>`;
+    if (statusEl) statusEl.style.display = 'none';
+  }
+}
+
+async function pollDuitNowStatus(tenantId, referenceNo, signal) {
+  const statusEl = document.getElementById('duitnow-status');
+  try {
+    const res = await fetch(`${API_BASE}/api/wallet/duitnow/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, referenceNo, intervalMs: 3000, maxAttempts: 120 }),
+      signal,
+    });
+    const data = await res.json();
+    if (data.success && (data.status === 'success' || data.paymentStatus === 'success')) {
+      if (statusEl) {
+        statusEl.textContent = '✅ Payment received! Confirming…';
+        statusEl.style.background = '#d4edda';
+        statusEl.style.color = '#155724';
+      }
+      // Auto-confirm the payment
+      setTimeout(() => { if (state.payStep === 'qr' && state.payMethod === 'duitnow') confirmTablePayment(); }, 800);
+    } else {
+      if (statusEl) {
+        statusEl.textContent = `⚠️ ${data.message || 'Payment not completed'}`;
+        statusEl.style.background = '#f8d7da';
+        statusEl.style.color = '#721c24';
+      }
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    if (statusEl) statusEl.textContent = `Polling error: ${e.message}`;
+  }
+}
 
 async function initAirwallexPayment(amount, table, settings, bd) {
   const loadingEl = document.getElementById('card-loading');
@@ -1204,7 +1326,22 @@ async function sendToPrinter(job) {
     if (res.ok) return true;
   } catch (_) {}
 
-  // Try 2: local relay with server-built ESC/POS bytes
+  // Try 2: Capacitor native bridge (Android app)
+  if (escposB64 && window.Capacitor?.isNativePlatform()) {
+    try {
+      const { PrintBridge } = window.Capacitor.Plugins;
+      await PrintBridge.printRaw({
+        data: escposB64,
+        ip:   settings.printerIp,
+        port: parseInt(settings.printerPort, 10) || 9100,
+      });
+      return true;
+    } catch (e) {
+      console.warn('[print] Native bridge failed:', e);
+    }
+  }
+
+  // Try 3: local relay with server-built ESC/POS bytes
   if (escposB64) {
     const relayUrl = settings.relayUrl || 'http://localhost:9101';
     try {
@@ -1535,15 +1672,21 @@ async function init() {
     renderMenuList();
   });
 
-  // Table picker
+  // Table picker (desktop + mobile)
   document.getElementById('table-select-btn').addEventListener('click', () => openTablePicker(false));
+  const mobileTableBtn = document.getElementById('mobile-table-btn');
+  if (mobileTableBtn) mobileTableBtn.addEventListener('click', () => openTablePicker(false));
   document.getElementById('table-picker-close').addEventListener('click', closeTablePicker);
   document.getElementById('table-picker-modal').addEventListener('click', e => {
     if (e.target === e.currentTarget && state.tableNumber) closeTablePicker();
   });
 
   // Pax controls
-  function updatePaxDisplay() { document.getElementById('pax-display').textContent = state.pax; }
+  function updatePaxDisplay() {
+    document.getElementById('pax-display').textContent = state.pax;
+    const mp = document.getElementById('mobile-pax-display');
+    if (mp) mp.textContent = state.pax;
+  }
   document.getElementById('pax-minus').addEventListener('click', () => {
     if (state.pax > 1) state.pax--;
     updatePaxDisplay();
@@ -1552,6 +1695,63 @@ async function init() {
     state.pax++;
     updatePaxDisplay();
   });
+  // Mobile pax controls
+  const mPaxMinus = document.getElementById('mobile-pax-minus');
+  const mPaxPlus  = document.getElementById('mobile-pax-plus');
+  if (mPaxMinus) mPaxMinus.addEventListener('click', () => { if (state.pax > 1) state.pax--; updatePaxDisplay(); });
+  if (mPaxPlus)  mPaxPlus.addEventListener('click',  () => { state.pax++; updatePaxDisplay(); });
+
+  // Mobile basket bar — draggable + opens cart sheet on tap
+  const mbar = document.getElementById('mobile-basket-bar');
+  if (mbar) {
+    let dragState = null;
+    const DRAG_THRESHOLD = 8;
+
+    mbar.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      const currentTop = parseInt(mbar.style.top, 10) || mbar.getBoundingClientRect().top;
+      dragState = { startY: touch.clientY, startTop: currentTop, moved: false };
+    }, { passive: true });
+
+    mbar.addEventListener('touchmove', (e) => {
+      if (!dragState) return;
+      const touch = e.touches[0];
+      const deltaY = touch.clientY - dragState.startY;
+      if (Math.abs(deltaY) > DRAG_THRESHOLD) dragState.moved = true;
+      if (!dragState.moved) return;
+      e.preventDefault();
+      const headerH = document.getElementById('header')?.offsetHeight || 56;
+      const barH = mbar.offsetHeight;
+      const minTop = headerH;
+      const maxTop = window.innerHeight - barH - 10;
+      const newTop = Math.max(minTop, Math.min(maxTop, dragState.startTop + deltaY));
+      mbar.style.top = newTop + 'px';
+      mbar.style.transition = 'none';
+    }, { passive: false });
+
+    mbar.addEventListener('touchend', () => {
+      if (!dragState) return;
+      const wasDrag = dragState.moved;
+      dragState = null;
+      mbar.style.transition = '';
+      if (!wasDrag) {
+        document.getElementById('cart-panel').classList.add('mobile-cart-open');
+      }
+    });
+  }
+  // Inject mobile back button into cart head (close the sheet)
+  const cpHead = document.getElementById('cp-head');
+  if (cpHead && !document.getElementById('mobile-cart-back-btn')) {
+    const backBtn = document.createElement('button');
+    backBtn.id = 'mobile-cart-back-btn';
+    backBtn.type = 'button';
+    backBtn.className = 'mobile-cart-back-btn';
+    backBtn.innerHTML = '← Back';
+    backBtn.addEventListener('click', () => {
+      document.getElementById('cart-panel').classList.remove('mobile-cart-open');
+    });
+    cpHead.insertBefore(backBtn, cpHead.firstChild);
+  }
 
   // Cart panel: clear + send
   document.getElementById('cp-clear-btn').addEventListener('click', () => {
@@ -1580,6 +1780,8 @@ async function init() {
       renderCartPanel();
       renderMenuList();
       updateTableBtn();
+      // Mobile: close cart drawer and return to menu
+      document.getElementById('cart-panel').classList.remove('mobile-cart-open');
       showToast(wasEditing ? t('order_updated', { table: sentTable }) : t('order_sent', { table: sentTable }));
       const _ps = loadSettings();
       if (_ps.printOrderSlip !== false) printOrderSlip(sentTable, slipItems, wasEditing);
@@ -1615,6 +1817,8 @@ async function init() {
 
   // Pay bills
   document.getElementById('pay-bills-btn').addEventListener('click', openBillingModal);
+  const mobilePayBtn = document.getElementById('mobile-pay-btn');
+  if (mobilePayBtn) mobilePayBtn.addEventListener('click', openBillingModal);
   document.getElementById('pay-close-btn').addEventListener('click', closeBillingModal);
   document.getElementById('payment-modal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeBillingModal();

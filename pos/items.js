@@ -343,9 +343,16 @@ function initSettings() {
   const settings = loadSettings();
   const shopNameInput    = document.getElementById('s-shop-name');
   const shopAddressInput = document.getElementById('s-shop-address');
+  const tngEnabledInput = document.getElementById('s-tng-enabled');
   const tngLinkInput   = document.getElementById('s-tng-link');
   const tngInput       = document.getElementById('s-tng-url');
   const tngPreview     = document.getElementById('s-tng-preview');
+  const duitnowEnabledInput = document.getElementById('s-duitnow-enabled');
+  const walletUrlInput      = document.getElementById('s-wallet-url');
+  const duitnowProfileInput = document.getElementById('s-duitnow-profile');
+  const duitnowTerminalInput = document.getElementById('s-duitnow-terminal');
+  const walletReloadBtn     = document.getElementById('s-wallet-reload-btn');
+  const duitnowProfileHint  = document.getElementById('s-duitnow-profile-hint');
   const printOrderSlipInput = document.getElementById('s-print-order-slip');
   const printReceiptInput   = document.getElementById('s-print-receipt');
   const printerIpInput   = document.getElementById('s-printer-ip');
@@ -355,7 +362,6 @@ function initSettings() {
   const sstRateInput     = document.getElementById('s-sst-rate');
   const svcEnabledInput  = document.getElementById('s-svc-enabled');
   const svcRateInput     = document.getElementById('s-svc-rate');
-  const verifyEwalletInput = document.getElementById('s-verify-ewallet');
   const awEnabledInput   = document.getElementById('s-aw-enabled');
   const awClientIdInput  = document.getElementById('s-aw-client-id');
   const awApiKeyInput    = document.getElementById('s-aw-api-key');
@@ -363,8 +369,14 @@ function initSettings() {
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
+  tngEnabledInput.checked = settings.tngEnabled !== false; // default on
   tngLinkInput.value     = settings.tngPayLink    || '';
   tngInput.value         = settings.tngQrUrl      || '';
+  duitnowEnabledInput.checked = !!settings.duitnowEnabled;
+  walletUrlInput.value        = settings.walletUrl       || 'http://localhost:4568';
+  duitnowTerminalInput.value  = settings.duitnowTerminal || '';
+  // Profile options are loaded asynchronously; remember selection
+  const _savedProfile         = settings.duitnowProfile || '';
   printOrderSlipInput.checked = settings.printOrderSlip !== false;
   printReceiptInput.checked   = settings.printReceipt !== false;
   printerIpInput.value   = settings.printerIp     || '';
@@ -374,7 +386,6 @@ function initSettings() {
   sstRateInput.value      = settings.sstRate ?? 6;
   svcEnabledInput.checked = !!settings.svcEnabled;
   svcRateInput.value      = settings.svcRate ?? 10;
-  verifyEwalletInput.checked = !!settings.verifyEwallet;
   awEnabledInput.checked = !!settings.airwallexEnabled;
   awClientIdInput.value  = settings.airwallexClientId || '';
   awApiKeyInput.value    = settings.airwallexApiKey   || '';
@@ -390,12 +401,53 @@ function initSettings() {
 
   tngInput.addEventListener('input', () => updatePreview(tngInput, tngPreview));
 
+  async function loadWalletProfiles() {
+    const walletUrl = (walletUrlInput.value || '').trim();
+    if (!walletUrl) {
+      duitnowProfileHint.textContent = 'Set wallet URL first, then click Reload';
+      duitnowProfileHint.style.color = '';
+      return;
+    }
+    duitnowProfileHint.textContent = 'Loading profiles...';
+    duitnowProfileHint.style.color = '';
+    try {
+      // Use server proxy to avoid CORS (the server fetches the wallet on behalf of browser)
+      const res = await fetch(`${API_BASE}/api/wallet-test/tenants?url=${encodeURIComponent(walletUrl)}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const tenants = data.tenants || [];
+      const currentVal = duitnowProfileInput.value || _savedProfile;
+      duitnowProfileInput.innerHTML = '<option value="">-- Select profile --</option>' +
+        tenants.map(t => `<option value="${t.name}">${t.name} (${t.activeGateway})</option>`).join('');
+      if (currentVal && tenants.some(t => t.name === currentVal)) {
+        duitnowProfileInput.value = currentVal;
+      }
+      duitnowProfileHint.textContent = `Loaded ${tenants.length} profile(s)`;
+      duitnowProfileHint.style.color = 'var(--green,#27ae60)';
+    } catch (e) {
+      duitnowProfileHint.textContent = `Failed: ${e.message}. Check wallet URL and that the wallet service is running.`;
+      duitnowProfileHint.style.color = 'var(--red,#C0392B)';
+    }
+  }
+
+  walletReloadBtn.addEventListener('click', loadWalletProfiles);
+  walletUrlInput.addEventListener('change', loadWalletProfiles);
+  loadWalletProfiles();
+
   function gatherSettings() {
     return {
       shopName:     shopNameInput.value.trim(),
       shopAddress:  shopAddressInput.value.trim(),
+      tngEnabled:   tngEnabledInput.checked,
       tngPayLink:   tngLinkInput.value.trim(),
       tngQrUrl:     tngInput.value.trim(),
+      duitnowEnabled: duitnowEnabledInput.checked,
+      walletUrl:       walletUrlInput.value.trim(),
+      duitnowProfile:  duitnowProfileInput.value.trim(),
+      duitnowTerminal: duitnowTerminalInput.value.trim(),
       printOrderSlip: printOrderSlipInput.checked,
       printReceipt:   printReceiptInput.checked,
       printerIp:    printerIpInput.value.trim(),
@@ -405,7 +457,6 @@ function initSettings() {
       sstRate:      parseFloat(sstRateInput.value) || 6,
       svcEnabled:   svcEnabledInput.checked,
       svcRate:      parseFloat(svcRateInput.value) || 10,
-      verifyEwallet: verifyEwalletInput.checked,
       airwallexEnabled:  awEnabledInput.checked,
       airwallexClientId: awClientIdInput.value.trim(),
       airwallexApiKey:   awApiKeyInput.value.trim(),

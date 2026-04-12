@@ -71,7 +71,7 @@ async function fetchShopName() {
 }
 
 // ─── Format helpers ──────────────────────────────────────────────────────────
-const fmtRM   = n => `RM ${n.toFixed(2)}`;
+const fmtRM   = n => `${typeof getCurrency === 'function' ? getCurrency() : 'RM'} ${n.toFixed(2)}`;
 const fmtDate = ts => new Date(ts).toLocaleDateString('en-MY', { day: '2-digit', month: 'short' });
 const fmtDateFull = ts => new Date(ts).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtHour = h => {
@@ -81,6 +81,15 @@ const fmtHour = h => {
 };
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
+const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
+function localName(item) {
+  if (typeof getLang === 'function') {
+    const field = LANG_NAME_FIELDS[getLang()];
+    if (field && item[field]) return item[field];
+  }
+  return item.nameZh || item.name || '';
+}
+
 function calcKPIs(orders) {
   const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
   const orderCount = orders.length;
@@ -90,7 +99,7 @@ function calcKPIs(orders) {
   const byItem = {};
   orders.forEach(o => {
     (o.items || []).forEach(it => {
-      const key = it.nameZh || it.name || 'Unknown';
+      const key = localName(it);
       byItem[key] = (byItem[key] || 0) + (it.quantity || 1);
     });
   });
@@ -128,7 +137,7 @@ function calcHourlyBreakdown(orders) {
 }
 
 function calcPaymentMix(orders) {
-  const labels = { cash: 'Cash', tng: 'TNG', duitnow: 'DuitNow', card: 'Card' };
+  const labels = { cash: _t('cash'), tng: 'TNG', duitnow: 'DuitNow', card: _t('credit_card') };
   const byMethod = {};
   let grandTotal = 0;
   orders.forEach(o => {
@@ -150,7 +159,7 @@ function calcItemRankings(orders) {
   let totalRev = 0;
   orders.forEach(o => {
     (o.items || []).forEach(it => {
-      const key = it.nameZh || it.name || 'Unknown';
+      const key = localName(it);
       if (!byItem[key]) byItem[key] = { name: key, qty: 0, revenue: 0 };
       const qty = it.quantity || 1;
       const rev = it.subtotal || (it.unitPrice || 0) * qty;
@@ -190,23 +199,25 @@ const CHART_DEFAULTS = {
 };
 
 // ─── Render KPIs ─────────────────────────────────────────────────────────────
+function _t(key) { return typeof t === 'function' ? t(key) : key; }
+
 function renderKPIs(kpis) {
   return `
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-label">${_t('revenue')}</div>
         <div class="kpi-value green">${fmtRM(kpis.totalRevenue)}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Orders</div>
+        <div class="kpi-label">${_t('orders')}</div>
         <div class="kpi-value">${kpis.orderCount}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Avg Order</div>
+        <div class="kpi-label">${_t('avg_order')}</div>
         <div class="kpi-value">${fmtRM(kpis.avgOrder)}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Top Item</div>
+        <div class="kpi-label">${_t('popular')}</div>
         <div class="kpi-value" style="font-size:16px;">${kpis.topItem} <span style="color:var(--muted);font-size:13px;">(${kpis.topItemQty})</span></div>
       </div>
     </div>`;
@@ -238,7 +249,7 @@ function renderRevenueChart(from, to) {
     data: {
       labels,
       datasets: [{
-        label: 'Revenue (RM)',
+        label: _t('revenue'),
         data,
         backgroundColor: COLORS.red + 'cc',
         borderColor: COLORS.red,
@@ -259,7 +270,7 @@ function renderRevenueChart(from, to) {
       },
       scales: {
         x: { ticks: { color: '#aaa', font: { size: 11 } }, grid: { color: '#3a3a5533' } },
-        y: { ticks: { color: '#aaa', callback: v => `RM ${v}` }, grid: { color: '#3a3a5533' }, beginAtZero: true },
+        y: { ticks: { color: '#aaa', callback: v => `${typeof getCurrency === 'function' ? getCurrency() : 'RM'} ${v}` }, grid: { color: '#3a3a5533' }, beginAtZero: true },
       },
     },
   });
@@ -313,7 +324,7 @@ function renderPaymentChart() {
         ctx.fillText(fmtRM(grandTotal), width / 2, height / 2 - 8);
         ctx.font = '12px -apple-system, sans-serif';
         ctx.fillStyle = '#aaaaaa';
-        ctx.fillText('Total', width / 2, height / 2 + 14);
+        ctx.fillText(_t('total'), width / 2, height / 2 + 14);
         ctx.restore();
       },
     }],
@@ -374,9 +385,9 @@ function renderDailyTable() {
   const kpis = calcKPIs(orders);
   return `
     <table class="report-table">
-      <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue</th><th class="num">Avg</th></tr></thead>
+      <thead><tr><th>${_t('date')}</th><th class="num">${_t('orders')}</th><th class="num">${_t('revenue')}</th><th class="num">${_t('avg_order')}</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${kpis.orderCount}</strong></td><td class="num"><strong>${fmtRM(kpis.totalRevenue)}</strong></td><td class="num"><strong>${fmtRM(kpis.avgOrder)}</strong></td></tr></tfoot>
+      <tfoot><tr><td><strong>${_t('total')}</strong></td><td class="num"><strong>${kpis.orderCount}</strong></td><td class="num"><strong>${fmtRM(kpis.totalRevenue)}</strong></td><td class="num"><strong>${fmtRM(kpis.avgOrder)}</strong></td></tr></tfoot>
     </table>`;
 }
 
@@ -386,12 +397,12 @@ function renderDashboard(from, to) {
   const kpis = calcKPIs(orders);
 
   if (orders.length === 0) {
-    container.innerHTML = '<div class="empty-state">No orders in this period</div>';
+    container.innerHTML = `<div class="empty-state">${_t('no_orders_found')}</div>`;
     return;
   }
 
   const singleDay = isSingleDay(from, to);
-  const chartTitle = singleDay ? 'Revenue by Hour' : 'Revenue by Day';
+  const chartTitle = singleDay ? `${_t('revenue')} / ${_t('time')}` : `${_t('revenue')} / ${_t('date')}`;
 
   container.innerHTML = `
     ${renderKPIs(kpis)}
@@ -401,17 +412,17 @@ function renderDashboard(from, to) {
         <div class="chart-wrap"><canvas id="revenue-chart"></canvas></div>
       </div>
       <div class="chart-card">
-        <h3>Payment Methods</h3>
+        <h3>${_t('payment')}</h3>
         <div class="chart-wrap"><canvas id="payment-chart"></canvas></div>
       </div>
     </div>
     <div class="dash-grid-2">
       <div class="chart-card">
-        <h3>Top Items</h3>
+        <h3>${_t('item_sales')}</h3>
         <div class="chart-wrap-sm"><canvas id="items-chart"></canvas></div>
       </div>
       <div class="table-card">
-        <h3>Daily Breakdown</h3>
+        <h3>${_t('sales_detail')}</h3>
         ${renderDailyTable()}
       </div>
     </div>
@@ -466,6 +477,15 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 
 // ─── Auth gate & init ────────────────────────────────────────────────────────
 (function init() {
+  // Handle ?store= parameter to set tenant
+  const urlStore = new URLSearchParams(location.search).get('store');
+  if (urlStore) {
+    const current = getTenantSession();
+    if (!current || current.slug !== urlStore) {
+      setTenantSession({ slug: urlStore, name: urlStore });
+    }
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   document.getElementById('date-from').value = today;
   document.getElementById('date-to').value = today;

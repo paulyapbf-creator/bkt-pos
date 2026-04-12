@@ -63,6 +63,17 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// No-cache headers for HTML pages so browser always gets latest version
+app.use((req, res, next) => {
+  const ext = req.path.split('.').pop().toLowerCase();
+  if (req.path === '/' || ['html', 'htm'].includes(ext)) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
+
 app.use('/kds', express.static(path.join(__dirname, 'public')));
 // Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
 const { existsSync } = require('fs');
@@ -1076,6 +1087,105 @@ app.get('/api/airwallex/intent-status/:id', async (req, res) => {
     res.json({ status: intent.status });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── REST API: Wallet payment gateway proxy ──────────────────────────────────
+// Forwards requests to the wallet service (multi-tenant DuitNow/AmpersandPay/ECPI).
+// The wallet URL is stored per-tenant in the POS settings (walletUrl field).
+
+async function getWalletUrl(req) {
+  try {
+    if (!req.store) return '';
+    const settings = await req.store.getSettings();
+    return (settings && settings.walletUrl) ? settings.walletUrl.replace(/\/+$/, '') : '';
+  } catch { return ''; }
+}
+
+app.get('/api/wallet/tenants', async (req, res) => {
+  const walletUrl = await getWalletUrl(req);
+  if (!walletUrl) return res.status(400).json({ error: 'Wallet URL not configured' });
+  try {
+    const r = await fetch(`${walletUrl}/api/payment/tenants`);
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `Wallet unreachable: ${e.message}` });
+  }
+});
+
+app.post('/api/wallet/duitnow/create', async (req, res) => {
+  const walletUrl = await getWalletUrl(req);
+  if (!walletUrl) return res.status(400).json({ error: 'Wallet URL not configured' });
+  try {
+    const r = await fetch(`${walletUrl}/api/payment/duitnow/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `Wallet unreachable: ${e.message}` });
+  }
+});
+
+app.post('/api/wallet/duitnow/poll', async (req, res) => {
+  const walletUrl = await getWalletUrl(req);
+  if (!walletUrl) return res.status(400).json({ error: 'Wallet URL not configured' });
+  try {
+    const r = await fetch(`${walletUrl}/api/payment/duitnow/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `Wallet unreachable: ${e.message}` });
+  }
+});
+
+app.post('/api/wallet/duitnow/cancel', async (req, res) => {
+  const walletUrl = await getWalletUrl(req);
+  if (!walletUrl) return res.status(400).json({ error: 'Wallet URL not configured' });
+  try {
+    const r = await fetch(`${walletUrl}/api/payment/duitnow/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `Wallet unreachable: ${e.message}` });
+  }
+});
+
+app.get('/api/wallet/qr', async (req, res) => {
+  const walletUrl = await getWalletUrl(req);
+  if (!walletUrl) return res.status(400).end();
+  try {
+    const r = await fetch(`${walletUrl}/api/qr?data=${encodeURIComponent(req.query.data || '')}`);
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.set('Content-Type', r.headers.get('content-type') || 'image/png');
+    res.send(buf);
+  } catch (e) {
+    res.status(502).end();
+  }
+});
+
+// Special endpoint to list tenants given a URL (for settings page "Reload" button
+// before settings are saved)
+app.get('/api/wallet-test/tenants', async (req, res) => {
+  const walletUrl = (req.query.url || '').toString().replace(/\/+$/, '');
+  if (!walletUrl) return res.status(400).json({ error: 'url query parameter required' });
+  try {
+    const r = await fetch(`${walletUrl}/api/payment/tenants`);
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `Wallet unreachable: ${e.message}` });
   }
 });
 

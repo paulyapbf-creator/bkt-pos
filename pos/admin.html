@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Admin — Tenant Management</title>
   <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,6 +42,49 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
 #auth-gate.hidden { display: none; }
 #auth-form { max-width: 320px; width: 100%; }
 .hidden { display: none !important; }
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  #header { padding: 0 10px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
+  #header h1 { font-size: 15px; }
+  .container { padding: 12px 10px; }
+  .card { padding: 12px; margin-bottom: 12px; }
+  .card h2 { font-size: 13px; }
+  input[type="text"], input[type="password"], input[type="url"], input[type="email"], select {
+    font-size: 16px; /* prevent iOS zoom */
+    padding: 10px 12px;
+  }
+  .btn { padding: 12px 18px; font-size: 14px; min-height: 44px; }
+  .btn-sm { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 10px; }
+  .kpi-value { font-size: 16px; }
+  /* Tenant table to cards */
+  table thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  table tr {
+    background: var(--header);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 10px;
+  }
+  table td { border: none; padding: 4px 0; text-align: left; }
+  table td:last-child { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+  table td:last-child .btn { flex: 1; min-width: 70px; }
+  /* Detail panel grid */
+  #detail-panel > div[style*="grid-template-columns:1fr 1fr"],
+  #detail-panel > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Camera preview / thumbnails */
+  #camera-thumbnails img, #camera-thumbnails > div { width: 50px !important; height: 50px !important; }
+  #import-file-list { gap: 6px; }
+  /* Reset buttons */
+  div[style*="display:flex"][style*="gap:8px"][style*="flex-wrap:wrap"] .btn {
+    flex: 1; min-width: 100px;
+  }
+}
   </style>
 </head>
 <body>

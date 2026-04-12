@@ -434,17 +434,27 @@ body {
 }
 
 @media (max-width: 600px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   #dashboard { padding: 10px; }
-  .kpi-value { font-size: 20px; }
+  .kpi-card { padding: 12px 10px; }
+  .kpi-value { font-size: 18px; }
+  .kpi-label { font-size: 11px; }
   .chart-wrap { height: 220px; }
   .chart-wrap-sm { height: 200px; }
-  .report-table { font-size: 12px; }
-  .report-table th, .report-table td { padding: 8px 6px; }
-  #header { padding: 0 10px; gap: 6px; }
-  #header-right { gap: 4px; }
-  .nav-link { padding: 8px 9px; font-size: 16px; line-height: 1; }
+  .chart-card, .table-card { padding: 12px; }
+  .chart-card h3, .table-card h3 { font-size: 13px; }
+  .report-table { font-size: 11px; }
+  .report-table th, .report-table td { padding: 6px 4px; }
+  #header { padding: 0 10px; gap: 6px; height: auto; min-height: 56px; flex-wrap: wrap; padding: 8px 10px; }
+  #header-right { gap: 6px; flex-wrap: wrap; }
+  #app-title { font-size: 14px; }
+  .page-title { display: none; }
+  .nav-link { padding: 8px 10px; font-size: 12px; min-height: 36px; }
   .nav-txt { display: none; }
+  #filter-bar { padding: 8px; gap: 6px; flex-wrap: wrap; }
+  .preset-btn { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+  .filter-dates { flex-wrap: wrap; gap: 6px; }
+  .filter-dates input[type="date"] { font-size: 14px; padding: 8px; }
 }
 
 @media (max-width: 400px) {
@@ -463,19 +473,20 @@ body {
   <header id="header">
     <span id="app-title"><span id="shop-name">BKT House</span></span>
     <div id="header-right">
-      <span class="page-title">Sales Dashboard</span>
-      <button id="logout-btn" class="nav-link">Logout</button>
+      <div id="header-lang"></div>
+      <span class="page-title" data-i18n="sales_summary">Sales Dashboard</span>
+      <button id="logout-btn" class="nav-link" data-i18n="logout">Logout</button>
     </div>
   </header>
 
   <!-- ── Date filter bar ── -->
   <div id="filter-bar">
     <div class="filter-presets">
-      <button class="preset-btn active" data-preset="today">Today</button>
-      <button class="preset-btn" data-preset="yesterday">Yesterday</button>
-      <button class="preset-btn" data-preset="week">This Week</button>
-      <button class="preset-btn" data-preset="month">This Month</button>
-      <button class="preset-btn" data-preset="custom">Custom</button>
+      <button class="preset-btn active" data-preset="today" data-i18n="today">Today</button>
+      <button class="preset-btn" data-preset="yesterday" data-i18n="yesterday">Yesterday</button>
+      <button class="preset-btn" data-preset="week" data-i18n="this_week">This Week</button>
+      <button class="preset-btn" data-preset="month" data-i18n="this_month">This Month</button>
+      <button class="preset-btn" data-preset="custom" data-i18n="custom">Custom</button>
     </div>
     <div class="filter-dates hidden" id="custom-dates">
       <input type="date" id="date-from">
@@ -490,8 +501,22 @@ body {
     <div class="loading" id="loading">Loading...</div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="auth.js"></script>
   <script src="dashboard.js"></script>
+  <script>
+    (function() {
+      const lc = document.getElementById('header-lang');
+      if (lc && typeof createLangSwitcher === 'function') {
+        lc.appendChild(createLangSwitcher());
+        onLangChange(() => {
+          translatePage();
+          if (typeof currentFrom !== 'undefined' && currentFrom) renderDashboard(currentFrom, currentTo);
+        });
+      }
+      translatePage();
+    })();
+  </script>
 </body>
 </html>
