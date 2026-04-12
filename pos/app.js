@@ -1609,6 +1609,11 @@ function applySessionToUI(session) {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 async function init() {
+  // ── Detect native app (Capacitor) and force mobile layout ──
+  if (window.Capacitor?.isNativePlatform()) {
+    document.documentElement.classList.add('native-app');
+  }
+
   // ── Handle tenant switch from admin links ──
   const urlParams = new URLSearchParams(location.search);
   const storeParam = urlParams.get('store');

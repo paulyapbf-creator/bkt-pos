@@ -3018,3 +3018,29 @@ button, a, .mli, .table-cell, .modifier-option {
   display: flex;
   gap: 6px;
 }
+
+/* ── Native app (Capacitor) — force mobile layout regardless of viewport ── */
+html.native-app .app-txt { display: none; }
+html.native-app .nav-txt { display: none; }
+html.native-app #header { gap: 4px; padding: 0 10px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
+html.native-app #header::-webkit-scrollbar { display: none; }
+html.native-app #header-right { gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
+html.native-app .nav-link { padding: 8px 6px; font-size: 16px; line-height: 1; min-width: 32px; flex-shrink: 0; }
+html.native-app .pay-bills-btn { padding: 8px 8px; font-size: 14px; line-height: 1; flex-shrink: 0; }
+html.native-app #app-title { flex-shrink: 0; }
+html.native-app #main-layout { flex-direction: column; height: calc(100dvh - 56px); }
+html.native-app #menu-panel { order: 1; flex: 1; width: 100%; min-height: 0; display: flex; flex-direction: column; }
+html.native-app #menu-area { flex: 1; min-height: 0; }
+html.native-app #cart-panel { position: fixed !important; left: 0; right: 0; bottom: 0; top: 0; width: 100% !important; max-width: none !important; min-width: 0 !important; z-index: 250; border-right: none; transform: translateY(100%); transition: transform 0.25s ease; background: var(--bg); }
+html.native-app #cart-panel.mobile-cart-open { transform: translateY(0); }
+html.native-app #cart-panel #cp-head { padding-top: max(14px, env(safe-area-inset-top, 14px)); }
+html.native-app .mobile-basket-bar { display: inline-flex !important; right: 10px; bottom: auto; }
+html.native-app .mobile-table-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px; background: var(--header); border-bottom: 1px solid var(--border); }
+html.native-app .mobile-pay-btn { display: block !important; }
+html.native-app #pay-bills-btn { display: none !important; }
+html.native-app .mobile-cart-back-btn { display: inline-block; }
+html.native-app #cart-panel .cp-head-row { display: none; }
+html.native-app #menu-list { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px; }
+html.native-app .mli { padding: 12px 10px; min-height: 96px; }
+html.native-app #cp-foot { padding: 14px 16px 18px; border-top: 1px solid var(--border); background: var(--header); }
+html.native-app #send-btn { font-size: 16px; padding: 16px 8px; min-height: 52px; width: 100%; }
