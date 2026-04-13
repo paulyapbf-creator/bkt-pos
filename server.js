@@ -464,7 +464,7 @@ app.use('/api', async (req, res, next) => {
 app.get('/api/tenants', async (req, res) => {
   if (!isSaasMode) return res.json([]);
   try {
-    const tenants = await listActiveTenants();
+    const tenants = await getAllActiveTenants();
     res.json(tenants);
   } catch (e) {
     res.json([]);
