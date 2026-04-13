@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="style.css?v=2026041003">
   <script>
     // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
-    if (new URLSearchParams(location.search).has('app') || sessionStorage.getItem('bkt_app_mode')) {
+    if (window.Capacitor?.isNativePlatform?.() ||
+        navigator.userAgent.includes('BKT-POS-App') ||
+        new URLSearchParams(location.search).has('app') ||
+        sessionStorage.getItem('bkt_app_mode')) {
       document.documentElement.classList.add('native-app');
       sessionStorage.setItem('bkt_app_mode', '1');
     }

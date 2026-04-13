@@ -1616,7 +1616,7 @@ async function init() {
     sessionStorage.getItem('bkt_app_mode');
   if (isApp) {
     document.documentElement.classList.add('native-app');
-    sessionStorage.setItem('bkt_app_mode', '1'); // persist across page navigations
+    sessionStorage.setItem('bkt_app_mode', '1');
   }
 
   // ── Handle tenant switch from admin links ──
