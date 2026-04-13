@@ -92,13 +92,15 @@ app.use((req, res, next) => {
   if (!isPage) return next();
 
   const filePath = req.path === '/' ? path.join(posPath, 'index.html') : path.join(posPath, req.path);
+  console.log(`[app-detect] UA match, serving ${filePath}`);
   try {
     let html = readFileSync(filePath, 'utf8');
     html = html.replace('<html lang="en">', '<html lang="en" class="native-app">');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (e) {
-    next(); // file not found, fall through to static
+    console.log(`[app-detect] File error: ${e.message}`);
+    next();
   }
 });
 
