@@ -85,9 +85,9 @@ const posPath = existsSync(path.join(__dirname, 'pos'))
 app.use((req, res, next) => {
   const ua = req.headers['user-agent'] || '';
   const isApp = ua.includes('BKT-POS-App') || req.query.app === '1';
+  console.log(`[app-detect] path=${req.path} isApp=${isApp} ua=${ua.substring(0, 40)}`);
   if (!isApp) return next();
 
-  const ext = req.path.split('.').pop().toLowerCase();
   const isPage = req.path === '/' || req.path.endsWith('.html');
   if (!isPage) return next();
 
