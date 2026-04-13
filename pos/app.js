@@ -1327,9 +1327,9 @@ async function sendToPrinter(job) {
   } catch (_) {}
 
   // Try 2: Capacitor native bridge (Android app)
-  if (escposB64 && window.Capacitor?.isNativePlatform()) {
+  if (escposB64 && (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App'))) {
     try {
-      const { PrintBridge } = window.Capacitor.Plugins;
+      const { PrintBridge } = (window.Capacitor?.Plugins || {});
       await PrintBridge.printRaw({
         data: escposB64,
         ip:   settings.printerIp,

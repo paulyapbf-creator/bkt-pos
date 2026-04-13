@@ -501,9 +501,9 @@ function initSettings() {
     } catch (_) {}
 
     // Try Capacitor native PrintBridge (Android app)
-    if (!ok && escposB64 && window.Capacitor?.isNativePlatform()) {
+    if (!ok && escposB64 && (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App'))) {
       try {
-        const { PrintBridge } = window.Capacitor.Plugins;
+        const { PrintBridge } = (window.Capacitor?.Plugins || {});
         await PrintBridge.printRaw({
           data: escposB64,
           ip:   ip,
