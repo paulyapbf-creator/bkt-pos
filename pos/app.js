@@ -1609,8 +1609,9 @@ function applySessionToUI(session) {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 async function init() {
-  // ── Detect native app (Capacitor WebView) and force mobile layout ──
-  if (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App')) {
+  // ── Detect native app or mobile device and force mobile layout ──
+  if (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App') ||
+      (screen.width <= 640 && 'ontouchstart' in window)) {
     document.documentElement.classList.add('native-app');
   }
 
