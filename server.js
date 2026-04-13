@@ -62,7 +62,9 @@ app.use(async (req, res, next) => {
 
   // Detect Android app via user agent and serve HTML with native-app class injected
   const ua = req.headers['user-agent'] || '';
-  if (ua.includes('BKT-POS-App') || qs.get('app') === '1') {
+  const appMode = ua.includes('BKT-POS-App') || qs.get('app') === '1';
+  console.log(`[app-detect] appMode=${appMode} path=${req.path} ua=${ua.substring(0,30)}`);
+  if (appMode) {
     const htmlFile = req.path === '/' ? 'index.html' : req.path.replace(/^\//, '');
     const htmlPath = path.join(posPath, htmlFile);
     try {
@@ -71,7 +73,7 @@ app.use(async (req, res, next) => {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.send(html);
-    } catch (_) {}
+    } catch (e) { console.error('[app-detect] Error:', e.message); }
   }
 
   next();
