@@ -60,6 +60,20 @@ app.use(async (req, res, next) => {
     res.setHeader('Set-Cookie', `bkt_tenant=${slug}; Path=/; SameSite=Strict; Max-Age=86400`);
   }
 
+  // Detect Android app via user agent and serve HTML with native-app class injected
+  const ua = req.headers['user-agent'] || '';
+  if (ua.includes('BKT-POS-App') || qs.get('app') === '1') {
+    const htmlFile = req.path === '/' ? 'index.html' : req.path.replace(/^\//, '');
+    const htmlPath = path.join(posPath, htmlFile);
+    try {
+      let html = require('fs').readFileSync(htmlPath, 'utf8');
+      html = html.replace('<html lang="en">', '<html lang="en" class="native-app">');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.send(html);
+    } catch (_) {}
+  }
+
   next();
 });
 
@@ -80,29 +94,6 @@ const { existsSync, readFileSync } = require('fs');
 const posPath = existsSync(path.join(__dirname, 'pos'))
   ? path.join(__dirname, 'pos')
   : path.join(__dirname, '..', 'pos');
-
-// Inject native-app class for Android app (detected via user agent)
-app.use((req, res, next) => {
-  const ua = req.headers['user-agent'] || '';
-  const isApp = ua.includes('BKT-POS-App') || req.query.app === '1';
-  console.log(`[app-detect] path=${req.path} isApp=${isApp} ua=${ua.substring(0, 40)}`);
-  if (!isApp) return next();
-
-  const isPage = req.path === '/' || req.path.endsWith('.html');
-  if (!isPage) return next();
-
-  const filePath = req.path === '/' ? path.join(posPath, 'index.html') : path.join(posPath, req.path);
-  console.log(`[app-detect] UA match, serving ${filePath}`);
-  try {
-    let html = readFileSync(filePath, 'utf8');
-    html = html.replace('<html lang="en">', '<html lang="en" class="native-app">');
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch (e) {
-    console.log(`[app-detect] File error: ${e.message}`);
-    next();
-  }
-});
 
 app.use(express.static(posPath));
 app.get('/dashboard', (req, res) => res.redirect('/dashboard.html'));
