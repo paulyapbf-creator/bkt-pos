@@ -531,7 +531,18 @@ function initSettings() {
   });
 }
 
+function initBuildInfo() {
+  const el = document.getElementById('maint-build-info');
+  if (!el) return;
+  fetch(`${API_BASE}/api/version`).then(r => r.json()).then(d => {
+    el.textContent = `Server: ${d.version}`;
+  }).catch(() => {
+    el.textContent = 'Server: unavailable';
+  });
+}
+
 function initMaintenance() {
+  initBuildInfo();
   const modal     = document.getElementById('maint-confirm-modal');
   const msgEl     = document.getElementById('maint-confirm-msg');
   const okBtn     = document.getElementById('maint-confirm-ok');

@@ -1,5 +1,7 @@
 'use strict';
 
+const BUILD_VERSION = '1.1.0-build.20260413';
+
 require('dotenv').config();
 
 // Use Google DNS so MongoDB SRV lookups work on restrictive networks
@@ -104,6 +106,7 @@ const posPath = existsSync(path.join(__dirname, 'pos'))
   : path.join(__dirname, '..', 'pos');
 
 app.use(express.static(posPath, staticOpts));
+app.get('/api/version', (req, res) => res.json({ version: BUILD_VERSION }));
 app.get('/dashboard', (req, res) => res.redirect('/dashboard.html'));
 
 // ─── SaaS multi-tenant ───────────────────────────────────────────────────────
