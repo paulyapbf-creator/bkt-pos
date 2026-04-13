@@ -1,6 +1,6 @@
 'use strict';
 
-const BUILD_VERSION = '1.1.0-build.20260413';
+const BUILD_VERSION = '1.1.0-build.20260413b';
 
 require('dotenv').config();
 
@@ -21,6 +21,9 @@ const wss    = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+
+// Build version — registered first, no middleware can block this
+app.get('/api/version', (req, res) => res.json({ version: BUILD_VERSION, ts: Date.now() }));
 
 // ─── Admin routes (served independently, before tenant blocking) ─────────────
 app.get('/admin', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
