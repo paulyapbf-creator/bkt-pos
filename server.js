@@ -90,14 +90,20 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/kds', express.static(path.join(__dirname, 'public')));
+// Disable caching for ALL static files so app always gets latest JS/CSS
+const staticOpts = { maxAge: 0, etag: false, lastModified: false, setHeaders: (res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+}};
+app.use('/kds', express.static(path.join(__dirname, 'public'), staticOpts));
 // Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
 const { existsSync, readFileSync } = require('fs');
 const posPath = existsSync(path.join(__dirname, 'pos'))
   ? path.join(__dirname, 'pos')
   : path.join(__dirname, '..', 'pos');
 
-app.use(express.static(posPath));
+app.use(express.static(posPath, staticOpts));
 app.get('/dashboard', (req, res) => res.redirect('/dashboard.html'));
 
 // ─── SaaS multi-tenant ───────────────────────────────────────────────────────
