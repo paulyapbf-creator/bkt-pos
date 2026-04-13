@@ -76,10 +76,32 @@ app.use((req, res, next) => {
 
 app.use('/kds', express.static(path.join(__dirname, 'public')));
 // Serve POS files — supports both local dev layout (../pos) and single-repo layout (./pos)
-const { existsSync } = require('fs');
+const { existsSync, readFileSync } = require('fs');
 const posPath = existsSync(path.join(__dirname, 'pos'))
   ? path.join(__dirname, 'pos')
   : path.join(__dirname, '..', 'pos');
+
+// Inject native-app class for Android app (detected via user agent)
+app.use((req, res, next) => {
+  const ua = req.headers['user-agent'] || '';
+  const isApp = ua.includes('BKT-POS-App') || req.query.app === '1';
+  if (!isApp) return next();
+
+  const ext = req.path.split('.').pop().toLowerCase();
+  const isPage = req.path === '/' || req.path.endsWith('.html');
+  if (!isPage) return next();
+
+  const filePath = req.path === '/' ? path.join(posPath, 'index.html') : path.join(posPath, req.path);
+  try {
+    let html = readFileSync(filePath, 'utf8');
+    html = html.replace('<html lang="en">', '<html lang="en" class="native-app">');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    next(); // file not found, fall through to static
+  }
+});
+
 app.use(express.static(posPath));
 app.get('/dashboard', (req, res) => res.redirect('/dashboard.html'));
 
