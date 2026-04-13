@@ -1609,10 +1609,14 @@ function applySessionToUI(session) {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 async function init() {
-  // ── Detect native app or mobile device and force mobile layout ──
-  if (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App') ||
-      (screen.width <= 640 && 'ontouchstart' in window)) {
+  // ── Detect native app and force mobile layout ──
+  const isApp = window.Capacitor?.isNativePlatform() ||
+    navigator.userAgent.includes('BKT-POS-App') ||
+    new URLSearchParams(location.search).has('app') ||
+    sessionStorage.getItem('bkt_app_mode');
+  if (isApp) {
     document.documentElement.classList.add('native-app');
+    sessionStorage.setItem('bkt_app_mode', '1'); // persist across page navigations
   }
 
   // ── Handle tenant switch from admin links ──

@@ -7,17 +7,13 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=2026041002">
+  <link rel="stylesheet" href="style.css?v=2026041003">
   <script>
-    // Cache-bust: reload CSS & JS if stale
-    document.addEventListener('DOMContentLoaded', () => {
-      const v = Date.now();
-      document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
-        if (l.href.includes('style.css') && !l.href.includes(String(v).slice(0,8))) {
-          l.href = l.href.replace(/\?.*/, '') + '?v=' + v;
-        }
-      });
-    });
+    // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
+    if (new URLSearchParams(location.search).has('app') || sessionStorage.getItem('bkt_app_mode')) {
+      document.documentElement.classList.add('native-app');
+      sessionStorage.setItem('bkt_app_mode', '1');
+    }
   </script>
 </head>
 <body>
