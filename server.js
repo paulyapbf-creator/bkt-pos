@@ -462,10 +462,13 @@ app.use('/api', async (req, res, next) => {
 // ─── REST API: Tenant endpoints (SaaS) ──────────────────────────────────────
 
 app.get('/api/tenants', async (req, res) => {
-  // Returns empty in non-SaaS mode; used internally to check if SaaS is active
   if (!isSaasMode) return res.json([]);
-  // Only return tenant count (not list) — tenants are assigned via URL, not selected
-  res.json([]);
+  try {
+    const tenants = await listActiveTenants();
+    res.json(tenants);
+  } catch (e) {
+    res.json([]);
+  }
 });
 
 app.post('/api/tenants/select', async (req, res) => {
