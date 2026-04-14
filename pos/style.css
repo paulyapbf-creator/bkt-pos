@@ -2042,7 +2042,7 @@ button, a, .mli, .table-cell, .modifier-option {
   /* Header: hide brand text + nav labels → icon-only buttons */
   .app-txt { display: none; }
   .nav-txt  { display: none; }
-  #header   { gap: 4px; padding: 0 10px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
+  #header   { gap: 4px; padding: 0 10px; padding-top: max(8px, env(safe-area-inset-top, 8px)); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
   #header::-webkit-scrollbar { display: none; }
   #header-right { gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
   .nav-link       { padding: 8px 6px; font-size: 16px; line-height: 1; min-width: 32px; flex-shrink: 0; }
@@ -3022,7 +3022,7 @@ button, a, .mli, .table-cell, .modifier-option {
 /* ── Native app (Capacitor) — force mobile layout regardless of viewport ── */
 html.native-app .app-txt { display: none; }
 html.native-app .nav-txt { display: none; }
-html.native-app #header { gap: 4px; padding: 0 10px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
+html.native-app #header { gap: 4px; padding: 0 10px; padding-top: max(12px, env(safe-area-inset-top, 12px)); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
 html.native-app #header::-webkit-scrollbar { display: none; }
 html.native-app #header-right { gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
 html.native-app .nav-link { padding: 8px 6px; font-size: 16px; line-height: 1; min-width: 32px; flex-shrink: 0; }
