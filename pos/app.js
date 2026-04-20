@@ -1326,7 +1326,18 @@ async function sendToPrinter(job) {
     if (res.ok) return true;
   } catch (_) {}
 
-  // Try 2: Capacitor native bridge (Android app)
+  // Try 2: Android native print bridge (works on cloud URLs)
+  if (escposB64 && window.AndroidPrint) {
+    try {
+      const result = window.AndroidPrint.printRaw(escposB64, settings.printerIp, parseInt(settings.printerPort, 10) || 9100);
+      if (result === 'ok') return true;
+      console.warn('[print] AndroidPrint failed:', result);
+    } catch (e) {
+      console.warn('[print] AndroidPrint error:', e);
+    }
+  }
+
+  // Try 2b: Capacitor native bridge (local pages only)
   if (escposB64 && (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App'))) {
     try {
       const { PrintBridge } = (window.Capacitor?.Plugins || {});

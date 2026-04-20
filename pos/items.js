@@ -500,7 +500,15 @@ function initSettings() {
       if (res.ok) ok = true;
     } catch (_) {}
 
-    // Try Capacitor native PrintBridge (Android app)
+    // Try Android native print bridge (works even after navigating to cloud URL)
+    if (!ok && escposB64 && window.AndroidPrint) {
+      try {
+        const result = window.AndroidPrint.printRaw(escposB64, ip, parseInt(printerPortInput.value, 10) || 9100);
+        if (result === 'ok') ok = true;
+      } catch (_) {}
+    }
+
+    // Try Capacitor native PrintBridge (Android app - local pages only)
     if (!ok && escposB64 && (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App'))) {
       try {
         const { PrintBridge } = (window.Capacitor?.Plugins || {});
