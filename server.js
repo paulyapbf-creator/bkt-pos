@@ -1258,8 +1258,9 @@ app.post('/api/sync', async (req, res) => {
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
 const net = require('net');
+const iconv = require('iconv-lite');
 
-const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
+const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A, FS_BYTE = 0x1C;
 const LINE_WIDTH = 48; // characters per line at normal size on 80mm printer
 
 // ─── Plain-text ESC/POS helpers ──────────────────────────────────────────────
@@ -1299,7 +1300,7 @@ function lrLine(left, right, cols) {
 }
 
 function printText(parts, text) {
-  parts.push(Buffer.from(text + '\n', 'utf8'));
+  parts.push(iconv.encode(text + '\n', 'gbk'));
 }
 
 function setAlign(parts, align) {
@@ -1348,6 +1349,8 @@ function buildEscPos(job) {
 
   // ESC @ — init printer
   push(ESC_BYTE, 0x40);
+  // FS & — enable Chinese character mode (GBK)
+  push(FS_BYTE, 0x26);
 
   if (job.type === 'test') {
     printLine(parts, 'TEST PRINT', { bold: true, big: true, align: 'center' });
