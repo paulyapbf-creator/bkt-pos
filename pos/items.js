@@ -501,9 +501,10 @@ function initSettings() {
     } catch (_) {}
 
     // Try Android native print bridge (works even after navigating to cloud URL)
-    if (!ok && escposB64 && window.AndroidPrint) {
+    if (!ok && window.AndroidPrint) {
       try {
-        const result = window.AndroidPrint.printRaw(escposB64, ip, parseInt(printerPortInput.value, 10) || 9100);
+        // Use native text-based test print (no raster — more compatible)
+        const result = window.AndroidPrint.testPrint(ip, parseInt(printerPortInput.value, 10) || 9100);
         if (result === 'ok') ok = true;
       } catch (_) {}
     }
