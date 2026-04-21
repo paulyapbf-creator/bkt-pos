@@ -1258,31 +1258,31 @@ app.post('/api/sync', async (req, res) => {
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
 const net = require('net');
-const iconv = require('iconv-lite');
+const { createCanvas } = require('canvas');
 
-const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A, FS_BYTE = 0x1C;
+const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
 const LINE_WIDTH = 48; // characters per line at normal size on 80mm printer
+const IMG_WIDTH  = 576; // pixels for 80mm printer (72 dots/mm × 8mm printable)
 
-// ─── Plain-text ESC/POS helpers ──────────────────────────────────────────────
+// ─── ESC/POS helpers ─────────────────────────────────────────────────────────
+
+function hasCJK(s) {
+  return /[\u2E80-\u9FFF\uF900-\uFAFF]/.test(s);
+}
 
 // Calculate display width (CJK chars = 2 columns, ASCII = 1)
 function strWidth(s) {
   let w = 0;
-  for (const ch of s) {
-    w += ch.charCodeAt(0) > 0x7F ? 2 : 1;
-  }
+  for (const ch of s) w += ch.charCodeAt(0) > 0x7F ? 2 : 1;
   return w;
 }
 
 // Truncate string to fit within maxCols display columns
 function truncate(s, maxCols) {
-  let w = 0;
-  let i = 0;
+  let w = 0, i = 0;
   for (const ch of s) {
     const cw = ch.charCodeAt(0) > 0x7F ? 2 : 1;
-    if (w + cw > maxCols - 2) { // leave room for ".."
-      return s.slice(0, i) + '..';
-    }
+    if (w + cw > maxCols - 2) return s.slice(0, i) + '..';
     w += cw;
     i += ch.length;
   }
@@ -1293,14 +1293,107 @@ function truncate(s, maxCols) {
 function lrLine(left, right, cols) {
   cols = cols || LINE_WIDTH;
   const rw = strWidth(right);
-  const maxLeft = cols - rw - 1; // at least 1 space gap
+  const maxLeft = cols - rw - 1;
   let l = strWidth(left) > maxLeft ? truncate(left, maxLeft) : left;
   const gap = cols - strWidth(l) - rw;
   return l + ' '.repeat(Math.max(gap, 1)) + right;
 }
 
+// ─── Render text to raster image using ESC * (bit image) ─────────────────────
+// ESC * is more widely supported than GS v 0.
+// Mode 33 = 24-dot double density, column-based: 3 bytes per column (24 pixels high)
+
+function renderTextImage(text, opts = {}) {
+  const fontSize = opts.fontSize || 24;
+  const bold     = opts.bold || false;
+  const align    = opts.align || 'left';
+  const width    = IMG_WIDTH;
+  const height   = Math.ceil(fontSize * 1.5);
+
+  const canvas = createCanvas(width, height);
+  const ctx    = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#000';
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"`;
+  ctx.textBaseline = 'top';
+
+  let x = 0;
+  if (align === 'center') x = (width - ctx.measureText(text).width) / 2;
+  else if (align === 'right') x = width - ctx.measureText(text).width;
+  ctx.fillText(text, x, Math.floor(fontSize * 0.1));
+
+  return ctx.getImageData(0, 0, width, height);
+}
+
+function renderLRImage(left, right, opts = {}) {
+  const fontSize = opts.fontSize || 24;
+  const bold     = opts.bold || false;
+  const width    = IMG_WIDTH;
+  const height   = Math.ceil(fontSize * 1.5);
+
+  const canvas = createCanvas(width, height);
+  const ctx    = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#000';
+  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"`;
+  ctx.textBaseline = 'top';
+  const yPos = Math.floor(fontSize * 0.1);
+  ctx.fillText(left, 0, yPos);
+  ctx.fillText(right, width - ctx.measureText(right).width, yPos);
+
+  return ctx.getImageData(0, 0, width, height);
+}
+
+// Convert ImageData to ESC * column-based bit image commands
+// Prints in 24-dot high strips (mode 33)
+function imageToEscStar(imgData) {
+  const { width, height, data } = imgData;
+  const parts = [];
+
+  for (let yOff = 0; yOff < height; yOff += 24) {
+    const stripH = Math.min(24, height - yOff);
+    // ESC * 33 nL nH — 24-dot double-density
+    const nL = width & 0xFF, nH = (width >> 8) & 0xFF;
+    parts.push(Buffer.from([ESC_BYTE, 0x2A, 33, nL, nH]));
+
+    // Column data: for each x, 3 bytes (24 vertical pixels, MSB=top)
+    const colData = Buffer.alloc(width * 3);
+    for (let x = 0; x < width; x++) {
+      for (let bit = 0; bit < 24; bit++) {
+        const y = yOff + bit;
+        if (y < height) {
+          const idx = (y * width + x) * 4;
+          const gray = data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
+          if (gray < 128) {
+            const byteIdx = Math.floor(bit / 8);
+            colData[x * 3 + byteIdx] |= (0x80 >> (bit % 8));
+          }
+        }
+      }
+    }
+    parts.push(colData);
+    parts.push(Buffer.from([LF_BYTE])); // line feed after each strip
+  }
+
+  return Buffer.concat(parts);
+}
+
+function printImage(parts, text, opts) {
+  const imgData = renderTextImage(text, opts);
+  parts.push(imageToEscStar(imgData));
+}
+
+function printImageLR(parts, left, right, opts) {
+  const imgData = renderLRImage(left, right, opts);
+  parts.push(imageToEscStar(imgData));
+}
+
+// ─── Plain-text ESC/POS helpers (for ASCII-only lines) ───────────────────────
+
 function printText(parts, text) {
-  parts.push(iconv.encode(text + '\n', 'gbk'));
+  parts.push(Buffer.from(text + '\n'));
 }
 
 function setAlign(parts, align) {
@@ -1312,8 +1405,6 @@ function setBold(parts, on) {
   parts.push(Buffer.from([ESC_BYTE, 0x45, on ? 1 : 0]));
 }
 
-// GS ! n — character size: bits 0-2 = width magnification, bits 4-6 = height magnification
-// 0x00=normal, 0x01=2xW, 0x10=2xH, 0x11=2xW+2xH
 function setSize(parts, size) {
   parts.push(Buffer.from([GS_BYTE, 0x21, size]));
 }
@@ -1322,23 +1413,34 @@ function printDash(parts) {
   printText(parts, '-'.repeat(LINE_WIDTH));
 }
 
+// Smart print: use raster image if text has CJK, plain text otherwise
 function printLine(parts, text, opts = {}) {
-  if (opts.align)  setAlign(parts, opts.align);
-  if (opts.bold)   setBold(parts, true);
-  if (opts.big)    setSize(parts, 0x11); // double w+h
-  printText(parts, text);
-  if (opts.big)    setSize(parts, 0x00);
-  if (opts.bold)   setBold(parts, false);
-  if (opts.align)  setAlign(parts, 'left');
+  if (hasCJK(text)) {
+    const fontSize = opts.big ? 48 : 24;
+    printImage(parts, text, { fontSize, bold: opts.bold, align: opts.align });
+  } else {
+    if (opts.align)  setAlign(parts, opts.align);
+    if (opts.bold)   setBold(parts, true);
+    if (opts.big)    setSize(parts, 0x11);
+    printText(parts, text);
+    if (opts.big)    setSize(parts, 0x00);
+    if (opts.bold)   setBold(parts, false);
+    if (opts.align)  setAlign(parts, 'left');
+  }
 }
 
 function printLR(parts, left, right, opts = {}) {
-  const cols = opts.big ? Math.floor(LINE_WIDTH / 2) : LINE_WIDTH;
-  if (opts.bold)  setBold(parts, true);
-  if (opts.big)   setSize(parts, 0x11);
-  printText(parts, lrLine(left, right, cols));
-  if (opts.big)   setSize(parts, 0x00);
-  if (opts.bold)  setBold(parts, false);
+  if (hasCJK(left) || hasCJK(right)) {
+    const fontSize = opts.big ? 48 : 24;
+    printImageLR(parts, left, right, { fontSize, bold: opts.bold });
+  } else {
+    const cols = opts.big ? Math.floor(LINE_WIDTH / 2) : LINE_WIDTH;
+    if (opts.bold)  setBold(parts, true);
+    if (opts.big)   setSize(parts, 0x11);
+    printText(parts, lrLine(left, right, cols));
+    if (opts.big)   setSize(parts, 0x00);
+    if (opts.bold)  setBold(parts, false);
+  }
 }
 
 function buildEscPos(job) {
@@ -1349,8 +1451,6 @@ function buildEscPos(job) {
 
   // ESC @ — init printer
   push(ESC_BYTE, 0x40);
-  // FS & — enable Chinese character mode (GBK)
-  push(FS_BYTE, 0x26);
 
   if (job.type === 'test') {
     printLine(parts, 'TEST PRINT', { bold: true, big: true, align: 'center' });
