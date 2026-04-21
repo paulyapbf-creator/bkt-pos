@@ -1258,123 +1258,86 @@ app.post('/api/sync', async (req, res) => {
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
 const net = require('net');
-const { createCanvas } = require('canvas');
 
-const PRINTER_WIDTH = 480; // 80mm thermal printer effective print width
 const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
+const LINE_WIDTH = 48; // characters per line at normal size on 80mm printer
 
-// Render a line of text to a 1-bit raster bitmap for GS v 0
-function textToRaster(text, opts = {}) {
-  const fontSize = opts.fontSize || 22;
-  const bold     = opts.bold || false;
-  const align    = opts.align || 'left'; // left, center, right
-  const width    = opts.width || PRINTER_WIDTH;
-  const height   = Math.ceil(fontSize * 1.4);
+// ─── Plain-text ESC/POS helpers ──────────────────────────────────────────────
 
-  const canvas = createCanvas(width, height);
-  const ctx    = canvas.getContext('2d');
-
-  // White background
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
-
-  // Draw text
-  ctx.fillStyle = '#000';
-  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "SimSun","Microsoft YaHei","SimHei","Arial"`;
-  ctx.textBaseline = 'top';
-
-  const measured = ctx.measureText(text);
-  let x = 0;
-  if (align === 'center')     x = (width - measured.width) / 2;
-  else if (align === 'right') x = width - measured.width;
-
-  ctx.fillText(text, x, Math.floor(fontSize * 0.15));
-
-  // Convert to 1-bit raster: GS v 0 format
-  // Each byte = 8 horizontal pixels, MSB = leftmost
-  const imgData    = ctx.getImageData(0, 0, width, height).data;
-  const bytesPerRow = Math.ceil(width / 8);
-  const raster      = Buffer.alloc(bytesPerRow * height);
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const gray = imgData[idx] * 0.299 + imgData[idx+1] * 0.587 + imgData[idx+2] * 0.114;
-      if (gray < 128) { // dark pixel
-        const byteIdx = y * bytesPerRow + Math.floor(x / 8);
-        raster[byteIdx] |= (0x80 >> (x % 8));
-      }
-    }
+// Calculate display width (CJK chars = 2 columns, ASCII = 1)
+function strWidth(s) {
+  let w = 0;
+  for (const ch of s) {
+    w += ch.charCodeAt(0) > 0x7F ? 2 : 1;
   }
-
-  return { raster, bytesPerRow, height };
+  return w;
 }
 
-// Print a raster image via GS v 0
-function rasterCmd(raster, bytesPerRow, height) {
-  // GS v 0 m xL xH yL yH d1...dk
-  const header = Buffer.from([
-    GS_BYTE, 0x76, 0x30, 0x00, // GS v 0, mode 0 (normal)
-    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
-    height & 0xFF, (height >> 8) & 0xFF,
-  ]);
-  return Buffer.concat([header, raster]);
+// Truncate string to fit within maxCols display columns
+function truncate(s, maxCols) {
+  let w = 0;
+  let i = 0;
+  for (const ch of s) {
+    const cw = ch.charCodeAt(0) > 0x7F ? 2 : 1;
+    if (w + cw > maxCols - 2) { // leave room for ".."
+      return s.slice(0, i) + '..';
+    }
+    w += cw;
+    i += ch.length;
+  }
+  return s;
 }
 
-function printLine(parts, text, opts) {
-  const { raster, bytesPerRow, height } = textToRaster(text, opts);
-  parts.push(rasterCmd(raster, bytesPerRow, height));
+// Pad/align a left-right pair on one line
+function lrLine(left, right, cols) {
+  cols = cols || LINE_WIDTH;
+  const rw = strWidth(right);
+  const maxLeft = cols - rw - 1; // at least 1 space gap
+  let l = strWidth(left) > maxLeft ? truncate(left, maxLeft) : left;
+  const gap = cols - strWidth(l) - rw;
+  return l + ' '.repeat(Math.max(gap, 1)) + right;
+}
+
+function printText(parts, text) {
+  parts.push(Buffer.from(text + '\n', 'utf8'));
+}
+
+function setAlign(parts, align) {
+  const a = align === 'center' ? 1 : align === 'right' ? 2 : 0;
+  parts.push(Buffer.from([ESC_BYTE, 0x61, a]));
+}
+
+function setBold(parts, on) {
+  parts.push(Buffer.from([ESC_BYTE, 0x45, on ? 1 : 0]));
+}
+
+// GS ! n — character size: bits 0-2 = width magnification, bits 4-6 = height magnification
+// 0x00=normal, 0x01=2xW, 0x10=2xH, 0x11=2xW+2xH
+function setSize(parts, size) {
+  parts.push(Buffer.from([GS_BYTE, 0x21, size]));
 }
 
 function printDash(parts) {
-  printLine(parts, '-'.repeat(48), { fontSize: 20 });
+  printText(parts, '-'.repeat(LINE_WIDTH));
+}
+
+function printLine(parts, text, opts = {}) {
+  if (opts.align)  setAlign(parts, opts.align);
+  if (opts.bold)   setBold(parts, true);
+  if (opts.big)    setSize(parts, 0x11); // double w+h
+  printText(parts, text);
+  if (opts.big)    setSize(parts, 0x00);
+  if (opts.bold)   setBold(parts, false);
+  if (opts.align)  setAlign(parts, 'left');
 }
 
 function printLR(parts, left, right, opts = {}) {
-  printLine(parts, left, { ...opts, align: 'left' });
-  // Overlay: render both on one line
-  const fontSize = opts.fontSize || 22;
-  const bold = opts.bold || false;
-  const height = Math.ceil(fontSize * 1.4);
-  const width = PRINTER_WIDTH;
-
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = '#000';
-  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "SimSun","Microsoft YaHei","SimHei","Arial"`;
-  ctx.textBaseline = 'top';
-  const yPos = Math.floor(fontSize * 0.15);
-  const rm = ctx.measureText(right);
-  const gap = fontSize; // minimum gap between left and right text
-  const maxLeftWidth = width - rm.width - gap;
-  // Truncate left text if too long
-  let truncLeft = left;
-  if (ctx.measureText(truncLeft).width > maxLeftWidth) {
-    while (truncLeft.length > 1 && ctx.measureText(truncLeft + '..').width > maxLeftWidth) {
-      truncLeft = truncLeft.slice(0, -1);
-    }
-    truncLeft += '..';
-  }
-  ctx.fillText(truncLeft, 0, yPos);
-  ctx.fillText(right, width - rm.width, yPos);
-
-  const imgData = ctx.getImageData(0, 0, width, height).data;
-  const bytesPerRow = Math.ceil(width / 8);
-  const raster = Buffer.alloc(bytesPerRow * height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const gray = imgData[idx] * 0.299 + imgData[idx+1] * 0.587 + imgData[idx+2] * 0.114;
-      if (gray < 128) {
-        raster[y * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
-      }
-    }
-  }
-  // Replace last printLine with this combined one
-  parts.pop();
-  parts.push(rasterCmd(raster, bytesPerRow, height));
+  const cols = opts.big ? Math.floor(LINE_WIDTH / 2) : LINE_WIDTH;
+  if (opts.bold)  setBold(parts, true);
+  if (opts.big)   setSize(parts, 0x11);
+  printText(parts, lrLine(left, right, cols));
+  if (opts.big)   setSize(parts, 0x00);
+  if (opts.bold)  setBold(parts, false);
 }
 
 function buildEscPos(job) {
@@ -1386,49 +1349,32 @@ function buildEscPos(job) {
   // ESC @ — init printer
   push(ESC_BYTE, 0x40);
 
-  const S  = 34;  // normal text size
-  const SM = 28;  // small text (English sub-lines, mods)
-  const LG = 48;  // shop name / title
-
   if (job.type === 'test') {
-    // Use plain text ESC/POS for test print (most compatible with all printers)
-    const center = (...b) => parts.push(Buffer.from(b));
-    center(ESC_BYTE, 0x61, 0x01); // center align
-    parts.push(Buffer.from([GS_BYTE, 0x21, 0x11])); // double width+height
-    parts.push(Buffer.from('TEST PRINT\n'));
-    parts.push(Buffer.from([GS_BYTE, 0x21, 0x00])); // normal size
-    parts.push(Buffer.from('\n'));
-    parts.push(Buffer.from('Printer is working!\n'));
-    parts.push(Buffer.from(`IP: ${job.printerIp || '?'}\n`));
-    parts.push(Buffer.from(`Port: ${job.printerPort || 9100}\n`));
-    parts.push(Buffer.from(`${new Date().toLocaleString()}\n`));
-    parts.push(Buffer.from('--------------------------------\n'));
-    center(ESC_BYTE, 0x61, 0x00); // left align
+    printLine(parts, 'TEST PRINT', { bold: true, big: true, align: 'center' });
+    printText(parts, '');
+    printLine(parts, 'Printer is working!', { align: 'center' });
+    printLine(parts, `IP: ${job.printerIp || '?'}`, { align: 'center' });
+    printLine(parts, `Port: ${job.printerPort || 9100}`, { align: 'center' });
+    printLine(parts, new Date().toLocaleString(), { align: 'center' });
+    printDash(parts);
     feed(3); cut();
 
   } else if (job.type === 'orderSlip') {
     const d = job.data;
-    // Date/time left, table number large right
-    printLR(parts, d.dateTime || '', d.table, { fontSize: LG, bold: true });
     const ol = d.labels || {};
-    printLine(parts, d.isUpdate ? (ol.orderUpdate || 'ORDER UPDATE') : (ol.newOrder || 'NEW ORDER'), { fontSize: S, bold: true, align: 'left' });
-    if (d.cashier) printLine(parts, `${ol.cashier || 'Cashier'}: ${d.cashier}`, { fontSize: SM });
-    if (d.pax > 0) printLine(parts, `Pax: ${d.pax}`, { fontSize: SM });
+    // Table number large
+    printLR(parts, d.dateTime || '', d.table, { bold: true, big: true });
+    printLine(parts, d.isUpdate ? (ol.orderUpdate || 'ORDER UPDATE') : (ol.newOrder || 'NEW ORDER'), { bold: true });
+    if (d.cashier) printText(parts, `${ol.cashier || 'Cashier'}: ${d.cashier}`);
+    if (d.pax > 0) printText(parts, `Pax: ${d.pax}`);
     printDash(parts);
     (d.items || []).forEach((item, idx) => {
-      // Qty + Chinese name (large, bold) on first line
       const zhLabel = `${item.qty}x  ${item.nameZh || item.nameEn || ''}`;
-      printLine(parts, zhLabel, { fontSize: S, bold: true });
-      // English name on second line (smaller)
-      if (item.nameEn && item.nameZh) printLine(parts, `    ${item.nameEn}`, { fontSize: SM });
-      // Modifiers with - prefix
+      printLine(parts, zhLabel, { bold: true });
+      if (item.nameEn && item.nameZh) printText(parts, `    ${item.nameEn}`);
       const mods = Array.isArray(item.mods) ? item.mods : (item.mods ? [item.mods] : []);
-      mods.forEach(m => {
-        if (m) printLine(parts, `    -${m}`, { fontSize: SM });
-      });
-      // Notes with * prefix
-      if (item.notes) printLine(parts, `    *${item.notes}`, { fontSize: SM });
-      // Separator between items
+      mods.forEach(m => { if (m) printText(parts, `    -${m}`); });
+      if (item.notes) printText(parts, `    *${item.notes}`);
       if (idx < d.items.length - 1) printDash(parts);
     });
     printDash(parts);
@@ -1436,35 +1382,35 @@ function buildEscPos(job) {
 
   } else if (job.type === 'receipt') {
     const d = job.data;
-    printLine(parts, d.shopName || 'BKT House', { fontSize: LG, bold: true, align: 'center' });
-    if (d.shopAddress) printLine(parts, d.shopAddress, { fontSize: SM, align: 'center' });
     const rl = d.labels || {};
     const cur = d.currency || 'RM';
-    printLine(parts, rl.officialReceipt || 'Official Receipt', { fontSize: S, align: 'center' });
-    printLine(parts, rl.receipt || 'RECEIPT', { fontSize: S, bold: true, align: 'center' });
+    printLine(parts, d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    if (d.shopAddress) printLine(parts, d.shopAddress, { align: 'center' });
+    printLine(parts, rl.officialReceipt || 'Official Receipt', { align: 'center' });
+    printLine(parts, rl.receipt || 'RECEIPT', { bold: true, align: 'center' });
     printDash(parts);
-    printLR(parts, rl.receiptNo || 'Receipt No', d.receiptNo, { fontSize: S });
-    printLR(parts, rl.table || 'Table', d.table, { fontSize: S });
-    printLR(parts, rl.date || 'Date', d.dateStr, { fontSize: S });
-    printLR(parts, rl.time || 'Time', d.timeStr, { fontSize: S });
-    if (d.cashier) printLR(parts, rl.servedBy || 'Served by', d.cashier, { fontSize: S });
+    printLR(parts, rl.receiptNo || 'Receipt No', d.receiptNo || '');
+    printLR(parts, rl.table || 'Table', d.table || '');
+    printLR(parts, rl.date || 'Date', d.dateStr || '');
+    printLR(parts, rl.time || 'Time', d.timeStr || '');
+    if (d.cashier) printLR(parts, rl.servedBy || 'Served by', d.cashier);
     printDash(parts);
     (d.items || []).forEach(item => {
-      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { fontSize: S, bold: true });
-      if (item.nameEn) printLine(parts, `   ${item.nameEn}`, { fontSize: SM });
-      if (item.mods)   printLine(parts, `   [${item.mods}]`, { fontSize: SM });
-      if (item.notes)  printLine(parts, `   * ${item.notes}`, { fontSize: SM });
+      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { bold: true });
+      if (item.nameEn) printText(parts, `   ${item.nameEn}`);
+      if (item.mods)   printText(parts, `   [${item.mods}]`);
+      if (item.notes)  printText(parts, `   * ${item.notes}`);
     });
     printDash(parts);
-    printLR(parts, rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`, { fontSize: S });
-    if (d.sst) printLR(parts, `${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`, { fontSize: S });
-    if (d.svc) printLR(parts, `${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`, { fontSize: S });
-    printLR(parts, rl.total || 'TOTAL', `${cur}${d.total}`, { fontSize: 40, bold: true });
+    printLR(parts, rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`);
+    if (d.sst) printLR(parts, `${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
+    if (d.svc) printLR(parts, `${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
+    printLR(parts, rl.total || 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
     printDash(parts);
-    printLR(parts, rl.payment || 'Payment', d.payLabel, { fontSize: S });
+    printLR(parts, rl.payment || 'Payment', d.payLabel || '');
     push(LF_BYTE);
-    printLine(parts, d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { fontSize: S, align: 'center' });
-    printLine(parts, d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { fontSize: S, align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { align: 'center' });
+    printLine(parts, d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { align: 'center' });
     feed(3); cut();
   }
 
