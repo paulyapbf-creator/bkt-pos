@@ -1258,7 +1258,15 @@ app.post('/api/sync', async (req, res) => {
 // ─── REST API: Print (thermal printer via TCP) ───────────────────────────────
 
 const net = require('net');
-const { createCanvas } = require('canvas');
+const { createCanvas, registerFont } = require('canvas');
+const path = require('path');
+
+// Register Chinese font for canvas rendering (needed for CJK in receipts/slips)
+try {
+  registerFont(path.join(__dirname, 'fonts', 'NotoSansSC-Regular.ttf'), { family: 'Noto Sans SC' });
+} catch (e) {
+  console.warn('[print] Could not register Chinese font:', e.message);
+}
 
 const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
 const LINE_WIDTH = 48; // characters per line at normal size on 80mm printer
