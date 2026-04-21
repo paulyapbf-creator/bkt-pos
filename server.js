@@ -1391,12 +1391,19 @@ function buildEscPos(job) {
   const LG = 48;  // shop name / title
 
   if (job.type === 'test') {
-    printLine(parts, 'TEST PRINT', { fontSize: LG, bold: true, align: 'center' });
-    printLine(parts, '打印测试 OK', { fontSize: S, align: 'center' });
-    printLine(parts, 'Printer is working!', { fontSize: S, align: 'center' });
-    printLine(parts, `IP: ${job.printerIp || '?'}`, { fontSize: S, align: 'center' });
-    printLine(parts, `Port: ${job.printerPort || 9100}`, { fontSize: S, align: 'center' });
-    printLine(parts, new Date().toLocaleString(), { fontSize: S, align: 'center' });
+    // Use plain text ESC/POS for test print (most compatible with all printers)
+    const center = (...b) => parts.push(Buffer.from(b));
+    center(ESC_BYTE, 0x61, 0x01); // center align
+    parts.push(Buffer.from([GS_BYTE, 0x21, 0x11])); // double width+height
+    parts.push(Buffer.from('TEST PRINT\n'));
+    parts.push(Buffer.from([GS_BYTE, 0x21, 0x00])); // normal size
+    parts.push(Buffer.from('\n'));
+    parts.push(Buffer.from('Printer is working!\n'));
+    parts.push(Buffer.from(`IP: ${job.printerIp || '?'}\n`));
+    parts.push(Buffer.from(`Port: ${job.printerPort || 9100}\n`));
+    parts.push(Buffer.from(`${new Date().toLocaleString()}\n`));
+    parts.push(Buffer.from('--------------------------------\n'));
+    center(ESC_BYTE, 0x61, 0x00); // left align
     feed(3); cut();
 
   } else if (job.type === 'orderSlip') {

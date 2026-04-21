@@ -482,54 +482,40 @@ function initSettings() {
 
     testMsg.textContent = 'Sending...';
 
-    // Send JSON test job to server (server builds ESC/POS with GBK)
+    const port = parseInt(printerPortInput.value, 10) || 9100;
     let ok = false;
-    let escposB64 = null;
-    try {
-      const res = await fetch(`${API_BASE}/api/print`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'test',
-          printerIp: ip,
-          printerPort: parseInt(printerPortInput.value, 10) || 9100,
-        }),
-      });
-      const result = await res.json();
-      if (result.escpos) escposB64 = result.escpos;
-      if (res.ok) ok = true;
-    } catch (_) {}
 
-    // Try Android native print bridge (works even after navigating to cloud URL)
-    if (!ok && window.AndroidPrint) {
+    // Try 1: Android native text-based test print (most reliable for test)
+    if (window.AndroidPrint) {
       try {
-        // Use native text-based test print (no raster — more compatible)
-        const result = window.AndroidPrint.testPrint(ip, parseInt(printerPortInput.value, 10) || 9100);
+        const result = window.AndroidPrint.testPrint(ip, port);
         if (result === 'ok') ok = true;
       } catch (_) {}
     }
 
-    // Try Capacitor native PrintBridge (Android app - local pages only)
-    if (!ok && escposB64 && (window.Capacitor?.isNativePlatform() || navigator.userAgent.includes('BKT-POS-App'))) {
+    // Try 2: server-side build + TCP print
+    let escposB64 = null;
+    if (!ok) {
       try {
-        const { PrintBridge } = (window.Capacitor?.Plugins || {});
-        await PrintBridge.printRaw({
-          data: escposB64,
-          ip:   ip,
-          port: parseInt(printerPortInput.value, 10) || 9100,
+        const res = await fetch(`${API_BASE}/api/print`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'test', printerIp: ip, printerPort: port }),
         });
-        ok = true;
+        const result = await res.json();
+        if (result.escpos) escposB64 = result.escpos;
+        if (res.ok) ok = true;
       } catch (_) {}
     }
 
-    // Try relay with server-built bytes
+    // Try 3: relay with server-built bytes
     if (!ok && escposB64) {
       const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
       try {
         const res = await fetch(`${relay}/print`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ printerIp: ip, printerPort: parseInt(printerPortInput.value, 10) || 9100, data: escposB64 }),
+          body: JSON.stringify({ printerIp: ip, printerPort: port, data: escposB64 }),
         });
         if (res.ok) ok = true;
       } catch (_) {}
