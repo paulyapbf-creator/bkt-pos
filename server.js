@@ -1259,7 +1259,6 @@ app.post('/api/sync', async (req, res) => {
 
 const net = require('net');
 const { createCanvas, registerFont } = require('canvas');
-const path = require('path');
 
 // Register Chinese font for canvas rendering (needed for CJK in receipts/slips)
 try {
