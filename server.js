@@ -1306,225 +1306,170 @@ function lrLine(left, right, cols) {
   return l + ' '.repeat(Math.max(gap, 1)) + right;
 }
 
-// ─── Render text to raster image using ESC * (bit image) ─────────────────────
-// ESC * is more widely supported than GS v 0.
-// Mode 33 = 24-dot double density, column-based: 3 bytes per column (24 pixels high)
+// ─── Full-page raster printing (GS v 0) ──────────────────────────────────────
+// Renders entire receipt/slip as a single canvas image, then sends as
+// row-based raster bitmap. Works on virtually all thermal printers.
 
-function renderTextImage(text, opts = {}) {
-  const fontSize = opts.fontSize || 24;
-  const bold     = opts.bold || false;
-  const align    = opts.align || 'left';
-  const width    = IMG_WIDTH;
-  const height   = Math.ceil(fontSize * 1.5);
+const PRINT_FONT = '"Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"';
+const FONT_NORMAL = 24;
+const FONT_BIG    = 42;
+const LINE_PAD    = 6; // extra pixels between lines
 
-  const canvas = createCanvas(width, height);
-  const ctx    = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = '#000';
-  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"`;
-  ctx.textBaseline = 'top';
+function createRenderer(width) {
+  let y = 8; // top margin
+  const ops = [];
 
-  let x = 0;
-  if (align === 'center') x = (width - ctx.measureText(text).width) / 2;
-  else if (align === 'right') x = width - ctx.measureText(text).width;
-  ctx.fillText(text, x, Math.floor(fontSize * 0.1));
+  return {
+    text(text, opts = {}) {
+      const fontSize = opts.big ? FONT_BIG : FONT_NORMAL;
+      ops.push({ type: 'text', text, y, fontSize, bold: !!opts.bold, align: opts.align || 'left' });
+      y += fontSize + LINE_PAD;
+    },
+    lr(left, right, opts = {}) {
+      const fontSize = opts.big ? FONT_BIG : FONT_NORMAL;
+      ops.push({ type: 'lr', left, right, y, fontSize, bold: !!opts.bold });
+      y += fontSize + LINE_PAD;
+    },
+    dash() {
+      ops.push({ type: 'dash', y: y + 4 });
+      y += 14;
+    },
+    space(px) { y += px || 8; },
+    render() {
+      const height = y + 8;
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, width, height);
 
-  return ctx.getImageData(0, 0, width, height);
-}
-
-function renderLRImage(left, right, opts = {}) {
-  const fontSize = opts.fontSize || 24;
-  const bold     = opts.bold || false;
-  const width    = IMG_WIDTH;
-  const height   = Math.ceil(fontSize * 1.5);
-
-  const canvas = createCanvas(width, height);
-  const ctx    = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = '#000';
-  ctx.font = `${bold ? 'bold ' : ''}${fontSize}px "Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"`;
-  ctx.textBaseline = 'top';
-  const yPos = Math.floor(fontSize * 0.1);
-  ctx.fillText(left, 0, yPos);
-  ctx.fillText(right, width - ctx.measureText(right).width, yPos);
-
-  return ctx.getImageData(0, 0, width, height);
-}
-
-// Convert ImageData to ESC * column-based bit image commands
-// Prints in 24-dot high strips (mode 33)
-function imageToEscStar(imgData) {
-  const { width, height, data } = imgData;
-  const parts = [];
-
-  for (let yOff = 0; yOff < height; yOff += 24) {
-    const stripH = Math.min(24, height - yOff);
-    // ESC * 33 nL nH — 24-dot double-density
-    const nL = width & 0xFF, nH = (width >> 8) & 0xFF;
-    parts.push(Buffer.from([ESC_BYTE, 0x2A, 33, nL, nH]));
-
-    // Column data: for each x, 3 bytes (24 vertical pixels, MSB=top)
-    const colData = Buffer.alloc(width * 3);
-    for (let x = 0; x < width; x++) {
-      for (let bit = 0; bit < 24; bit++) {
-        const y = yOff + bit;
-        if (y < height) {
-          const idx = (y * width + x) * 4;
-          const gray = data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
-          if (gray < 128) {
-            const byteIdx = Math.floor(bit / 8);
-            colData[x * 3 + byteIdx] |= (0x80 >> (bit % 8));
-          }
+      for (const op of ops) {
+        ctx.fillStyle = '#000';
+        ctx.textBaseline = 'top';
+        if (op.type === 'text') {
+          ctx.font = `${op.bold ? 'bold ' : ''}${op.fontSize}px ${PRINT_FONT}`;
+          let x = 4;
+          if (op.align === 'center') x = (width - ctx.measureText(op.text).width) / 2;
+          else if (op.align === 'right') x = width - ctx.measureText(op.text).width - 4;
+          ctx.fillText(op.text, x, op.y);
+        } else if (op.type === 'lr') {
+          ctx.font = `${op.bold ? 'bold ' : ''}${op.fontSize}px ${PRINT_FONT}`;
+          ctx.fillText(op.left, 4, op.y);
+          ctx.fillText(op.right, width - ctx.measureText(op.right).width - 4, op.y);
+        } else if (op.type === 'dash') {
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(0, op.y);
+          ctx.lineTo(width, op.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
         }
       }
+      return canvas;
+    },
+  };
+}
+
+// Convert canvas to GS v 0 raster bit image (row-based, universally supported)
+function canvasToGSv0(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  const imgData = ctx.getImageData(0, 0, width, height);
+  const data = imgData.data;
+  const bytesPerRow = Math.ceil(width / 8);
+
+  const xL = bytesPerRow & 0xFF, xH = (bytesPerRow >> 8) & 0xFF;
+  const yL = height & 0xFF, yH = (height >> 8) & 0xFF;
+  const header = Buffer.from([GS_BYTE, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
+
+  const bitmap = Buffer.alloc(bytesPerRow * height);
+  for (let row = 0; row < height; row++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (row * width + x) * 4;
+      const gray = data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
+      if (gray < 128) {
+        bitmap[row * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
+      }
     }
-    parts.push(colData);
-    parts.push(Buffer.from([LF_BYTE])); // line feed after each strip
   }
 
-  return Buffer.concat(parts);
-}
-
-function printImage(parts, text, opts) {
-  const imgData = renderTextImage(text, opts);
-  parts.push(imageToEscStar(imgData));
-}
-
-function printImageLR(parts, left, right, opts) {
-  const imgData = renderLRImage(left, right, opts);
-  parts.push(imageToEscStar(imgData));
-}
-
-// ─── Plain-text ESC/POS helpers (for ASCII-only lines) ───────────────────────
-
-function printText(parts, text) {
-  parts.push(Buffer.from(text + '\n'));
-}
-
-function setAlign(parts, align) {
-  const a = align === 'center' ? 1 : align === 'right' ? 2 : 0;
-  parts.push(Buffer.from([ESC_BYTE, 0x61, a]));
-}
-
-function setBold(parts, on) {
-  parts.push(Buffer.from([ESC_BYTE, 0x45, on ? 1 : 0]));
-}
-
-function setSize(parts, size) {
-  parts.push(Buffer.from([GS_BYTE, 0x21, size]));
-}
-
-function printDash(parts) {
-  printText(parts, '-'.repeat(LINE_WIDTH));
-}
-
-// Smart print: use raster image if text has CJK, plain text otherwise
-function printLine(parts, text, opts = {}) {
-  if (hasCJK(text)) {
-    const fontSize = opts.big ? 48 : 24;
-    printImage(parts, text, { fontSize, bold: opts.bold, align: opts.align });
-  } else {
-    if (opts.align)  setAlign(parts, opts.align);
-    if (opts.bold)   setBold(parts, true);
-    if (opts.big)    setSize(parts, 0x11);
-    printText(parts, text);
-    if (opts.big)    setSize(parts, 0x00);
-    if (opts.bold)   setBold(parts, false);
-    if (opts.align)  setAlign(parts, 'left');
-  }
-}
-
-function printLR(parts, left, right, opts = {}) {
-  if (hasCJK(left) || hasCJK(right)) {
-    const fontSize = opts.big ? 48 : 24;
-    printImageLR(parts, left, right, { fontSize, bold: opts.bold });
-  } else {
-    const cols = opts.big ? Math.floor(LINE_WIDTH / 2) : LINE_WIDTH;
-    if (opts.bold)  setBold(parts, true);
-    if (opts.big)   setSize(parts, 0x11);
-    printText(parts, lrLine(left, right, cols));
-    if (opts.big)   setSize(parts, 0x00);
-    if (opts.bold)  setBold(parts, false);
-  }
+  return Buffer.concat([header, bitmap]);
 }
 
 function buildEscPos(job) {
   const parts = [];
-  const push = (...b) => parts.push(Buffer.from(b));
-  const feed = (n) => push(ESC_BYTE, 0x64, n);
-  const cut  = () => push(GS_BYTE, 0x56, 1);
+  const init = Buffer.from([ESC_BYTE, 0x40]);           // ESC @ — init
+  const feed = Buffer.from([ESC_BYTE, 0x64, 3]);        // feed 3 lines
+  const cut  = Buffer.from([GS_BYTE, 0x56, 1]);         // partial cut
 
-  // ESC @ — init printer
-  push(ESC_BYTE, 0x40);
+  const r = createRenderer(IMG_WIDTH);
 
   if (job.type === 'test') {
-    printLine(parts, 'TEST PRINT', { bold: true, big: true, align: 'center' });
-    printText(parts, '');
-    printLine(parts, 'Printer is working!', { align: 'center' });
-    printLine(parts, `IP: ${job.printerIp || '?'}`, { align: 'center' });
-    printLine(parts, `Port: ${job.printerPort || 9100}`, { align: 'center' });
-    printLine(parts, new Date().toLocaleString(), { align: 'center' });
-    printDash(parts);
-    feed(3); cut();
+    r.text('TEST PRINT', { bold: true, big: true, align: 'center' });
+    r.space();
+    r.text('Printer is working!', { align: 'center' });
+    r.text(`IP: ${job.printerIp || '?'}`, { align: 'center' });
+    r.text(`Port: ${job.printerPort || 9100}`, { align: 'center' });
+    r.text(new Date().toLocaleString(), { align: 'center' });
+    r.dash();
 
   } else if (job.type === 'orderSlip') {
     const d = job.data;
     const ol = d.labels || {};
-    // Table number large
-    printLR(parts, d.dateTime || '', d.table, { bold: true, big: true });
-    printLine(parts, d.isUpdate ? (ol.orderUpdate || 'ORDER UPDATE') : (ol.newOrder || 'NEW ORDER'), { bold: true });
-    if (d.cashier) printText(parts, `${ol.cashier || 'Cashier'}: ${d.cashier}`);
-    if (d.pax > 0) printText(parts, `Pax: ${d.pax}`);
-    printDash(parts);
+    r.lr(d.dateTime || '', d.table, { bold: true, big: true });
+    r.text(d.isUpdate ? (ol.orderUpdate || 'ORDER UPDATE') : (ol.newOrder || 'NEW ORDER'), { bold: true });
+    if (d.cashier) r.text(`${ol.cashier || 'Cashier'}: ${d.cashier}`);
+    if (d.pax > 0) r.text(`Pax: ${d.pax}`);
+    r.dash();
     (d.items || []).forEach((item, idx) => {
-      const zhLabel = `${item.qty}x  ${item.nameZh || item.nameEn || ''}`;
-      printLine(parts, zhLabel, { bold: true });
-      if (item.nameEn && item.nameZh) printText(parts, `    ${item.nameEn}`);
+      const label = `${item.qty}x  ${item.nameZh || item.nameEn || ''}`;
+      r.text(label, { bold: true });
+      if (item.nameEn && item.nameZh) r.text(`    ${item.nameEn}`);
       const mods = Array.isArray(item.mods) ? item.mods : (item.mods ? [item.mods] : []);
-      mods.forEach(m => { if (m) printText(parts, `    -${m}`); });
-      if (item.notes) printText(parts, `    *${item.notes}`);
-      if (idx < d.items.length - 1) printDash(parts);
+      mods.forEach(m => { if (m) r.text(`    -${m}`); });
+      if (item.notes) r.text(`    *${item.notes}`);
+      if (idx < d.items.length - 1) r.dash();
     });
-    printDash(parts);
-    feed(3); cut();
+    r.dash();
 
   } else if (job.type === 'receipt') {
     const d = job.data;
     const rl = d.labels || {};
     const cur = d.currency || 'RM';
-    printLine(parts, d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
-    if (d.shopAddress) printLine(parts, d.shopAddress, { align: 'center' });
-    printLine(parts, rl.officialReceipt || 'Official Receipt', { align: 'center' });
-    printLine(parts, rl.receipt || 'RECEIPT', { bold: true, align: 'center' });
-    printDash(parts);
-    printLR(parts, rl.receiptNo || 'Receipt No', d.receiptNo || '');
-    printLR(parts, rl.table || 'Table', d.table || '');
-    printLR(parts, rl.date || 'Date', d.dateStr || '');
-    printLR(parts, rl.time || 'Time', d.timeStr || '');
-    if (d.cashier) printLR(parts, rl.servedBy || 'Served by', d.cashier);
-    printDash(parts);
+    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    if (d.shopAddress) r.text(d.shopAddress, { align: 'center' });
+    r.text(rl.officialReceipt || 'Official Receipt', { align: 'center' });
+    r.text(rl.receipt || 'RECEIPT', { bold: true, align: 'center' });
+    r.dash();
+    r.lr(rl.receiptNo || 'Receipt No', d.receiptNo || '');
+    r.lr(rl.table || 'Table', d.table || '');
+    r.lr(rl.date || 'Date', d.dateStr || '');
+    r.lr(rl.time || 'Time', d.timeStr || '');
+    if (d.cashier) r.lr(rl.servedBy || 'Served by', d.cashier);
+    r.dash();
     (d.items || []).forEach(item => {
-      printLR(parts, `${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { bold: true });
-      if (item.nameEn) printText(parts, `   ${item.nameEn}`);
-      if (item.mods)   printText(parts, `   [${item.mods}]`);
-      if (item.notes)  printText(parts, `   * ${item.notes}`);
+      r.lr(`${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { bold: true });
+      if (item.nameEn) r.text(`   ${item.nameEn}`);
+      if (item.mods)   r.text(`   [${item.mods}]`);
+      if (item.notes)  r.text(`   * ${item.notes}`);
     });
-    printDash(parts);
-    printLR(parts, rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`);
-    if (d.sst) printLR(parts, `${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
-    if (d.svc) printLR(parts, `${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
-    printLR(parts, rl.total || 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
-    printDash(parts);
-    printLR(parts, rl.payment || 'Payment', d.payLabel || '');
-    push(LF_BYTE);
-    printLine(parts, d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { align: 'center' });
-    printLine(parts, d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { align: 'center' });
-    feed(3); cut();
+    r.dash();
+    r.lr(rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`);
+    if (d.sst) r.lr(`${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
+    if (d.svc) r.lr(`${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
+    r.lr(rl.total || 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
+    r.dash();
+    r.lr(rl.payment || 'Payment', d.payLabel || '');
+    r.space();
+    r.text(d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { align: 'center' });
+    r.text(d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { align: 'center' });
   }
 
-  return Buffer.concat(parts);
+  const canvas = r.render();
+  const raster = canvasToGSv0(canvas);
+
+  return Buffer.concat([init, raster, feed, cut]);
 }
 
 function sendTcpData(ip, port, data) {
