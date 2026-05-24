@@ -1269,7 +1269,9 @@ try {
 
 const ESC_BYTE = 0x1B, GS_BYTE = 0x1D, LF_BYTE = 0x0A;
 const LINE_WIDTH = 48; // characters per line at normal size on 80mm printer
-const IMG_WIDTH  = 576; // pixels for 80mm printer (72 dots/mm × 8mm printable)
+const IMG_WIDTH_58  = 384; // pixels for 58mm printer (48mm printable × 8 dots/mm)
+const IMG_WIDTH_80  = 576; // pixels for 80mm printer (72mm printable × 8 dots/mm)
+const isCloud = !!process.env.RAILWAY_PUBLIC_DOMAIN;
 
 // ─── ESC/POS helpers ─────────────────────────────────────────────────────────
 
@@ -1311,11 +1313,12 @@ function lrLine(left, right, cols) {
 // row-based raster bitmap. Works on virtually all thermal printers.
 
 const PRINT_FONT = '"Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"';
-const FONT_NORMAL = 24;
-const FONT_BIG    = 42;
-const LINE_PAD    = 6; // extra pixels between lines
 
 function createRenderer(width) {
+  // Scale fonts to paper width: 384px→28/48px, 576px→24/42px
+  const FONT_NORMAL = width >= 576 ? 24 : 28;
+  const FONT_BIG    = width >= 576 ? 42 : 48;
+  const LINE_PAD    = width >= 576 ? 6 : 8;
   let y = 8; // top margin
   const ops = [];
 
@@ -1397,13 +1400,14 @@ function canvasToGSv0(canvas) {
   return Buffer.concat([header, bitmap]);
 }
 
-function buildEscPos(job) {
+function buildEscPos(job, imgWidth) {
+  const width = imgWidth || IMG_WIDTH_58;
   const parts = [];
   const init = Buffer.from([ESC_BYTE, 0x40]);           // ESC @ — init
   const feed = Buffer.from([ESC_BYTE, 0x64, 3]);        // feed 3 lines
   const cut  = Buffer.from([GS_BYTE, 0x56, 1]);         // partial cut
 
-  const r = createRenderer(IMG_WIDTH);
+  const r = createRenderer(width);
 
   if (job.type === 'test') {
     r.text('TEST PRINT', { bold: true, big: true, align: 'center' });
@@ -1488,6 +1492,7 @@ app.post('/api/print', async (req, res) => {
     const settings    = await req.store.getSettings();
     const printerIp   = settings.printerIp;
     const printerPort = parseInt(settings.printerPort, 10) || 9100;
+    const printerWidth = settings.printerWidth === '80' ? IMG_WIDTH_80 : IMG_WIDTH_58;
 
     if (!printerIp) return res.status(400).json({ error: 'No printer IP configured' });
 
@@ -1495,18 +1500,23 @@ app.post('/api/print', async (req, res) => {
     job.printerIp   = job.printerIp || printerIp;
     job.printerPort = job.printerPort || printerPort;
 
-    const escpos = buildEscPos(job);
-    console.log(`[print] type=${job.type} size=${escpos.length}B → ${printerIp}:${printerPort}`);
+    const escpos = buildEscPos(job, printerWidth);
+    console.log(`[print] type=${job.type} size=${escpos.length}B width=${printerWidth}px → ${printerIp}:${printerPort}`);
 
-    // Try sending to printer
+    // Return built ESC/POS so frontend can use relay/Android fallback
+    const escposB64 = escpos.toString('base64');
+
+    // On cloud, skip TCP (printer is on local network, not reachable from cloud)
+    if (isCloud) {
+      return res.json({ ok: false, escpos: escposB64 });
+    }
+
+    // On local network, try direct TCP
     let sent = false;
     try {
       await sendTcpData(printerIp, printerPort, escpos);
       sent = true;
     } catch (_) {}
-
-    // Return built ESC/POS so frontend can use relay fallback
-    const escposB64 = escpos.toString('base64');
 
     if (sent) {
       res.json({ ok: true, escpos: escposB64 });
