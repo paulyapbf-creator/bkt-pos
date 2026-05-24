@@ -504,7 +504,7 @@ function initSettings() {
         });
         const result = await res.json();
         if (result.escpos) escposB64 = result.escpos;
-        if (res.ok) ok = true;
+        if (result.ok === true) ok = true;
       } catch (_) {}
     }
 

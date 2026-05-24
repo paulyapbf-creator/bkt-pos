@@ -1323,7 +1323,7 @@ async function sendToPrinter(job) {
     });
     const result = await res.json();
     if (result.escpos) escposB64 = result.escpos;
-    if (res.ok) return true;
+    if (result.ok === true) return true; // server printed via TCP successfully
   } catch (_) {}
 
   // Try 2: Android native print bridge (works on cloud URLs)
