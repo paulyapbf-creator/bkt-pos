@@ -1322,6 +1322,15 @@ function createRenderer(width) {
   let y = 8; // top margin
   const ops = [];
 
+  // Draw text with thickness — all text is bold; emphasized text gets double-strike
+  function drawText(ctx, text, x, yPos, emphasized) {
+    ctx.fillText(text, x, yPos);
+    if (emphasized) {
+      ctx.fillText(text, x + 1, yPos);     // double-strike right
+      ctx.fillText(text, x, yPos + 1);     // double-strike down
+    }
+  }
+
   return {
     text(text, opts = {}) {
       const fontSize = opts.big ? FONT_BIG : FONT_NORMAL;
@@ -1349,18 +1358,20 @@ function createRenderer(width) {
         ctx.fillStyle = '#000';
         ctx.textBaseline = 'top';
         if (op.type === 'text') {
-          ctx.font = `${op.bold ? 'bold ' : ''}${op.fontSize}px ${PRINT_FONT}`;
+          // All text renders bold; emphasized (op.bold) gets double-strike
+          ctx.font = `bold ${op.fontSize}px ${PRINT_FONT}`;
           let x = 4;
           if (op.align === 'center') x = (width - ctx.measureText(op.text).width) / 2;
           else if (op.align === 'right') x = width - ctx.measureText(op.text).width - 4;
-          ctx.fillText(op.text, x, op.y);
+          drawText(ctx, op.text, x, op.y, op.bold);
         } else if (op.type === 'lr') {
-          ctx.font = `${op.bold ? 'bold ' : ''}${op.fontSize}px ${PRINT_FONT}`;
-          ctx.fillText(op.left, 4, op.y);
-          ctx.fillText(op.right, width - ctx.measureText(op.right).width - 4, op.y);
+          ctx.font = `bold ${op.fontSize}px ${PRINT_FONT}`;
+          const rx = width - ctx.measureText(op.right).width - 4;
+          drawText(ctx, op.left, 4, op.y, op.bold);
+          drawText(ctx, op.right, rx, op.y, op.bold);
         } else if (op.type === 'dash') {
           ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           ctx.setLineDash([6, 4]);
           ctx.beginPath();
           ctx.moveTo(0, op.y);
