@@ -1628,11 +1628,6 @@ async function init() {
   if (isApp) {
     document.documentElement.classList.add('native-app');
     sessionStorage.setItem('bkt_app_mode', '1');
-    // Move search bar into table-bar row to save vertical space
-    const mtb = document.getElementById('mobile-table-bar');
-    const sw = document.getElementById('search-wrap');
-    const payBtn = document.getElementById('mobile-pay-btn');
-    if (mtb && sw) mtb.insertBefore(sw, payBtn);
   }
 
   // ── Handle tenant switch from admin links ──
