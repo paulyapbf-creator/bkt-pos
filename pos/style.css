@@ -3022,21 +3022,23 @@ button, a, .mli, .table-cell, .modifier-option {
 /* ── Native app (Capacitor) — force mobile layout regardless of viewport ── */
 html.native-app .app-txt { display: none; }
 html.native-app .nav-txt { display: none; }
-html.native-app #header { gap: 2px; padding: 0 6px; padding-top: max(12px, env(safe-area-inset-top, 12px)); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; }
+html.native-app #header { gap: 0; padding: 0 4px; padding-top: env(safe-area-inset-top, 0px); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; min-height: 48px; }
 html.native-app #header::-webkit-scrollbar { display: none; }
-html.native-app #header-right { gap: 2px; flex-wrap: nowrap; flex-shrink: 0; }
-html.native-app .nav-link { padding: 12px 10px; font-size: 22px; line-height: 1; min-width: 44px; min-height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-html.native-app .pay-bills-btn { padding: 12px 10px; font-size: 22px; line-height: 1; min-width: 44px; min-height: 44px; flex-shrink: 0; }
-html.native-app .user-chip { padding: 10px 10px; font-size: 20px; min-width: 44px; min-height: 44px; }
-html.native-app #app-title { flex-shrink: 0; font-size: 22px; }
-html.native-app #main-layout { flex-direction: column; height: calc(100dvh - 64px); }
+html.native-app #header-right { gap: 0; flex-wrap: nowrap; flex-shrink: 0; }
+html.native-app .nav-link { padding: 10px 12px; font-size: 26px; line-height: 1; min-width: 48px; min-height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+html.native-app .pay-bills-btn { padding: 10px 12px; font-size: 26px; line-height: 1; min-width: 48px; min-height: 48px; flex-shrink: 0; }
+html.native-app .user-chip { padding: 10px 10px; font-size: 24px; min-width: 48px; min-height: 48px; }
+html.native-app #app-title { flex-shrink: 0; font-size: 24px; padding: 0 4px; }
+html.native-app #main-layout { flex-direction: column; height: calc(100dvh - 48px - env(safe-area-inset-top, 0px)); }
 html.native-app #menu-panel { order: 1; flex: 1; width: 100%; min-height: 0; display: flex; flex-direction: column; }
 html.native-app #menu-area { flex: 1; min-height: 0; }
 html.native-app #cart-panel { position: fixed !important; left: 0; right: 0; bottom: 0; top: 0; width: 100% !important; max-width: none !important; min-width: 0 !important; z-index: 250; border-right: none; transform: translateY(100%); transition: transform 0.25s ease; background: var(--bg); }
 html.native-app #cart-panel.mobile-cart-open { transform: translateY(0); }
 html.native-app #cart-panel #cp-head { padding-top: max(14px, env(safe-area-inset-top, 14px)); }
 html.native-app .mobile-basket-bar { display: inline-flex !important; right: 10px; bottom: auto; }
-html.native-app .mobile-table-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px; background: var(--header); border-bottom: 1px solid var(--border); }
+html.native-app .mobile-table-bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--header); border-bottom: 1px solid var(--border); flex-wrap: nowrap; }
+html.native-app #search-wrap { padding: 0; border-bottom: none; background: none; flex: 1; min-width: 0; }
+html.native-app #search-input { font-size: 14px; padding: 8px 10px; }
 html.native-app .mobile-pay-btn { display: block !important; }
 html.native-app #pay-bills-btn { display: none !important; }
 html.native-app .mobile-cart-back-btn { display: inline-block; }
