@@ -82,7 +82,7 @@ function renderTable() {
   }
 
   tbody.innerHTML = filtered.map(item => `
-    <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}">`
+    <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}">
       <td><span class="cat-chip">${catName(item.category)}</span></td>
       <td class="td-name">
         <div class="td-name-zh">${localName(item)}</div>
