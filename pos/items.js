@@ -125,6 +125,9 @@ function moveItem(id, dir) {
   [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
   persist();
   renderTable();
+  // Re-focus the same direction button on the moved item
+  const btn = document.querySelector(`.btn-${dir < 0 ? 'up' : 'down'}[data-id="${id}"]`);
+  if (btn) { btn.focus(); btn.scrollIntoView({ block: 'nearest' }); }
 }
 
 // ─── Modal open / close ───────────────────────────────────────────────────────
