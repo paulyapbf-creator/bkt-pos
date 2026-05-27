@@ -82,7 +82,7 @@ function renderTable() {
   }
 
   tbody.innerHTML = filtered.map(item => `
-    <tr class="${item.isAvailable ? '' : 'row-dim'}">
+    <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}">`
       <td><span class="cat-chip">${catName(item.category)}</span></td>
       <td class="td-name">
         <div class="td-name-zh">${localName(item)}</div>
@@ -122,20 +122,15 @@ function moveItem(id, dir) {
   if (idx < 0) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
-  // Save scroll position
-  const wrap = document.getElementById('im-table-wrap');
-  const scrollTop = wrap ? wrap.scrollTop : 0;
   [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
   persist();
   renderTable();
-  // Restore scroll and focus the button on the moved item
-  if (wrap) wrap.scrollTop = scrollTop;
   requestAnimationFrame(() => {
-    const cls = dir < 0 ? 'btn-up' : 'btn-down';
-    const btn = document.querySelector(`.${cls}[data-id="${id}"]`);
-    if (btn) {
-      btn.focus();
-      btn.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    const row = document.querySelector(`tr[data-item-id="${id}"]`);
+    if (row) {
+      row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      row.style.background = '#2a2a4a';
+      setTimeout(() => { row.style.background = ''; }, 600);
     }
   });
 }
