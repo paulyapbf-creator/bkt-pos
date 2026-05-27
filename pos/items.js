@@ -122,12 +122,22 @@ function moveItem(id, dir) {
   if (idx < 0) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
+  // Save scroll position
+  const wrap = document.getElementById('im-table-wrap');
+  const scrollTop = wrap ? wrap.scrollTop : 0;
   [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
   persist();
   renderTable();
-  // Re-focus the same direction button on the moved item
-  const btn = document.querySelector(`.btn-${dir < 0 ? 'up' : 'down'}[data-id="${id}"]`);
-  if (btn) { btn.focus(); btn.scrollIntoView({ block: 'nearest' }); }
+  // Restore scroll and focus the button on the moved item
+  if (wrap) wrap.scrollTop = scrollTop;
+  requestAnimationFrame(() => {
+    const cls = dir < 0 ? 'btn-up' : 'btn-down';
+    const btn = document.querySelector(`.${cls}[data-id="${id}"]`);
+    if (btn) {
+      btn.focus();
+      btn.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }
+  });
 }
 
 // ─── Modal open / close ───────────────────────────────────────────────────────
