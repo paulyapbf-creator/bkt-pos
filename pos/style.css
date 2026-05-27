@@ -1079,6 +1079,7 @@ body {
   transition: opacity 0.15s;
 }
 .row-btn:hover { opacity: 0.82; }
+.btn-up, .btn-down { background: var(--header); color: #aaa; padding: 4px 8px; font-size: 11px; margin-left: 2px; }
 .btn-edit { background: var(--panel); color: #ccc; }
 .btn-del  { background: #3a1a1a; color: #e57373; }
 

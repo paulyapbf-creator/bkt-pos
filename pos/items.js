@@ -99,16 +99,32 @@ function renderTable() {
         ? `<span class="mod-count">${item.modifierGroups.length} group${item.modifierGroups.length > 1 ? 's' : ''}</span>`
         : '<span class="td-dim">—</span>'}</td>
       <td class="td-actions">
+        <button class="row-btn btn-up"   data-id="${item.id}" title="Move up">▲</button>
+        <button class="row-btn btn-down" data-id="${item.id}" title="Move down">▼</button>
         <button class="row-btn btn-edit" data-id="${item.id}">Edit</button>
         <button class="row-btn btn-del"  data-id="${item.id}">Delete</button>
       </td>
     </tr>
   `).join('');
 
+  tbody.querySelectorAll('.btn-up').forEach(b =>
+    b.addEventListener('click', () => moveItem(b.dataset.id, -1)));
+  tbody.querySelectorAll('.btn-down').forEach(b =>
+    b.addEventListener('click', () => moveItem(b.dataset.id, 1)));
   tbody.querySelectorAll('.btn-edit').forEach(b =>
     b.addEventListener('click', () => openModal(items.find(i => i.id === b.dataset.id))));
   tbody.querySelectorAll('.btn-del').forEach(b =>
     b.addEventListener('click', () => deleteItem(b.dataset.id)));
+}
+
+function moveItem(id, dir) {
+  const idx = items.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+  persist();
+  renderTable();
 }
 
 // ─── Modal open / close ───────────────────────────────────────────────────────
