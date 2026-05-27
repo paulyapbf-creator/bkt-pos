@@ -82,7 +82,8 @@ function renderTable() {
   }
 
   tbody.innerHTML = filtered.map(item => `
-    <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}">
+    <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}" draggable="true">
+      <td class="td-drag"><span class="drag-handle">⠿</span></td>
       <td><span class="cat-chip">${catName(item.category)}</span></td>
       <td class="td-name">
         <div class="td-name-zh">${localName(item)}</div>
@@ -99,46 +100,143 @@ function renderTable() {
         ? `<span class="mod-count">${item.modifierGroups.length} group${item.modifierGroups.length > 1 ? 's' : ''}</span>`
         : '<span class="td-dim">—</span>'}</td>
       <td class="td-actions">
-        <button class="row-btn btn-up"   data-id="${item.id}" title="Move up">▲</button>
-        <button class="row-btn btn-down" data-id="${item.id}" title="Move down">▼</button>
         <button class="row-btn btn-edit" data-id="${item.id}">Edit</button>
         <button class="row-btn btn-del"  data-id="${item.id}">Delete</button>
       </td>
     </tr>
   `).join('');
 
-  tbody.querySelectorAll('.btn-up').forEach(b =>
-    b.addEventListener('click', () => moveItem(b.dataset.id, -1)));
-  tbody.querySelectorAll('.btn-down').forEach(b =>
-    b.addEventListener('click', () => moveItem(b.dataset.id, 1)));
   tbody.querySelectorAll('.btn-edit').forEach(b =>
     b.addEventListener('click', () => openModal(items.find(i => i.id === b.dataset.id))));
   tbody.querySelectorAll('.btn-del').forEach(b =>
     b.addEventListener('click', () => deleteItem(b.dataset.id)));
+  initDragReorder(tbody);
 }
 
-function moveItem(id, dir) {
-  const idx = items.findIndex(i => i.id === id);
-  if (idx < 0) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= items.length) return;
-  // Swap in data
-  [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
-  persist();
-  // Swap rows directly in the DOM (no full re-render, keeps scroll position)
-  const tbody = document.getElementById('im-tbody');
-  const rows = tbody.querySelectorAll('tr[data-item-id]');
-  const movedRow = document.querySelector(`tr[data-item-id="${id}"]`);
-  if (!movedRow) { renderTable(); return; }
-  if (dir < 0 && movedRow.previousElementSibling) {
-    tbody.insertBefore(movedRow, movedRow.previousElementSibling);
-  } else if (dir > 0 && movedRow.nextElementSibling) {
-    tbody.insertBefore(movedRow.nextElementSibling, movedRow);
+// ─── Drag-and-drop reordering (desktop + mobile touch) ──────────────────────
+
+function initDragReorder(tbody) {
+  let dragRow = null;
+  let placeholder = null;
+  let touchY = 0;
+  let touchStarted = false;
+
+  // Create a thin line placeholder
+  function createPlaceholder() {
+    const ph = document.createElement('tr');
+    ph.className = 'drag-placeholder';
+    ph.innerHTML = '<td colspan="8" style="height:3px;padding:0;background:#C0392B;border:none;"></td>';
+    return ph;
   }
-  // Highlight and scroll to the moved row
-  movedRow.style.background = '#2a2a4a';
-  movedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  setTimeout(() => { movedRow.style.background = ''; }, 800);
+
+  function getRowAtY(y) {
+    const rows = tbody.querySelectorAll('tr[data-item-id]:not(.drag-placeholder)');
+    for (const row of rows) {
+      const rect = row.getBoundingClientRect();
+      if (y >= rect.top && y <= rect.bottom) {
+        // Return row and whether cursor is in top or bottom half
+        return { row, after: y > rect.top + rect.height / 2 };
+      }
+    }
+    return null;
+  }
+
+  function finishDrag() {
+    if (!dragRow || !placeholder) return;
+    // Insert the dragged row at the placeholder position
+    tbody.insertBefore(dragRow, placeholder);
+    placeholder.remove();
+    dragRow.classList.remove('dragging');
+    dragRow.style.background = '#2a2a4a';
+    setTimeout(() => { dragRow.style.background = ''; }, 600);
+
+    // Rebuild items array from new DOM order
+    const newOrder = [];
+    tbody.querySelectorAll('tr[data-item-id]').forEach(row => {
+      const item = items.find(i => i.id === row.dataset.itemId);
+      if (item) newOrder.push(item);
+    });
+    // Add any items not in the filtered view back
+    items.forEach(item => { if (!newOrder.includes(item)) newOrder.push(item); });
+    items.length = 0;
+    items.push(...newOrder);
+    persist();
+
+    dragRow = null;
+    placeholder = null;
+    touchStarted = false;
+  }
+
+  // ── Desktop drag events ──
+  tbody.addEventListener('dragstart', e => {
+    const row = e.target.closest('tr[data-item-id]');
+    if (!row) return;
+    dragRow = row;
+    placeholder = createPlaceholder();
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    requestAnimationFrame(() => row.classList.add('dragging'));
+  });
+
+  tbody.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragRow || !placeholder) return;
+    const hit = getRowAtY(e.clientY);
+    if (hit && hit.row !== dragRow) {
+      if (hit.after) {
+        hit.row.after(placeholder);
+      } else {
+        tbody.insertBefore(placeholder, hit.row);
+      }
+    }
+  });
+
+  tbody.addEventListener('dragend', e => {
+    e.preventDefault();
+    finishDrag();
+  });
+
+  // ── Mobile touch events ──
+  tbody.addEventListener('touchstart', e => {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const row = handle.closest('tr[data-item-id]');
+    if (!row) return;
+    e.preventDefault();
+    dragRow = row;
+    placeholder = createPlaceholder();
+    touchY = e.touches[0].clientY;
+    touchStarted = true;
+    row.classList.add('dragging');
+    tbody.insertBefore(placeholder, row.nextSibling);
+  }, { passive: false });
+
+  tbody.addEventListener('touchmove', e => {
+    if (!touchStarted || !dragRow || !placeholder) return;
+    e.preventDefault();
+    touchY = e.touches[0].clientY;
+    const hit = getRowAtY(touchY);
+    if (hit && hit.row !== dragRow) {
+      if (hit.after) {
+        hit.row.after(placeholder);
+      } else {
+        tbody.insertBefore(placeholder, hit.row);
+      }
+    }
+    // Auto-scroll the table wrapper
+    const wrap = document.getElementById('im-table-wrap');
+    if (wrap) {
+      const rect = wrap.getBoundingClientRect();
+      if (touchY < rect.top + 40) wrap.scrollTop -= 8;
+      if (touchY > rect.bottom - 40) wrap.scrollTop += 8;
+    }
+  }, { passive: false });
+
+  tbody.addEventListener('touchend', e => {
+    if (!touchStarted) return;
+    e.preventDefault();
+    finishDrag();
+  });
 }
 
 // ─── Modal open / close ───────────────────────────────────────────────────────
