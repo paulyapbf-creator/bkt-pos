@@ -1325,9 +1325,11 @@ function createRenderer(width) {
   // Draw text with thickness — all text is bold; emphasized text gets double-strike
   function drawText(ctx, text, x, yPos, emphasized) {
     ctx.fillText(text, x, yPos);
+    ctx.fillText(text, x + 0.5, yPos);   // slight offset for thicker base stroke
     if (emphasized) {
-      ctx.fillText(text, x + 1, yPos);     // double-strike right
-      ctx.fillText(text, x, yPos + 1);     // double-strike down
+      ctx.fillText(text, x + 1, yPos);   // extra right
+      ctx.fillText(text, x, yPos + 1);   // extra down
+      ctx.fillText(text, x + 1, yPos + 1); // diagonal
     }
   }
 
@@ -1366,8 +1368,15 @@ function createRenderer(width) {
           drawText(ctx, op.text, x, op.y, op.bold);
         } else if (op.type === 'lr') {
           ctx.font = `bold ${op.fontSize}px ${PRINT_FONT}`;
-          const rx = width - ctx.measureText(op.right).width - 4;
-          drawText(ctx, op.left, 4, op.y, op.bold);
+          const rw = ctx.measureText(op.right).width;
+          const rx = width - rw - 4;
+          const maxLeftW = rx - 8 - 4; // leave 8px gap between left and right
+          let left = op.left;
+          if (ctx.measureText(left).width > maxLeftW && maxLeftW > 30) {
+            while (ctx.measureText(left + '..').width > maxLeftW && left.length > 1) left = left.slice(0, -1);
+            left = left + '..';
+          }
+          drawText(ctx, left, 4, op.y, op.bold);
           drawText(ctx, op.right, rx, op.y, op.bold);
         } else if (op.type === 'dash') {
           ctx.strokeStyle = '#000';
@@ -1385,30 +1394,39 @@ function createRenderer(width) {
   };
 }
 
-// Convert canvas to GS v 0 raster bit image (row-based, universally supported)
+// Convert canvas to GS v 0 raster bit image, sent in strips to avoid printer buffer overflow.
+// Most thermal printers have limited receive buffers (~4-12KB); a full receipt image can be
+// 20-50KB, causing garbage output. Sending in 200-line strips keeps each command small.
 function canvasToGSv0(canvas) {
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   const bytesPerRow = Math.ceil(width / 8);
+  const STRIP_H = 200; // rows per strip — keeps each GS v 0 command under ~10KB
+  const parts = [];
 
-  const xL = bytesPerRow & 0xFF, xH = (bytesPerRow >> 8) & 0xFF;
-  const yL = height & 0xFF, yH = (height >> 8) & 0xFF;
-  const header = Buffer.from([GS_BYTE, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
+  for (let yOff = 0; yOff < height; yOff += STRIP_H) {
+    const stripH = Math.min(STRIP_H, height - yOff);
+    const xL = bytesPerRow & 0xFF, xH = (bytesPerRow >> 8) & 0xFF;
+    const yL = stripH & 0xFF, yH = (stripH >> 8) & 0xFF;
+    parts.push(Buffer.from([GS_BYTE, 0x76, 0x30, 0x00, xL, xH, yL, yH]));
 
-  const bitmap = Buffer.alloc(bytesPerRow * height);
-  for (let row = 0; row < height; row++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (row * width + x) * 4;
-      const gray = data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
-      if (gray < 128) {
-        bitmap[row * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
+    const bitmap = Buffer.alloc(bytesPerRow * stripH);
+    for (let row = 0; row < stripH; row++) {
+      const srcRow = yOff + row;
+      for (let x = 0; x < width; x++) {
+        const idx = (srcRow * width + x) * 4;
+        const gray = data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
+        if (gray < 128) {
+          bitmap[row * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
+        }
       }
     }
+    parts.push(bitmap);
   }
 
-  return Buffer.concat([header, bitmap]);
+  return Buffer.concat(parts);
 }
 
 function buildEscPos(job, imgWidth) {
