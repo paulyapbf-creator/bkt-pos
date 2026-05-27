@@ -189,6 +189,7 @@ async function viewTenant(slug) {
   document.querySelectorAll('.detail-period').forEach(b => b.classList.remove('active'));
   document.querySelector('.detail-period[data-period="today"]').classList.add('active');
   await loadTenantSales(slug, 'today');
+  loadAccessSettings(slug);
 }
 
 function closeDetail() {
@@ -268,6 +269,49 @@ document.getElementById('save-info-btn').addEventListener('click', async () => {
     loadTenants(); // refresh table
   } else {
     msg.textContent = 'Failed to save';
+    msg.className = 'msg msg-err';
+  }
+  msg.classList.remove('hidden');
+  setTimeout(() => msg.classList.add('hidden'), 2000);
+});
+
+// POS Access Control — load when detail opens
+const ACCESS_KEYS = ['history', 'orders', 'kitchen', 'reports', 'maintenance'];
+
+async function loadAccessSettings(slug) {
+  try {
+    const res = await fetch(`/api/settings?tenant=${slug}`);
+    if (!res.ok) return;
+    const settings = await res.json();
+    const ac = settings.posAccess || {};
+    ACCESS_KEYS.forEach(key => {
+      const el = document.getElementById('ac-' + key);
+      if (el) el.checked = ac[key] !== false; // default true
+    });
+  } catch {}
+}
+
+document.getElementById('save-access-btn').addEventListener('click', async () => {
+  if (!currentDetailSlug) return;
+  const msg = document.getElementById('save-access-msg');
+  // Read current settings first, then merge posAccess
+  try {
+    const res = await fetch(`/api/settings?tenant=${currentDetailSlug}`);
+    const settings = res.ok ? await res.json() : {};
+    const posAccess = {};
+    ACCESS_KEYS.forEach(key => {
+      posAccess[key] = document.getElementById('ac-' + key).checked;
+    });
+    settings.posAccess = posAccess;
+    const saveRes = await fetch(`/api/settings?tenant=${currentDetailSlug}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify(settings),
+    });
+    msg.textContent = saveRes.ok ? 'Saved' : 'Failed';
+    msg.className = saveRes.ok ? 'msg msg-ok' : 'msg msg-err';
+  } catch (e) {
+    msg.textContent = 'Error: ' + e.message;
     msg.className = 'msg msg-err';
   }
   msg.classList.remove('hidden');

@@ -170,6 +170,21 @@ function loadSettings() {
   catch (e) { return {}; }
 }
 
+function applyPosAccess(settings) {
+  const ac = (settings && settings.posAccess) || {};
+  const map = {
+    history:     '#history-btn',
+    orders:      'a[href="orders.html"]',
+    kitchen:     'a[href="kds.html"]',
+    reports:     'a[href="report.html"]',
+    maintenance: 'a[href*="items.html"]',
+  };
+  Object.entries(map).forEach(([key, sel]) => {
+    const el = document.querySelector(sel);
+    if (el) el.style.display = ac[key] === false ? 'none' : '';
+  });
+}
+
 function loadActiveBills() {
   return billsCache;
 }
@@ -1971,8 +1986,12 @@ async function init() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
+        applyPosAccess(s);
       }
     }).catch(() => {});
+
+    // Apply access control from cached settings on load
+    applyPosAccess(loadSettings());
 
     // Connect WebSocket
     connectWS();
