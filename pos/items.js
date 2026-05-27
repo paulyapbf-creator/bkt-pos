@@ -122,17 +122,23 @@ function moveItem(id, dir) {
   if (idx < 0) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= items.length) return;
+  // Swap in data
   [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
   persist();
-  renderTable();
-  requestAnimationFrame(() => {
-    const row = document.querySelector(`tr[data-item-id="${id}"]`);
-    if (row) {
-      row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-      row.style.background = '#2a2a4a';
-      setTimeout(() => { row.style.background = ''; }, 600);
-    }
-  });
+  // Swap rows directly in the DOM (no full re-render, keeps scroll position)
+  const tbody = document.getElementById('im-tbody');
+  const rows = tbody.querySelectorAll('tr[data-item-id]');
+  const movedRow = document.querySelector(`tr[data-item-id="${id}"]`);
+  if (!movedRow) { renderTable(); return; }
+  if (dir < 0 && movedRow.previousElementSibling) {
+    tbody.insertBefore(movedRow, movedRow.previousElementSibling);
+  } else if (dir > 0 && movedRow.nextElementSibling) {
+    tbody.insertBefore(movedRow.nextElementSibling, movedRow);
+  }
+  // Highlight and scroll to the moved row
+  movedRow.style.background = '#2a2a4a';
+  movedRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  setTimeout(() => { movedRow.style.background = ''; }, 800);
 }
 
 // ─── Modal open / close ───────────────────────────────────────────────────────
