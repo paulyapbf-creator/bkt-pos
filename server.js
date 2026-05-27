@@ -1479,6 +1479,31 @@ function buildEscPos(job, imgWidth) {
     r.space();
     r.text(d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { align: 'center' });
     r.text(d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { align: 'center' });
+
+  } else if (job.type === 'orderCheck') {
+    const d = job.data;
+    const cur = d.currency || 'RM';
+    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    r.text(d.lang === 'zh' ? '消费清单' : 'ORDER CHECK', { bold: true, align: 'center' });
+    r.dash();
+    r.lr(d.lang === 'zh' ? '桌号' : 'Table', d.table || '');
+    r.lr(d.lang === 'zh' ? '日期' : 'Date', d.dateStr || '');
+    r.lr(d.lang === 'zh' ? '时间' : 'Time', d.timeStr || '');
+    if (d.cashier) r.lr(d.lang === 'zh' ? '服务员' : 'Served by', d.cashier);
+    r.dash();
+    (d.items || []).forEach(item => {
+      r.lr(`${item.qty}x ${item.nameZh || ''}`, `${cur}${item.price}`, { bold: true });
+      if (item.nameEn) r.text(`   ${item.nameEn}`);
+      if (item.mods)   r.text(`   [${item.mods}]`);
+      if (item.notes)  r.text(`   * ${item.notes}`);
+    });
+    r.dash();
+    r.lr(d.lang === 'zh' ? '小计' : 'Subtotal', `${cur}${d.subtotal || d.total}`);
+    if (d.sst) r.lr(`SST (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
+    if (d.svc) r.lr(`Service (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
+    r.lr(d.lang === 'zh' ? '总计' : 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
+    r.dash();
+    r.text(d.lang === 'zh' ? '* 此非正式收据' : '* This is not an official receipt', { align: 'center' });
   }
 
   const canvas = r.render();

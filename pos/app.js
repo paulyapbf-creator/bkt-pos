@@ -675,9 +675,11 @@ function renderBillingStep() {
   const subEl     = document.getElementById('pay-subtitle');
   const bodyEl    = document.getElementById('pay-body');
   const backBtn   = document.getElementById('pay-back-btn');
+  const checkBtn  = document.getElementById('pay-check-btn');
   const confirmBtn = document.getElementById('pay-confirm-btn');
 
   backBtn.classList.toggle('hidden', state.payStep === 'list');
+  checkBtn.classList.add('hidden');
   confirmBtn.classList.add('hidden');
 
   if (state.payStep === 'list') {
@@ -723,6 +725,7 @@ function renderBillingStep() {
         <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
       ${breakdownRows}
     </table>`;
+    checkBtn.classList.remove('hidden');
     confirmBtn.textContent = t('proceed_to_payment'); confirmBtn.classList.remove('hidden');
 
   } else if (state.payStep === 'method') {
@@ -943,6 +946,24 @@ function handleBillingBack() {
   else if (state.payStep === 'qr')     { destroyAirwallexElement(); state.payStep = 'method'; state.payMethod = null; }
   else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
+}
+
+function handleOrderCheck() {
+  if (state.payStep !== 'bill' || !state.payingTable) return;
+  const bills = loadActiveBills();
+  const bill = bills[state.payingTable];
+  if (!bill) return;
+  const subtotal = getActiveBillTotal(bill.items);
+  const settings = loadSettings();
+  const bd = calcBillBreakdown(subtotal, settings);
+  const job = buildOrderCheckJob(state.payingTable, bill.items, bd);
+  if (settings.printerIp) {
+    sendToPrinter(job).then(ok => {
+      showToast(ok ? t('print_sent') || 'Check printed' : t('print_failed') || 'Print failed');
+    });
+  } else {
+    showToast(t('print_failed') || 'No printer configured');
+  }
 }
 
 function handleBillingConfirm() {
@@ -1305,6 +1326,36 @@ function buildReceiptJob(table, items, bd, method, orderId) {
       price:  item.subtotal.toFixed(2),
       mods:   (item.selectedModifiers || []).map(m => m.optionLabel).join(', '),
       notes:  item.notes ? item.notes.trim() : '',
+    })),
+  });
+}
+
+function buildOrderCheckJob(table, items, bd) {
+  const now = new Date();
+  const settings = loadSettings();
+  const sess = getSession();
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
+  return buildPrintJob('orderCheck', {
+    lang: typeof getLang === 'function' ? getLang() : 'en',
+    currency: cur,
+    shopName: settings.shopName || 'BKT House',
+    table,
+    dateStr: now.toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }),
+    timeStr: now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+    cashier: sess ? sess.name : '',
+    subtotal: bd.subtotal.toFixed(2),
+    sst: bd.sst ? bd.sst.toFixed(2) : null,
+    sstRate: bd.sstRate,
+    svc: bd.svc ? bd.svc.toFixed(2) : null,
+    svcRate: bd.svcRate,
+    total: bd.total.toFixed(2),
+    items: items.map(item => ({
+      qty: item.quantity,
+      nameZh: localName(item),
+      nameEn: item.name || '',
+      price: item.subtotal.toFixed(2),
+      mods: (item.selectedModifiers || []).map(m => m.optionLabel).join(', '),
+      notes: item.notes ? item.notes.trim() : '',
     })),
   });
 }
@@ -1845,6 +1896,7 @@ async function init() {
     if (e.target === e.currentTarget) closeBillingModal();
   });
   document.getElementById('pay-back-btn').addEventListener('click', handleBillingBack);
+  document.getElementById('pay-check-btn').addEventListener('click', handleOrderCheck);
   document.getElementById('pay-confirm-btn').addEventListener('click', handleBillingConfirm);
 
   // History
