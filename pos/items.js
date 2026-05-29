@@ -671,9 +671,10 @@ function initSettings() {
       }
     }
 
-    if (!testMsg.textContent.startsWith('error') && !testMsg.textContent.startsWith('Built-in'))
+    // Only overwrite if still showing "Sending..." (diagnostic messages already set)
+    if (testMsg.textContent === 'Sending...')
       testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check printer settings';
-    setTimeout(() => { testMsg.textContent = ''; }, 4000);
+    setTimeout(() => { testMsg.textContent = ''; }, 6000);
   });
 }
 
