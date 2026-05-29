@@ -615,14 +615,18 @@ function initSettings() {
 
     if (pType === 'builtin') {
       // Built-in printer (WizarPOS)
-      if (window.AndroidPrint && window.AndroidPrint.isBuiltInPrinter && window.AndroidPrint.isBuiltInPrinter()) {
+      if (!window.AndroidPrint) {
+        testMsg.textContent = 'Not running in BKT POS app (use app, not browser)';
+      } else if (!window.AndroidPrint.isBuiltInPrinter) {
+        testMsg.textContent = 'App needs rebuild — isBuiltInPrinter() not found (old APK)';
+      } else if (!window.AndroidPrint.isBuiltInPrinter()) {
+        testMsg.textContent = 'WizarPOS SDK not detected — may need cloudpos.jar in libs/';
+      } else {
         try {
           const result = window.AndroidPrint.testBuiltIn();
           if (result === 'ok') ok = true;
           else testMsg.textContent = result;
         } catch (e) { testMsg.textContent = 'error: ' + e.message; }
-      } else {
-        testMsg.textContent = 'Built-in printer not available on this device';
       }
     } else {
       // External printer (TCP)
