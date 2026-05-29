@@ -483,6 +483,7 @@ function initSettings() {
   const duitnowProfileHint  = document.getElementById('s-duitnow-profile-hint');
   const printOrderSlipInput = document.getElementById('s-print-order-slip');
   const printReceiptInput   = document.getElementById('s-print-receipt');
+  const printerTypeInput = document.getElementById('s-printer-type');
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
   const relayUrlInput    = document.getElementById('s-relay-url');
@@ -507,6 +508,7 @@ function initSettings() {
   const _savedProfile         = settings.duitnowProfile || '';
   printOrderSlipInput.checked = settings.printOrderSlip !== false;
   printReceiptInput.checked   = settings.printReceipt !== false;
+  printerTypeInput.value = settings.printerType    || 'external';
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
   relayUrlInput.value    = settings.relayUrl       || '';
@@ -578,6 +580,7 @@ function initSettings() {
       duitnowTerminal: duitnowTerminalInput.value.trim(),
       printOrderSlip: printOrderSlipInput.checked,
       printReceipt:   printReceiptInput.checked,
+      printerType:  printerTypeInput.value,
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
       relayUrl:     relayUrlInput.value.trim(),
@@ -602,54 +605,70 @@ function initSettings() {
   // Test print button
   document.getElementById('s-test-print-btn').addEventListener('click', async () => {
     const testMsg = document.getElementById('s-test-msg');
-    const ip = printerIpInput.value.trim();
-    if (!ip) { testMsg.textContent = 'Enter printer IP first'; return; }
+    const pType = printerTypeInput.value;
 
     // Save current settings first so the server can read them
     saveSettings(gatherSettings());
-
     testMsg.textContent = 'Sending...';
 
-    const port = parseInt(printerPortInput.value, 10) || 9100;
     let ok = false;
 
-    // Try 1: Android native text-based test print (most reliable for test)
-    if (window.AndroidPrint) {
-      try {
-        const result = window.AndroidPrint.testPrint(ip, port);
-        if (result === 'ok') ok = true;
-      } catch (_) {}
+    if (pType === 'builtin') {
+      // Built-in printer (WizarPOS)
+      if (window.AndroidPrint && window.AndroidPrint.isBuiltInPrinter && window.AndroidPrint.isBuiltInPrinter()) {
+        try {
+          const result = window.AndroidPrint.testBuiltIn();
+          if (result === 'ok') ok = true;
+          else testMsg.textContent = result;
+        } catch (e) { testMsg.textContent = 'error: ' + e.message; }
+      } else {
+        testMsg.textContent = 'Built-in printer not available on this device';
+      }
+    } else {
+      // External printer (TCP)
+      const ip = printerIpInput.value.trim();
+      if (!ip) { testMsg.textContent = 'Enter printer IP first'; return; }
+      const port = parseInt(printerPortInput.value, 10) || 9100;
+
+      // Try 1: Android native TCP test print
+      if (window.AndroidPrint) {
+        try {
+          const result = window.AndroidPrint.testPrint(ip, port);
+          if (result === 'ok') ok = true;
+        } catch (_) {}
+      }
+
+      // Try 2: server-side build + TCP print
+      let escposB64 = null;
+      if (!ok) {
+        try {
+          const res = await fetch(`${API_BASE}/api/print`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'test', printerIp: ip, printerPort: port }),
+          });
+          const result = await res.json();
+          if (result.escpos) escposB64 = result.escpos;
+          if (result.ok === true) ok = true;
+        } catch (_) {}
+      }
+
+      // Try 3: relay with server-built bytes
+      if (!ok && escposB64) {
+        const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
+        try {
+          const res = await fetch(`${relay}/print`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ printerIp: ip, printerPort: port, data: escposB64 }),
+          });
+          if (res.ok) ok = true;
+        } catch (_) {}
+      }
     }
 
-    // Try 2: server-side build + TCP print
-    let escposB64 = null;
-    if (!ok) {
-      try {
-        const res = await fetch(`${API_BASE}/api/print`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'test', printerIp: ip, printerPort: port }),
-        });
-        const result = await res.json();
-        if (result.escpos) escposB64 = result.escpos;
-        if (result.ok === true) ok = true;
-      } catch (_) {}
-    }
-
-    // Try 3: relay with server-built bytes
-    if (!ok && escposB64) {
-      const relay = relayUrlInput.value.trim() || 'http://localhost:9101';
-      try {
-        const res = await fetch(`${relay}/print`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ printerIp: ip, printerPort: port, data: escposB64 }),
-        });
-        if (res.ok) ok = true;
-      } catch (_) {}
-    }
-
-    testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check IP/port and server';
+    if (!testMsg.textContent.startsWith('error') && !testMsg.textContent.startsWith('Built-in'))
+      testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check printer settings';
     setTimeout(() => { testMsg.textContent = ''; }, 4000);
   });
 }

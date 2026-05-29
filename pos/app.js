@@ -1377,6 +1377,33 @@ function buildOrderCheckJob(table, items, bd) {
 
 async function sendToPrinter(job) {
   const settings = loadSettings();
+  const pType = settings.printerType || 'external';
+
+  // ── Built-in printer path (WizarPOS) ──
+  if (pType === 'builtin') {
+    if (!window.AndroidPrint || !window.AndroidPrint.printBuiltIn) return false;
+    // Get raster data from server first
+    let escposB64 = null;
+    try {
+      const res = await fetch(`${API_BASE}/api/print`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job),
+      });
+      const result = await res.json();
+      if (result.escpos) escposB64 = result.escpos;
+    } catch (_) {}
+    if (!escposB64) return false;
+    try {
+      const result = window.AndroidPrint.printBuiltIn(escposB64);
+      return result === 'ok';
+    } catch (e) {
+      console.warn('[print] Built-in printer error:', e);
+      return false;
+    }
+  }
+
+  // ── External printer path (TCP/relay) ──
   if (!settings.printerIp) return false;
 
   // Try 1: server-side build + TCP print
