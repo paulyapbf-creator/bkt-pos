@@ -620,7 +620,8 @@ function initSettings() {
       } else if (!window.AndroidPrint.isBuiltInPrinter) {
         testMsg.textContent = 'App needs rebuild — isBuiltInPrinter() not found (old APK)';
       } else if (!window.AndroidPrint.isBuiltInPrinter()) {
-        testMsg.textContent = 'WizarPOS SDK not detected — may need cloudpos.jar in libs/';
+        const diag = window.AndroidPrint.printerDiagnostics ? window.AndroidPrint.printerDiagnostics() : '';
+        testMsg.textContent = 'WizarPOS SDK not detected. ' + diag;
       } else {
         try {
           const result = window.AndroidPrint.testBuiltIn();
