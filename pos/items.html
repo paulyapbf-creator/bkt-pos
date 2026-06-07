@@ -300,6 +300,22 @@
         </div>
       </div>
 
+      <div class="maint-card" id="diag-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">&#x1F52C; Printer Diagnostics</div>
+          <div class="maint-card-desc">Run the built-in printer diagnostic probe and optionally save the log locally or send it to the POS server.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="diag-run-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;">Run Diagnostics</button>
+            <button id="diag-save-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;display:none;">Save to Device</button>
+            <button id="diag-send-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;display:none;">Send to Host</button>
+          </div>
+          <div id="diag-status" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
+          <pre id="diag-log" style="display:none;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius,8px);font-size:11px;color:#ccc;white-space:pre-wrap;word-break:break-all;max-height:260px;overflow-y:auto;line-height:1.5;margin:0;"></pre>
+        </div>
+      </div>
+
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
           <div class="maint-card-title">🚀 <span data-i18n="reset_go_live">Reset &amp; Go Live</span></div>

@@ -774,6 +774,77 @@ function initMaintenance() {
     });
   }
 
+  // ── Printer Diagnostics ───────────────────────────────────────────
+  {
+    const runBtn   = document.getElementById("diag-run-btn");
+    const saveBtn  = document.getElementById("diag-save-btn");
+    const sendBtn  = document.getElementById("diag-send-btn");
+    const statusEl = document.getElementById("diag-status");
+    const logEl    = document.getElementById("diag-log");
+    let   diagText = "";
+
+    runBtn.addEventListener("click", () => {
+      if (!window.AndroidPrint) {
+        statusEl.style.color = "#e74c3c";
+        statusEl.textContent = "AndroidPrint bridge not available (not running in-app).";
+        return;
+      }
+      runBtn.disabled = true;
+      statusEl.style.color = "var(--muted)";
+      statusEl.textContent = "Running diagnostics…";
+      logEl.style.display = "none";
+      saveBtn.style.display = "none";
+      sendBtn.style.display = "none";
+      setTimeout(() => {
+        try {
+          diagText = window.AndroidPrint.printerDiagnostics();
+          logEl.textContent = diagText;
+          logEl.style.display = "block";
+          saveBtn.style.display = "inline-block";
+          sendBtn.style.display = "inline-block";
+          statusEl.style.color = "var(--muted)";
+          statusEl.textContent = "Diagnostics complete.";
+        } catch (e) {
+          statusEl.style.color = "#e74c3c";
+          statusEl.textContent = "Error: " + e.message;
+        }
+        runBtn.disabled = false;
+      }, 50);
+    });
+
+    saveBtn.addEventListener("click", () => {
+      if (!diagText || !window.AndroidPrint) return;
+      const result = window.AndroidPrint.saveLog(diagText);
+      if (result && result.startsWith("ok:")) {
+        statusEl.style.color = "#27ae60";
+        statusEl.textContent = "Saved: " + result.slice(3);
+      } else {
+        statusEl.style.color = "#e74c3c";
+        statusEl.textContent = result || "Save failed";
+      }
+    });
+
+    sendBtn.addEventListener("click", () => {
+      if (!diagText || !window.AndroidPrint) return;
+      const hostInput = document.getElementById("update-host-input");
+      const host = (hostInput ? hostInput.value.trim() : "").replace(//$/, "") || location.origin;
+      sendBtn.disabled = true;
+      statusEl.style.color = "var(--muted)";
+      statusEl.textContent = "Sending…";
+      setTimeout(() => {
+        const result = window.AndroidPrint.sendLog(host, diagText);
+        if (result === "ok") {
+          statusEl.style.color = "#27ae60";
+          statusEl.textContent = "Log sent to " + host;
+        } else {
+          statusEl.style.color = "#e74c3c";
+          statusEl.textContent = result;
+        }
+        sendBtn.disabled = false;
+      }, 50);
+    });
+  }
+
   // ── Reset & Go Live ───────────────────────────────────────────────────────
   document.getElementById('maint-reset-live-btn').addEventListener('click', () => {
     document.getElementById('maint-confirm-title').textContent = '🚀 Reset & Go Live';
