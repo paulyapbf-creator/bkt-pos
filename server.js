@@ -25,6 +25,41 @@ app.use(express.json({ limit: '5mb' }));
 // Build version — registered first, no middleware can block this
 app.get('/api/version', (req, res) => res.json({ version: BUILD_VERSION, ts: Date.now() }));
 
+// ─── App Update endpoints (no auth — device must reach server over TCP/IP) ────
+const UPDATES_DIR = path.join(__dirname, 'updates');
+const APK_FILE    = path.join(UPDATES_DIR, 'app-release.apk');
+const APK_INFO    = path.join(UPDATES_DIR, 'version.json');
+
+app.get('/api/app-update/info', (req, res) => {
+  const fs = require('fs');
+  try {
+    if (!fs.existsSync(APK_FILE)) return res.json({ available: false });
+    const stat = fs.statSync(APK_FILE);
+    let ver = {};
+    try { ver = JSON.parse(fs.readFileSync(APK_INFO, 'utf8')); } catch {}
+    res.json({
+      available:  true,
+      version:    ver.version   || 'unknown',
+      notes:      ver.notes     || '',
+      size:       stat.size,
+      filename:   'app-release.apk',
+      updatedAt:  stat.mtime,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to read update info' });
+  }
+});
+
+app.get('/api/app-update/apk', (req, res) => {
+  const fs = require('fs');
+  if (!fs.existsSync(APK_FILE)) return res.status(404).json({ error: 'No APK available' });
+  const stat = fs.statSync(APK_FILE);
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', 'attachment; filename="app-release.apk"');
+  res.setHeader('Content-Length', stat.size);
+  fs.createReadStream(APK_FILE).pipe(res);
+});
+
 // ─── Admin routes (served independently, before tenant blocking) ─────────────
 app.get('/admin', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
 app.get('/admin.html', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));

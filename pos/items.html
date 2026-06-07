@@ -278,6 +278,28 @@
         </div>
       </div>
 
+      <div class="maint-card" id="app-update-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">📲 App Update</div>
+          <div class="maint-card-desc">Download and install the latest Android APK from the POS server or a custom host over TCP/IP.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="update-host-input" placeholder="http://192.168.1.100:3000"
+              style="flex:1;background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius,8px);padding:8px 10px;font-size:13px;">
+            <button id="update-check-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;white-space:nowrap;">Check</button>
+          </div>
+          <div id="update-status" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
+          <div id="update-download-wrap" style="display:none;align-items:center;gap:10px;">
+            <a id="update-download-link" href="#" target="_blank"
+              class="add-btn" style="display:inline-block;padding:8px 18px;font-size:13px;text-decoration:none;">
+              &#x1F4E5; Download APK
+            </a>
+            <span id="update-size" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
           <div class="maint-card-title">🚀 <span data-i18n="reset_go_live">Reset &amp; Go Live</span></div>

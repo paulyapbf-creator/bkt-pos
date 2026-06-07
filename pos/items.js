@@ -737,6 +737,43 @@ function initMaintenance() {
     setTimeout(() => { msg.textContent = ''; }, 5000);
   });
 
+  // ── App Update ────────────────────────────────────────────────────────────
+  {
+    const hostInput    = document.getElementById('update-host-input');
+    const checkBtn     = document.getElementById('update-check-btn');
+    const statusEl     = document.getElementById('update-status');
+    const downloadWrap = document.getElementById('update-download-wrap');
+    const downloadLink = document.getElementById('update-download-link');
+    const sizeEl       = document.getElementById('update-size');
+
+    hostInput.value = location.origin;
+
+    checkBtn.addEventListener('click', async () => {
+      const host = hostInput.value.trim().replace(/\/$/, '');
+      if (!host) return;
+      statusEl.style.color = 'var(--muted)';
+      statusEl.textContent = 'Checking…';
+      downloadWrap.style.display = 'none';
+      try {
+        const res  = await fetch(`${host}/api/app-update/info`);
+        const data = await res.json();
+        if (!data.available) {
+          statusEl.textContent = 'No APK available on this host.';
+          return;
+        }
+        const mb = (data.size / 1024 / 1024).toFixed(1);
+        const notes = data.notes ? ` — ${data.notes}` : '';
+        statusEl.textContent = `Version ${data.version} available${notes}`;
+        downloadLink.href = `${host}/api/app-update/apk`;
+        sizeEl.textContent = `${mb} MB`;
+        downloadWrap.style.display = 'flex';
+      } catch {
+        statusEl.style.color = '#e74c3c';
+        statusEl.textContent = '✗ Could not reach host';
+      }
+    });
+  }
+
   // ── Reset & Go Live ───────────────────────────────────────────────────────
   document.getElementById('maint-reset-live-btn').addEventListener('click', () => {
     document.getElementById('maint-confirm-title').textContent = '🚀 Reset & Go Live';
