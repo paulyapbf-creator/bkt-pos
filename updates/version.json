@@ -1,1 +1,1 @@
-{"version":"1.1.5-debug","notes":"Fix: catch Throwable for JNI errors, show full error class in diagnostics"}
+{"version":"1.1.6-debug","notes":"Fix: bundle CloudPOS SDK classes and native libs for WizarPOS built-in printer"}
