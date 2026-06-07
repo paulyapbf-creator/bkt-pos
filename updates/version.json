@@ -1,1 +1,1 @@
-{"version":"1.1.6-debug","notes":"Fix: bundle CloudPOS SDK classes and native libs for WizarPOS built-in printer"}
+{"version":"1.1.7-debug","notes":"Add printer diagnostics: run, save to device, send to host"}

@@ -60,6 +60,26 @@ app.get('/api/app-update/apk', (req, res) => {
   fs.createReadStream(APK_FILE).pipe(res);
 });
 
+
+const LOGS_DIR = path.join(UPDATES_DIR, "logs");
+app.post("/api/diagnostic-log", (req, res) => {
+  const fs = require("fs");
+  try {
+    if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const file = path.join(LOGS_DIR, "diagnostic_" + ts + ".txt");
+    let body = "";
+    req.on("data", chunk => { body += chunk.toString(); });
+    req.on("end", () => {
+      fs.writeFileSync(file, body, "utf8");
+      console.log("[diagnostic-log] saved:", file);
+      res.json({ ok: true, file: path.basename(file) });
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── Admin routes (served independently, before tenant blocking) ─────────────
 app.get('/admin', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
 app.get('/admin.html', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
