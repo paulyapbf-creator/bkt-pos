@@ -1,1 +1,1 @@
-{"version":"1.1.7-debug","notes":"Add printer diagnostics: run, save to device, send to host"}
+{"version":"1.1.8-debug","notes":"Fix: Save/Send log buttons only shown when bridge methods available"}

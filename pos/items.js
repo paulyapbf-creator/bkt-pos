@@ -800,8 +800,8 @@ function initMaintenance() {
           diagText = window.AndroidPrint.printerDiagnostics();
           logEl.textContent = diagText;
           logEl.style.display = "block";
-          saveBtn.style.display = "inline-block";
-          sendBtn.style.display = "inline-block";
+          if (window.AndroidPrint.saveLog) saveBtn.style.display = "inline-block";
+          if (window.AndroidPrint.sendLog) sendBtn.style.display = "inline-block";
           statusEl.style.color = "var(--muted)";
           statusEl.textContent = "Diagnostics complete.";
         } catch (e) {
