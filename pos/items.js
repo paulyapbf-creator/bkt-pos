@@ -900,6 +900,7 @@ function initMaintenance() {
     document.body.style.overflow = 'hidden';
   });
 
+}
 
 function showMaintToast(msg) {
   // Reuse or create a simple toast
