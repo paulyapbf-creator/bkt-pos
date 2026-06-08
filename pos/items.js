@@ -777,6 +777,7 @@ function initMaintenance() {
   // â”€â”€ Printer Diagnostics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     const runBtn   = document.getElementById("diag-run-btn");
+    const printBtn = document.getElementById("diag-print-btn");
     const saveBtn  = document.getElementById("diag-save-btn");
     const sendBtn  = document.getElementById("diag-send-btn");
     const statusEl = document.getElementById("diag-status");
@@ -812,6 +813,33 @@ function initMaintenance() {
       }, 50);
     });
 
+
+    printBtn.addEventListener("click", () => {
+      if (!window.AndroidPrint) {
+        statusEl.style.color = "#e74c3c";
+        statusEl.textContent = "AndroidPrint bridge not available.";
+        return;
+      }
+      printBtn.disabled = true;
+      statusEl.style.color = "var(--muted)";
+      statusEl.textContent = "Sending test print…";
+      setTimeout(() => {
+        try {
+          const result = window.AndroidPrint.testBuiltIn();
+          if (result === "ok") {
+            statusEl.style.color = "#27ae60";
+            statusEl.textContent = "✓ Test print sent!";
+          } else {
+            statusEl.style.color = "#e74c3c";
+            statusEl.textContent = result;
+          }
+        } catch (e) {
+          statusEl.style.color = "#e74c3c";
+          statusEl.textContent = "error: " + e.message;
+        }
+        printBtn.disabled = false;
+      }, 50);
+    });
     saveBtn.addEventListener("click", () => {
       if (!diagText || !window.AndroidPrint) return;
       const result = window.AndroidPrint.saveLog(diagText);
