@@ -1349,7 +1349,7 @@ tr.dragging { opacity: 0.3; }
   display: flex; gap: 0;
   background: var(--header);
   border-bottom: 1px solid var(--border);
-  padding: 20px 16px 0;
+  padding: 40px 16px 0;
 }
 .admin-tab {
   background: none; border: none;
