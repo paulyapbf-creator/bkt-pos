@@ -80,6 +80,32 @@ app.post("/api/diagnostic-log", (req, res) => {
   }
 });
 
+app.get("/api/diagnostic-logs", (req, res) => {
+  const fs = require("fs");
+  if (!fs.existsSync(LOGS_DIR)) return res.json([]);
+  const files = fs.readdirSync(LOGS_DIR)
+    .filter(f => f.endsWith(".txt"))
+    .sort().reverse()
+    .map(f => { const s = fs.statSync(path.join(LOGS_DIR, f)); return { name: f, size: s.size, mtime: s.mtime }; });
+  res.json(files);
+});
+
+app.get("/api/diagnostic-logs/:file", (req, res) => {
+  const fs = require("fs");
+  const file = path.join(LOGS_DIR, path.basename(req.params.file));
+  if (!fs.existsSync(file)) return res.status(404).json({ error: "Not found" });
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.send(fs.readFileSync(file, "utf8"));
+});
+
+app.delete("/api/diagnostic-logs/:file", (req, res) => {
+  const fs = require("fs");
+  const file = path.join(LOGS_DIR, path.basename(req.params.file));
+  if (!fs.existsSync(file)) return res.status(404).json({ error: "Not found" });
+  fs.unlinkSync(file);
+  res.json({ ok: true });
+});
+
 // ─── Admin routes (served independently, before tenant blocking) ─────────────
 app.get('/admin', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
 app.get('/admin.html', (req, res) => res.sendFile(path.join(posPath, 'admin.html')));
