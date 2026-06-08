@@ -900,59 +900,6 @@ function initMaintenance() {
     document.body.style.overflow = 'hidden';
   });
 
-  // ── Diagnostic Logs Viewer ───────────────────────────────────
-  {
-    const listEl     = document.getElementById("diag-logs-list");
-    const contentEl  = document.getElementById("diag-logs-content");
-    const refreshBtn = document.getElementById("diag-logs-refresh");
-    let   activeFile = null;
-
-    async function loadLogs() {
-      listEl.innerHTML = "";
-      contentEl.style.display = "none";
-      activeFile = null;
-      try {
-        const data = await fetch(API_BASE + "/api/diagnostic-logs").then(r => r.json());
-        if (!data.length) { listEl.textContent = "No logs yet."; return; }
-        listEl.innerHTML = data.map(f => {
-          const kb = (f.size / 1024).toFixed(1);
-          const dt = new Date(f.mtime).toLocaleString();
-          return "<div class='diag-log-row' data-name='" + f.name + "'" +
-            " style='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;'>"+
-            "<span style='flex:1;font-size:13px;'>"+f.name+"</span>"+
-            "<span style='font-size:11px;color:var(--muted);white-space:nowrap;'>"+kb+" KB &bull; "+dt+"</span>"+
-            "<button class='diag-log-del' data-name='" + f.name + "' style='background:#a00;border:none;color:#fff;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:11px;'>Del</button>"+
-            "</div>";
-        }).join("");
-        listEl.querySelectorAll(".diag-log-row").forEach(row => {
-          row.addEventListener("click", async e => {
-            if (e.target.classList.contains("diag-log-del")) return;
-            const name = row.dataset.name;
-            if (activeFile === name) { contentEl.style.display = "none"; activeFile = null; return; }
-            activeFile = name;
-            contentEl.textContent = "Loading...";
-            contentEl.style.display = "block";
-            try {
-              const text = await fetch(API_BASE + "/api/diagnostic-logs/" + name).then(r => r.text());
-              contentEl.textContent = text;
-            } catch { contentEl.textContent = "Failed to load."; }
-          });
-        });
-        listEl.querySelectorAll(".diag-log-del").forEach(btn => {
-          btn.addEventListener("click", async e => {
-            e.stopPropagation();
-            if (!confirm("Delete " + btn.dataset.name + "?")) return;
-            await fetch(API_BASE + "/api/diagnostic-logs/" + btn.dataset.name, { method: "DELETE" });
-            loadLogs();
-          });
-        });
-      } catch { listEl.textContent = "Could not load logs."; }
-    }
-
-    refreshBtn.addEventListener("click", loadLogs);
-    loadLogs();
-  }
-}
 
 function showMaintToast(msg) {
   // Reuse or create a simple toast
