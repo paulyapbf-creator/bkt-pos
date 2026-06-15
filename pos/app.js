@@ -2056,6 +2056,24 @@ async function init() {
     // Refresh menu from API
     fetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiMenu => {
       if (apiMenu && apiMenu.length > 0) {
+        // Merge freeAddonCount from localStorage into API response.
+        // The PUT from items.js may have been in-flight when the user navigated away,
+        // so the server might still have the old value. localStorage is always authoritative
+        // for freeAddonCount because items.js writes there synchronously before the PUT.
+        try {
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          if (stored.length > 0) {
+            const byId = {};
+            stored.forEach(i => { if (i.id) byId[i.id] = i; });
+            apiMenu = apiMenu.map(item => {
+              const local = byId[item.id];
+              if (local && (local.freeAddonCount > 0) && !(item.freeAddonCount > 0)) {
+                return { ...item, freeAddonCount: local.freeAddonCount };
+              }
+              return item;
+            });
+          }
+        } catch (_) {}
         menuItems = apiMenu;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
         renderCategoryBar();

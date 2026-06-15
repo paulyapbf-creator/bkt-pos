@@ -43,6 +43,7 @@ function persist() {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(items),
+    keepalive: true,  // survives page navigation so the PUT is never aborted mid-flight
   }).catch(() => {});
 }
 
