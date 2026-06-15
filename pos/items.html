@@ -388,6 +388,13 @@
             <label><span data-i18n="base_price">Base Price</span> (RM) <span class="req">*</span></label>
             <input type="number" id="f-price" min="0" step="0.5" placeholder="0.00">
           </div>
+          <div class="form-field full-col" style="background:#f0f8f0;border:1.5px solid #c3e6c3;border-radius:8px;padding:10px 12px;">
+            <label style="color:#276127;font-weight:700;">Free Add-ons (Included Entitlement)</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+              <input type="number" id="f-free-addons" min="0" step="1" value="0" placeholder="0" style="width:70px;font-size:16px;font-weight:700;text-align:center;">
+              <span style="font-size:12px;color:#555;">Customer must choose this many free items from the <strong>Add-ons</strong> category. Set to <strong>0</strong> to disable.</span>
+            </div>
+          </div>
           <div class="form-field full-col">
             <label data-i18n="description_en">Description (EN)</label>
             <input type="text" id="f-desc" placeholder="Short description">

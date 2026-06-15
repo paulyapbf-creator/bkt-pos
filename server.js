@@ -810,6 +810,7 @@ app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
 ${langFields}
 - price: numeric price (number, not string)
 - category: category/section it belongs to (e.g. "Main Course", "Drinks", "Appetizer", etc.)
+- freeAddonCount: number of free add-ons/sides included with this item (integer, default 0). Look for phrases like "served with X free sides", "includes X free add-ons", "choose X free", "comes with X sides", "with choice of X sides".
 
 If the source document has a name in a specific language, use it directly. For languages not in the document, translate the item name accurately. Use empty string "" only if translation is truly not possible.
 
@@ -874,6 +875,7 @@ ${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicat
         category,
         isPopular: false,
         isAvailable: true,
+        freeAddonCount: parseInt(item.freeAddonCount) || 0,
         modifierGroups: [],
       };
       // Only include requested language fields

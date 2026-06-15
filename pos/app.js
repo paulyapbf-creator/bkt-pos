@@ -131,6 +131,7 @@ const state = {
   modalSelections:    {},
   modalNotes:         '',
   editingOrderItemId: null,
+  freeAddonSelections: [],    // ids of add-on items chosen for the current free-addon group
   editingActiveBill:  null,   // table name when editing an existing kitchen order
   payStep:            'list',
   payingTable:        null,
@@ -505,9 +506,13 @@ function renderCartPanel() {
       const oi = state.items.find(i => i.id === btn.dataset.id);
       if (!oi) return;
       const prefill = {};
-      oi.selectedModifiers.forEach(m => { prefill[m.groupId] = m.optionId; });
+      const prefillFreeAddons = [];
+      oi.selectedModifiers.forEach(m => {
+        if (m.isFreeAddon) prefillFreeAddons.push(m.optionId);
+        else prefill[m.groupId] = m.optionId;
+      });
       state.editingOrderItemId = oi.id;
-      openModifierModal(oi.menuItem, prefill, oi.notes || '');
+      openModifierModal(oi.menuItem, prefill, oi.notes || '', prefillFreeAddons);
     });
   });
 }
@@ -543,7 +548,7 @@ function renderMenuList() {
 
   list.innerHTML = items.map(item => {
     const count   = cartCountForMenuItem(item.id);
-    const hasMods = item.modifierGroups && item.modifierGroups.length > 0;
+    const hasMods = (item.modifierGroups && item.modifierGroups.length > 0) || (item.freeAddonCount > 0);
     return `
       <button class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
         ${count > 0 ? `<span class="mli-badge">${count}</span>` : ''}
@@ -558,7 +563,7 @@ function renderMenuList() {
       if (!state.tableNumber) { openTablePicker(true); return; }
       const item = menuItems.find(i => i.id === row.dataset.id);
       if (!item) return;
-      if (item.modifierGroups && item.modifierGroups.length > 0) {
+      if ((item.modifierGroups && item.modifierGroups.length > 0) || item.freeAddonCount > 0) {
         openModifierModal(item);
       } else {
         addItem(item, [], '');
@@ -571,10 +576,11 @@ function renderMenuList() {
 
 // ─── MODIFIER MODAL ───────────────────────────────────────────────────────────
 
-function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
-  state.modalItem       = item;
-  state.modalSelections = { ...prefillSelections };
-  state.modalNotes      = prefillNotes;
+function openModifierModal(item, prefillSelections = {}, prefillNotes = '', prefillFreeAddons = []) {
+  state.modalItem          = item;
+  state.modalSelections    = { ...prefillSelections };
+  state.modalNotes         = prefillNotes;
+  state.freeAddonSelections = [...prefillFreeAddons];
 
   const groups = item.modifierGroups || [];
   document.getElementById('modal-name-zh').textContent = localName(item);
@@ -608,6 +614,31 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
       </div>`;
   });
 
+  // ── Free Add-ons section (dynamically built from addons category) ──────────
+  if ((item.freeAddonCount || 0) > 0) {
+    const addonItems = menuItems.filter(i => i.category === 'addons' && i.isAvailable);
+    const n = item.freeAddonCount;
+    if (addonItems.length > 0) {
+      html += `
+        <div class="modifier-group">
+          <div class="group-header">
+            <span class="group-name-zh">免费加料</span>
+            <span class="group-name-en">Choose ${n} Free Add-on${n > 1 ? 's' : ''}</span>
+            <span class="required-badge">Required (<span id="free-addon-badge">${state.freeAddonSelections.length}</span>/${n})</span>
+          </div>
+          ${addonItems.map(addon => `
+            <div class="modifier-option free-addon-opt${state.freeAddonSelections.includes(addon.id) ? ' selected' : ''}" data-free-addon-id="${addon.id}">
+              <div class="radio-circle"></div>
+              <div class="option-labels">
+                <div class="option-label-zh">${localName(addon)}</div>
+                <div class="option-label-en">${addon.name}</div>
+              </div>
+              <span class="option-price" style="color:var(--green,#27ae60)">FREE</span>
+            </div>`).join('')}
+        </div>`;
+    }
+  }
+
   html += `
     <div class="modifier-group">
       <div class="group-header"><span class="group-name-zh">备注 / Notes</span></div>
@@ -618,10 +649,23 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
   body.innerHTML = html;
   if (prefillNotes) document.getElementById('modal-notes-input').value = prefillNotes;
 
-  body.querySelectorAll('.modifier-option').forEach(opt => {
+  body.querySelectorAll('.modifier-option:not(.free-addon-opt)').forEach(opt => {
     opt.addEventListener('click', () => {
       state.modalSelections[opt.dataset.groupId] = opt.dataset.optionId;
       syncModalSelectionUI(); syncModalPrice(); syncAddButton();
+    });
+  });
+
+  body.querySelectorAll('.free-addon-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const addonId = opt.dataset.freeAddonId;
+      const idx = state.freeAddonSelections.indexOf(addonId);
+      if (idx !== -1) {
+        state.freeAddonSelections.splice(idx, 1);
+      } else if (state.freeAddonSelections.length < (state.modalItem?.freeAddonCount || 0)) {
+        state.freeAddonSelections.push(addonId);
+      }
+      syncModalSelectionUI(); syncAddButton();
     });
   });
   document.getElementById('modal-notes-input').addEventListener('input', e => {
@@ -634,10 +678,15 @@ function openModifierModal(item, prefillSelections = {}, prefillNotes = '') {
 }
 
 function syncModalSelectionUI() {
-  document.querySelectorAll('#modal-body .modifier-option').forEach(opt => {
+  document.querySelectorAll('#modal-body .modifier-option:not(.free-addon-opt)').forEach(opt => {
     opt.classList.toggle('selected',
       state.modalSelections[opt.dataset.groupId] === opt.dataset.optionId);
   });
+  document.querySelectorAll('#modal-body .free-addon-opt').forEach(opt => {
+    opt.classList.toggle('selected', state.freeAddonSelections.includes(opt.dataset.freeAddonId));
+  });
+  const badge = document.getElementById('free-addon-badge');
+  if (badge) badge.textContent = state.freeAddonSelections.length;
 }
 
 function syncModalPrice() {
@@ -655,8 +704,9 @@ function syncModalPrice() {
 function syncAddButton() {
   const item = state.modalItem;
   if (!item) return;
-  const missing = (item.modifierGroups || []).some(g => g.required && !state.modalSelections[g.id]);
-  document.getElementById('modal-add-btn').disabled = missing;
+  const missingRequired = (item.modifierGroups || []).some(g => g.required && !state.modalSelections[g.id]);
+  const missingFreeAddons = (item.freeAddonCount || 0) > 0 && state.freeAddonSelections.length !== item.freeAddonCount;
+  document.getElementById('modal-add-btn').disabled = missingRequired || missingFreeAddons;
 }
 
 function closeModifierModal() {
@@ -664,6 +714,7 @@ function closeModifierModal() {
   document.body.style.overflow = '';
   document.getElementById('modal-add-btn').textContent = t('add_to_order');
   state.modalItem = null; state.modalSelections = {}; state.modalNotes = '';
+  state.freeAddonSelections = [];
   state.editingOrderItemId = null;
 }
 
@@ -1914,6 +1965,8 @@ async function init() {
     const item = state.modalItem; if (!item) return;
     const groups = item.modifierGroups || [];
     if (groups.some(g => g.required && !state.modalSelections[g.id])) return;
+    if ((item.freeAddonCount || 0) > 0 && state.freeAddonSelections.length !== item.freeAddonCount) return;
+
     const modifiers = groups
       .filter(g => state.modalSelections[g.id])
       .map(g => {
@@ -1921,6 +1974,17 @@ async function init() {
         return { groupId: g.id, groupName: g.name, optionId: opt.id,
                  optionLabel: opt.label, priceAdjustment: opt.priceAdjustment };
       });
+
+    // Append free add-on modifiers (price = 0, flagged for display/printing)
+    state.freeAddonSelections.forEach(addonId => {
+      const addon = menuItems.find(i => i.id === addonId);
+      if (addon) {
+        modifiers.push({ groupId: 'free_addons', groupName: 'Free Add-ons',
+                         optionId: addon.id, optionLabel: addon.name,
+                         priceAdjustment: 0, isFreeAddon: true });
+      }
+    });
+
     if (state.editingOrderItemId) {
       amendItem(state.editingOrderItemId, modifiers, state.modalNotes);
     } else {

@@ -254,6 +254,7 @@ function openModal(item = null) {
   document.getElementById('f-desczh').value    = item?.descriptionZh || '';
   document.getElementById('f-popular').checked  = item?.isPopular  || false;
   document.getElementById('f-available').checked = item?.isAvailable ?? true;
+  document.getElementById('f-free-addons').value = item?.freeAddonCount ?? 0;
 
   renderFormGroups();
   document.getElementById('im-modal').classList.remove('hidden');
@@ -363,8 +364,9 @@ function saveItem() {
     name, nameZh, category, price,
     description:   document.getElementById('f-desc').value.trim(),
     descriptionZh: document.getElementById('f-desczh').value.trim(),
-    isPopular:     document.getElementById('f-popular').checked,
-    isAvailable:   document.getElementById('f-available').checked,
+    isPopular:      document.getElementById('f-popular').checked,
+    isAvailable:    document.getElementById('f-available').checked,
+    freeAddonCount: parseInt(document.getElementById('f-free-addons').value) || 0,
     modifierGroups: cleanGroups,
   };
 
