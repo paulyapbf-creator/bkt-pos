@@ -3,6 +3,8 @@
 // localStorage key: 'bkt_menu_items'  (live data overrides these defaults)
 
 const STORAGE_KEY = 'bkt_menu_items';
+// Separate key for free addon counts — never overwritten by background menu sync
+const FREE_ADDONS_KEY = 'bkt_free_addon_counts';
 
 const CATEGORIES = [
   { id: 'all',        name: 'All',         nameZh: '全部' },

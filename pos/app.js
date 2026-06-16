@@ -1,8 +1,21 @@
 'use strict';
-// CATEGORIES, MENU_ITEMS and STORAGE_KEY come from menuDefaults.js
+// CATEGORIES, MENU_ITEMS, STORAGE_KEY and FREE_ADDONS_KEY come from menuDefaults.js
 
 const HISTORY_KEY      = 'bkt_order_history';
 const SETTINGS_KEY     = 'bkt_settings';
+
+// Re-applies freeAddonCount from the dedicated key (survives any overwrite of STORAGE_KEY)
+function applyFreeAddonCounts(arr) {
+  try {
+    const counts = JSON.parse(localStorage.getItem(FREE_ADDONS_KEY) || '{}');
+    if (Object.keys(counts).length === 0) return;
+    arr.forEach(item => {
+      if (item.id && counts[item.id] !== undefined) {
+        item.freeAddonCount = counts[item.id];
+      }
+    });
+  } catch (_) {}
+}
 
 const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
 function localName(item) {
@@ -1820,6 +1833,7 @@ async function init() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
+      applyFreeAddonCounts(menuItems);
       if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
     } catch (e) { menuItems = [...MENU_ITEMS]; }
   }
@@ -2074,6 +2088,7 @@ async function init() {
             });
           }
         } catch (_) {}
+        applyFreeAddonCounts(apiMenu);
         menuItems = apiMenu;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
         renderCategoryBar();

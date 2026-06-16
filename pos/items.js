@@ -27,10 +27,23 @@ let searchQ     = '';
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
+function applyFreeAddonCounts(arr) {
+  try {
+    const counts = JSON.parse(localStorage.getItem(FREE_ADDONS_KEY) || '{}');
+    if (Object.keys(counts).length === 0) return;
+    arr.forEach(item => {
+      if (item.id && counts[item.id] !== undefined) {
+        item.freeAddonCount = counts[item.id];
+      }
+    });
+  } catch (_) {}
+}
+
 function loadItems() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     items = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(MENU_ITEMS));
+    applyFreeAddonCounts(items);
     if (!raw) persist();
   } catch (e) {
     items = JSON.parse(JSON.stringify(MENU_ITEMS));
@@ -38,6 +51,12 @@ function loadItems() {
 }
 
 function persist() {
+  // Save free addon counts to a dedicated key so they survive any overwrite of STORAGE_KEY
+  try {
+    const counts = {};
+    items.forEach(item => { if (item.id) counts[item.id] = item.freeAddonCount || 0; });
+    localStorage.setItem(FREE_ADDONS_KEY, JSON.stringify(counts));
+  } catch (_) {}
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   fetch(`${API_BASE}/api/menu`, {
     method: 'PUT',

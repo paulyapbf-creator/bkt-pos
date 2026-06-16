@@ -1,1 +1,1 @@
-{"version":"1.2.5-debug","notes":"Free Add-ons entitlement per menu item"}
+{"version":"1.2.6-debug","notes":"Fix freeAddonCount persistence via dedicated storage key"}
