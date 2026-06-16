@@ -18,14 +18,14 @@ function saveSettings(data) {
   }).catch(() => {});
 }
 
-// â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── State ────────────────────────────────────────────────────────────────────
 
 let items       = [];   // live list
 let formGroups  = [];   // modifier groups being edited in modal
 let editingId   = null; // null = new item, string = item.id being edited
 let searchQ     = '';
 
-// â”€â”€â”€ Persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Persistence ──────────────────────────────────────────────────────────────
 
 function loadItems() {
   try {
@@ -47,7 +47,7 @@ function persist() {
   }).catch(() => {});
 }
 
-// â”€â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Table ────────────────────────────────────────────────────────────────────
 
 const LANG_NAME_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
 
@@ -57,7 +57,7 @@ function localName(item) {
     const field = LANG_NAME_FIELDS[lang];
     if (field && item[field]) return item[field];
   }
-  // Fallback: nameZh â†’ name
+  // Fallback: nameZh → name
   return item.nameZh || item.name || '';
 }
 
@@ -84,7 +84,7 @@ function renderTable() {
 
   tbody.innerHTML = filtered.map(item => `
     <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}" draggable="true">
-      <td class="td-drag"><span class="drag-handle">â ¿</span></td>
+      <td class="td-drag"><span class="drag-handle">⠿</span></td>
       <td><span class="cat-chip">${catName(item.category)}</span></td>
       <td class="td-name">
         <div class="td-name-zh">${localName(item)}</div>
@@ -96,10 +96,10 @@ function renderTable() {
           ${item.isAvailable ? 'Active' : 'Inactive'}
         </span>
       </td>
-      <td class="td-center">${item.isPopular ? 'â­' : 'â€”'}</td>
+      <td class="td-center">${item.isPopular ? '⭐' : '—'}</td>
       <td class="td-center">${(item.modifierGroups || []).length > 0
         ? `<span class="mod-count">${item.modifierGroups.length} group${item.modifierGroups.length > 1 ? 's' : ''}</span>`
-        : '<span class="td-dim">â€”</span>'}</td>
+        : '<span class="td-dim">—</span>'}</td>
       <td class="td-actions">
         <button class="row-btn btn-edit" data-id="${item.id}">Edit</button>
         <button class="row-btn btn-del"  data-id="${item.id}">Delete</button>
@@ -114,7 +114,7 @@ function renderTable() {
   initDragReorder(tbody);
 }
 
-// â”€â”€â”€ Drag-and-drop reordering (desktop + mobile touch) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Drag-and-drop reordering (desktop + mobile touch) ──────────────────────
 
 function initDragReorder(tbody) {
   let dragRow = null;
@@ -168,7 +168,7 @@ function initDragReorder(tbody) {
     touchStarted = false;
   }
 
-  // â”€â”€ Desktop drag events â”€â”€
+  // ── Desktop drag events ──
   tbody.addEventListener('dragstart', e => {
     const row = e.target.closest('tr[data-item-id]');
     if (!row) return;
@@ -197,7 +197,7 @@ function initDragReorder(tbody) {
     finishDrag();
   });
 
-  // â”€â”€ Mobile touch events â”€â”€
+  // ── Mobile touch events ──
   tbody.addEventListener('touchstart', e => {
     const handle = e.target.closest('.drag-handle');
     if (!handle) return;
@@ -240,7 +240,7 @@ function initDragReorder(tbody) {
   });
 }
 
-// â”€â”€â”€ Modal open / close â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Modal open / close ───────────────────────────────────────────────────────
 
 function openModal(item = null) {
   editingId  = item ? item.id : null;
@@ -268,7 +268,7 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-// â”€â”€â”€ Modifier group form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Modifier group form ──────────────────────────────────────────────────────
 
 function renderFormGroups() {
   const wrap = document.getElementById('mod-groups-wrap');
@@ -285,7 +285,7 @@ function renderFormGroups() {
       </div>
       <div class="mod-grp-row">
         <input class="mi" data-f="name"   data-gi="${gi}" placeholder="Group name (EN)" value="${grp.name}">
-        <input class="mi" data-f="nameZh" data-gi="${gi}" placeholder="ç»„å (ZH)" value="${grp.nameZh}">
+        <input class="mi" data-f="nameZh" data-gi="${gi}" placeholder="组名 (ZH)" value="${grp.nameZh}">
         <label class="inline-chk">
           <input type="checkbox" data-f="required" data-gi="${gi}" ${grp.required ? 'checked' : ''}> Required
         </label>
@@ -294,9 +294,9 @@ function renderFormGroups() {
         ${grp.options.map((opt, oi) => `
           <div class="mod-opt-row">
             <input class="mi opt-mi" data-f="label"           data-gi="${gi}" data-oi="${oi}" placeholder="Label (EN)" value="${opt.label}">
-            <input class="mi opt-mi" data-f="labelZh"         data-gi="${gi}" data-oi="${oi}" placeholder="æ ‡ç­¾ (ZH)"  value="${opt.labelZh}">
-            <input class="mi opt-price" type="number" data-f="priceAdjustment" data-gi="${gi}" data-oi="${oi}" placeholder="Â±RM" value="${opt.priceAdjustment}" step="0.5">
-            <button type="button" class="icon-del" data-a="del-opt" data-gi="${gi}" data-oi="${oi}">Ã—</button>
+            <input class="mi opt-mi" data-f="labelZh"         data-gi="${gi}" data-oi="${oi}" placeholder="标签 (ZH)"  value="${opt.labelZh}">
+            <input class="mi opt-price" type="number" data-f="priceAdjustment" data-gi="${gi}" data-oi="${oi}" placeholder="±RM" value="${opt.priceAdjustment}" step="0.5">
+            <button type="button" class="icon-del" data-a="del-opt" data-gi="${gi}" data-oi="${oi}">×</button>
           </div>
         `).join('')}
       </div>
@@ -339,7 +339,7 @@ function syncField(el) {
   else            formGroups[gi][f] = v;
 }
 
-// â”€â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CRUD ──────────────────────────────────────────────────────────────────────
 
 function saveItem() {
   const name    = document.getElementById('f-name').value.trim();
@@ -348,7 +348,7 @@ function saveItem() {
   const category = document.getElementById('f-category').value;
 
   if (!name || !nameZh || isNaN(price) || price < 0) {
-    alert('Please fill in Name (EN), Name (ZH), and a valid Price (â‰¥ 0).');
+    alert('Please fill in Name (EN), Name (ZH), and a valid Price (≥ 0).');
     return;
   }
 
@@ -392,10 +392,10 @@ function deleteItem(id) {
   renderTable();
 }
 
-// â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Init ─────────────────────────────────────────────────────────────────────
 
 function init() {
-  // â”€â”€ Auth gate â”€â”€
+  // ── Auth gate ──
   const session = getSession();
   if (!session) {
     showLoginOverlay(function() { location.reload(); });
@@ -430,7 +430,7 @@ function init() {
       closeModal();
   });
 
-  // â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Tabs ──────────────────────────────────────────────────────────────────
   const panels = {
     items:       document.getElementById('panel-items'),
     users:       document.getElementById('panel-users'),
@@ -458,13 +458,13 @@ function init() {
   const tabParam = new URLSearchParams(location.search).get('tab');
   if (tabParam && panels[tabParam]) switchTab(tabParam);
 
-  // â”€â”€ Payment Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Payment Settings ──────────────────────────────────────────────────────
   initSettings();
 
-  // â”€â”€ Maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Maintenance ───────────────────────────────────────────────────────────
   initMaintenance();
 
-  // â”€â”€ User Management (super only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── User Management (super only) ────────────────────────────────────────
   if (session.role === 'super') {
     initUserManagement();
   }
@@ -621,7 +621,7 @@ function initSettings() {
       if (!window.AndroidPrint) {
         testMsg.textContent = 'Not running in BKT POS app (use app, not browser)';
       } else if (!window.AndroidPrint.isBuiltInPrinter) {
-        testMsg.textContent = 'App needs rebuild â€” isBuiltInPrinter() not found (old APK)';
+        testMsg.textContent = 'App needs rebuild — isBuiltInPrinter() not found (old APK)';
       } else if (!window.AndroidPrint.isBuiltInPrinter()) {
         const diag = window.AndroidPrint.printerDiagnostics ? window.AndroidPrint.printerDiagnostics() : '';
         testMsg.textContent = 'WizarPOS SDK not detected. ' + diag;
@@ -677,7 +677,7 @@ function initSettings() {
 
     // Only overwrite if still showing "Sending..." (diagnostic messages already set)
     if (testMsg.textContent === 'Sending...')
-      testMsg.textContent = ok ? 'âœ“ Print sent!' : 'âœ— Failed â€” check printer settings';
+      testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check printer settings';
     setTimeout(() => { testMsg.textContent = ''; }, 6000);
   });
 }
@@ -709,7 +709,7 @@ function initMaintenance() {
   closeBtn.addEventListener('click',  closeConfirm);
   modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
 
-  // â”€â”€ Network Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Network Info ──────────────────────────────────────────────────────────
   {
     const el = document.getElementById('network-urls');
     if (el) {
@@ -722,7 +722,7 @@ function initMaintenance() {
     }
   }
 
-  // â”€â”€ Sync to Cloud â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Sync to Cloud ─────────────────────────────────────────────────────────
   document.getElementById('maint-sync-btn').addEventListener('click', async () => {
     const msg = document.getElementById('maint-sync-msg');
     msg.textContent = 'Syncing...';
@@ -730,17 +730,17 @@ function initMaintenance() {
       const res = await fetch(`${API_BASE}/api/sync`, { method: 'POST' });
       const data = await res.json();
       if (res.ok) {
-        msg.textContent = `âœ“ Synced ${data.orders} orders to cloud`;
+        msg.textContent = `✓ Synced ${data.orders} orders to cloud`;
       } else {
-        msg.textContent = `âœ— ${data.error || 'Sync failed'}`;
+        msg.textContent = `✗ ${data.error || 'Sync failed'}`;
       }
     } catch (e) {
-      msg.textContent = 'âœ— Could not reach server';
+      msg.textContent = '✗ Could not reach server';
     }
     setTimeout(() => { msg.textContent = ''; }, 5000);
   });
 
-  // â”€â”€ App Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── App Update ────────────────────────────────────────────────────────────
   {
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
@@ -755,7 +755,7 @@ function initMaintenance() {
       const host = hostInput.value.trim().replace(/\/$/, '');
       if (!host) return;
       statusEl.style.color = 'var(--muted)';
-      statusEl.textContent = 'Checkingâ€¦';
+      statusEl.textContent = 'Checking…';
       downloadWrap.style.display = 'none';
       try {
         const res  = await fetch(`${host}/api/app-update/info`);
@@ -765,19 +765,19 @@ function initMaintenance() {
           return;
         }
         const mb = (data.size / 1024 / 1024).toFixed(1);
-        const notes = data.notes ? ` â€” ${data.notes}` : '';
+        const notes = data.notes ? ` — ${data.notes}` : '';
         statusEl.textContent = `Version ${data.version} available${notes}`;
         downloadLink.href = `${host}/api/app-update/apk`;
         sizeEl.textContent = `${mb} MB`;
         downloadWrap.style.display = 'flex';
       } catch {
         statusEl.style.color = '#e74c3c';
-        statusEl.textContent = 'âœ— Could not reach host';
+        statusEl.textContent = '✗ Could not reach host';
       }
     });
   }
 
-  // â”€â”€ Printer Diagnostics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Printer Diagnostics ───────────────────────────────────────────
   {
     const runBtn   = document.getElementById("diag-run-btn");
     const printBtn = document.getElementById("diag-print-btn");
@@ -795,7 +795,7 @@ function initMaintenance() {
       }
       runBtn.disabled = true;
       statusEl.style.color = "var(--muted)";
-      statusEl.textContent = "Running diagnosticsâ€¦";
+      statusEl.textContent = "Running diagnostics…";
       logEl.style.display = "none";
       saveBtn.style.display = "none";
       sendBtn.style.display = "none";
@@ -861,7 +861,7 @@ function initMaintenance() {
       const host = (hostInput ? hostInput.value.trim() : "").replace(/\/$/, "") || location.origin;
       sendBtn.disabled = true;
       statusEl.style.color = "var(--muted)";
-      statusEl.textContent = "Sendingâ€¦";
+      statusEl.textContent = "Sending…";
       setTimeout(() => {
         const result = window.AndroidPrint.sendLog(host, diagText);
         if (result === "ok") {
@@ -876,9 +876,9 @@ function initMaintenance() {
     });
   }
 
-  // â”€â”€ Reset & Go Live â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Reset & Go Live ───────────────────────────────────────────────────────
   document.getElementById('maint-reset-live-btn').addEventListener('click', () => {
-    document.getElementById('maint-confirm-title').textContent = 'ðŸš€ Reset & Go Live';
+    document.getElementById('maint-confirm-title').textContent = '🚀 Reset & Go Live';
     msgEl.textContent = 'This will clear all active orders, kitchen data, sales history and KDS history. Menu items and payment settings will be kept.';
     document.getElementById('maint-table-picker').classList.add('hidden');
     okBtn.textContent = 'Yes, Reset & Go Live';
@@ -896,7 +896,7 @@ function initMaintenance() {
       localStorage.removeItem('bkt_order_history');
       const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('bkt_pos') : null;
       if (ch) { ch.postMessage({ type: 'bill:cleared', table: '*' }); ch.close(); }
-      showMaintToast('âœ“ System reset â€” ready to go live!');
+      showMaintToast('✓ System reset — ready to go live!');
     };
 
     modal.classList.remove('hidden');
@@ -924,7 +924,7 @@ function showMaintToast(msg) {
   }, 2200);
 }
 
-// â”€â”€â”€ Auth UI for Items page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Auth UI for Items page ──────────────────────────────────────────────────
 
 function applySessionToItemsUI(session) {
   const userBtnName = document.getElementById('user-btn-name');
@@ -950,7 +950,7 @@ function applySessionToItemsUI(session) {
   }
 }
 
-// â”€â”€â”€ User CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── User CRUD ───────────────────────────────────────────────────────────────
 
 let _users = [];
 let _editingUserId = null;
