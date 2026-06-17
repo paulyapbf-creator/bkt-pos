@@ -1329,6 +1329,32 @@ function launchTerminalSale(amount, cardType) {
   showManualConfirm(`Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
 }
 
+// Called by PaymentCallbackActivity when Coherent terminal returns a result
+window.onCoherentResult = function(result) {
+  const statusEl  = document.getElementById('terminal-status') || document.getElementById('cewallet-status');
+  const confirmBtn = document.getElementById('pay-confirm-btn');
+  // Value_1 = "00" means approved
+  const approved = result && (result.Value_1 === '00' || result.Value_1 === 0);
+  if (approved) {
+    if (statusEl) {
+      statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#155724;background:#d4edda;padding:10px 14px;border-radius:8px;';
+      statusEl.textContent = 'Payment approved! Confirming…';
+    }
+    setTimeout(() => {
+      if (state.payStep === 'qr' && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
+        confirmTablePayment();
+      }
+    }, 600);
+  } else {
+    const msg = result && result.Value_2 ? result.Value_2 : 'Payment declined or failed';
+    if (statusEl) {
+      statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#721c24;background:#f8d7da;padding:10px 14px;border-radius:8px;';
+      statusEl.textContent = msg + '. Try again or cancel.';
+    }
+    if (confirmBtn) confirmBtn.classList.add('hidden');
+  }
+};
+
 function launchCoherentEwallet(amount) {
   const settings = loadSettings();
   const pkg      = settings.terminalPkg   || 'com.coherent.centerm.cptpaterminal';
