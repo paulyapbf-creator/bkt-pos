@@ -1,1 +1,1 @@
-{"version":"1.2.6-debug","notes":"Fix freeAddonCount persistence via dedicated storage key"}
+{"version":"1.2.7-debug","notes":"Fix Coherent eWallet/card terminal launch — wait for terminal callback instead of immediate confirm"}
