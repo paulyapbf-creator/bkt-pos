@@ -1,1 +1,1 @@
-{"version":"1.2.7-debug","notes":"Fix Coherent eWallet/card terminal launch — wait for terminal callback instead of immediate confirm"}
+{"version":"1.2.8-debug","notes":"Fix Coherent terminal launch — use trampoline activity that fires intent and calls finish() so terminal can take foreground"}
