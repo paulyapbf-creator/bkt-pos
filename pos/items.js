@@ -528,6 +528,8 @@ function initSettings() {
   const terminalEnabledInput = document.getElementById('s-terminal-enabled');
   const terminalPkgInput     = document.getElementById('s-terminal-pkg');
   const terminalClassInput   = document.getElementById('s-terminal-class');
+  const cewalletEnabledInput = document.getElementById('s-cewallet-enabled');
+  const cewalletIdInput      = document.getElementById('s-cewallet-id');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -564,6 +566,8 @@ function initSettings() {
   terminalEnabledInput.checked = !!settings.terminalEnabled;
   terminalPkgInput.value       = settings.terminalPkg   || '';
   terminalClassInput.value     = settings.terminalClass || '';
+  cewalletEnabledInput.checked = !!settings.cewalletEnabled;
+  cewalletIdInput.value        = settings.cewalletId    || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -647,6 +651,8 @@ function initSettings() {
       terminalEnabled: terminalEnabledInput.checked,
       terminalPkg:     terminalPkgInput.value.trim() || 'com.coherent.centerm.cptpaterminal',
       terminalClass:   terminalClassInput.value.trim() || '.BroadcastTransactionActivity',
+      cewalletEnabled: cewalletEnabledInput.checked,
+      cewalletId:      cewalletIdInput.value.trim(),
     };
   }
 
