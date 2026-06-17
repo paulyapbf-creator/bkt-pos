@@ -528,6 +528,8 @@ function initSettings() {
   const terminalEnabledInput = document.getElementById('s-terminal-enabled');
   const terminalPkgInput     = document.getElementById('s-terminal-pkg');
   const terminalClassInput   = document.getElementById('s-terminal-class');
+  const terminalIndexMInput  = document.getElementById('s-terminal-index-m');
+  const terminalIndexTInput  = document.getElementById('s-terminal-index-t');
   const cewalletEnabledInput = document.getElementById('s-cewallet-enabled');
   const cewalletIdInput      = document.getElementById('s-cewallet-id');
 
@@ -564,10 +566,12 @@ function initSettings() {
   maeEnabledInput.checked    = !!settings.maeEnabled;
   maeLinkInput.value         = settings.maeLink     || '';
   terminalEnabledInput.checked = !!settings.terminalEnabled;
-  terminalPkgInput.value       = settings.terminalPkg   || '';
-  terminalClassInput.value     = settings.terminalClass || '';
+  terminalPkgInput.value       = settings.terminalPkg    || '';
+  terminalClassInput.value     = settings.terminalClass  || '';
+  terminalIndexMInput.value    = settings.terminalIndexM ?? 1;
+  terminalIndexTInput.value    = settings.terminalIndexT ?? 1;
   cewalletEnabledInput.checked = !!settings.cewalletEnabled;
-  cewalletIdInput.value        = settings.cewalletId    || '';
+  cewalletIdInput.value        = settings.cewalletId     || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -649,8 +653,10 @@ function initSettings() {
       maeEnabled:    maeEnabledInput.checked,
       maeLink:       maeLinkInput.value.trim(),
       terminalEnabled: terminalEnabledInput.checked,
-      terminalPkg:     terminalPkgInput.value.trim() || 'com.coherent.centerm.cptpaterminal',
+      terminalPkg:     terminalPkgInput.value.trim()   || 'com.coherent.centerm.cptpaterminal',
       terminalClass:   terminalClassInput.value.trim() || '.BroadcastTransactionActivity',
+      terminalIndexM:  parseInt(terminalIndexMInput.value, 10) || 1,
+      terminalIndexT:  parseInt(terminalIndexTInput.value, 10) || 1,
       cewalletEnabled: cewalletEnabledInput.checked,
       cewalletId:      cewalletIdInput.value.trim(),
     };

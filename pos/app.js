@@ -1289,9 +1289,11 @@ function destroyAirwallexElement() {
 
 function launchTerminalSale(amount, cardType) {
   const settings = loadSettings();
-  const pkg = settings.terminalPkg || 'com.coherent.centerm.cptpaterminal';
-  const cls = settings.terminalClass || '.BroadcastTransactionActivity';
-  const amtStr = amount.toFixed(2);
+  const pkg     = settings.terminalPkg    || 'com.coherent.centerm.cptpaterminal';
+  const cls     = settings.terminalClass  || '.BroadcastTransactionActivity';
+  const indexM  = settings.terminalIndexM ?? 1;
+  const indexT  = settings.terminalIndexT ?? 1;
+  const amtStr  = amount.toFixed(2);
   const statusEl = document.getElementById('terminal-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');
 
@@ -1312,7 +1314,7 @@ function launchTerminalSale(amount, cardType) {
   if (window.AndroidPay && typeof window.AndroidPay.launchSale === 'function') {
     if (statusEl) statusEl.textContent = `Launching terminal for ${getCurrency()} ${amtStr}…`;
     try {
-      const result = window.AndroidPay.launchSale(pkg, pkg + cls, amtStr);
+      const result = window.AndroidPay.launchSale(pkg, pkg + cls, amtStr, indexM, indexT);
       if (result === 'ok') {
         // Terminal is open — wait for onCoherentResult callback to auto-confirm
         if (statusEl) {
@@ -1366,11 +1368,13 @@ window.onCoherentResult = function(result) {
 };
 
 function launchCoherentEwallet(amount) {
-  const settings = loadSettings();
-  const pkg      = settings.terminalPkg   || 'com.coherent.centerm.cptpaterminal';
-  const cls      = settings.terminalClass || '.BroadcastTransactionActivity';
-  const eWalletId = settings.cewalletId  || '';
-  const amtStr   = amount.toFixed(2);
+  const settings  = loadSettings();
+  const pkg       = settings.terminalPkg    || 'com.coherent.centerm.cptpaterminal';
+  const cls       = settings.terminalClass  || '.BroadcastTransactionActivity';
+  const indexM    = settings.terminalIndexM ?? 1;
+  const indexT    = settings.terminalIndexT ?? 1;
+  const eWalletId = settings.cewalletId     || '';
+  const amtStr    = amount.toFixed(2);
   const statusEl = document.getElementById('cewallet-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');
 
@@ -1388,7 +1392,7 @@ function launchCoherentEwallet(amount) {
   if (window.AndroidPay && typeof window.AndroidPay.launchEwallet === 'function') {
     if (statusEl) statusEl.textContent = `Launching eWallet for ${getCurrency()} ${amtStr}…`;
     try {
-      const result = window.AndroidPay.launchEwallet(pkg, pkg + cls, amtStr, eWalletId);
+      const result = window.AndroidPay.launchEwallet(pkg, pkg + cls, amtStr, eWalletId, indexM, indexT);
       if (result === 'ok') {
         // Terminal is open showing QR — wait for onCoherentResult callback to auto-confirm
         if (statusEl) {

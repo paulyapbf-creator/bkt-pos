@@ -1,0 +1,1046 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabMode="fixed"
+        app:tabGravity="fill" />
+
+    <!-- ===== PRINTER TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabPrinter"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WizarPOS Printer Test"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status: Not initialized"
+            android:textSize="14sp"
+            android:padding="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnInit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Init Printer"
+            android:backgroundTint="#2196F3"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Print Text"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnImage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Print Image"
+            android:layout_marginBottom="4dp" />
+
+        <ScrollView
+            android:id="@+id/scrollLog"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#1A000000"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:fontFamily="monospace"
+                android:text="Log output will appear here...\n" />
+        </ScrollView>
+
+    </LinearLayout>
+
+    <!-- ===== CUSTOMER DISPLAY TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabCustomerDisplay"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Customer Display"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvDisplayStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Display status: checking..."
+            android:textSize="13sp"
+            android:padding="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Description"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="2dp" />
+
+        <EditText
+            android:id="@+id/etDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="e.g. Total Amount"
+            android:inputType="text"
+            android:background="@android:drawable/edit_text"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Currency &amp; Price"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="2dp" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <EditText
+                android:id="@+id/etCurrency"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:hint="THB"
+                android:text="THB"
+                android:inputType="text"
+                android:maxLength="5"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:gravity="center" />
+
+            <EditText
+                android:id="@+id/etPrice"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="0.00"
+                android:inputType="numberDecimal"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginStart="8dp"
+                android:textSize="24sp"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnInitDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Init Customer Display"
+            android:backgroundTint="#2196F3"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnTestDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test: 10x10 Red Bitmap (open → display)"
+            android:backgroundTint="#F44336"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnShowDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Show on Customer Display"
+            android:backgroundTint="#4CAF50"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnClearDisplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Clear Display"
+            android:backgroundTint="#9E9E9E"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="QR Preview"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="4dp" />
+
+        <ImageView
+            android:id="@+id/ivQRPreview"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:scaleType="fitCenter"
+            android:background="#FFFFFF"
+            android:padding="4dp" />
+
+    </LinearLayout>
+
+    <!-- ===== WALLET (eWallet App2App) TAB ===== -->
+    <ScrollView
+        android:id="@+id/tabWallet"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="eWallet Payment"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Pass / Fail counters -->
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pass: "
+                    android:textSize="13sp"
+                    android:textColor="#388E3C" />
+                <TextView
+                    android:id="@+id/tvEWalletPass"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#388E3C"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fail: "
+                    android:textSize="13sp"
+                    android:textColor="#C62828" />
+                <TextView
+                    android:id="@+id/tvEWalletFail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#C62828" />
+            </LinearLayout>
+
+            <!-- Merchant Settings -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Merchant Settings"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#444444"
+                android:background="#EEEEEE"
+                android:padding="6dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Package Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletPkgName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="com.coherent.centerm.cptpaterminal"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Class Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletClassName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=".BroadcastTransactionActivity"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Merchant Index (indexM)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etEWalletIndexM"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Terminal Index (indexT)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etEWalletIndexT"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Amount -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Txn Amount"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="0.00"
+                android:inputType="numberDecimal"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:textSize="28sp"
+                android:gravity="end"
+                android:layout_marginBottom="12dp" />
+
+            <!-- eWallet ID (QR mode) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="eWallet ID (for QR, optional)"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="S95"
+                android:hint="e.g. S95, DuitNow, TNG"
+                android:inputType="text"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button android:id="@+id/btnEWalletIdS95"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="S95" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdDuitNow"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="DuitNow" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdTnG"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="TnG" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdBoost"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="Boost" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdShopeePay"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="ShopeePay" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdGrabPay"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="GrabPay" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdMAE"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="MAE" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdClear"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="(clear)" android:textSize="11sp"
+                        android:backgroundTint="#FFCDD2" android:textColor="#B71C1C" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Order ID -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Order ID (optional)"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletOrderId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="optional"
+                android:inputType="text"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Action buttons -->
+            <Button
+                android:id="@+id/btnEWalletSale"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="E-Wallet (Tap / Scan)"
+                android:backgroundTint="#FF9800"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnEWalletQR"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="E-Wallet QR (with eWallet ID)"
+                android:backgroundTint="#E53935"
+                android:textSize="16sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Status -->
+            <TextView
+                android:id="@+id/tvEWalletStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enter amount and tap a button to launch eWallet payment"
+                android:textSize="13sp"
+                android:padding="10dp"
+                android:background="#E0E0E0" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ===== CASHIER TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabCashier"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cashier"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Amount row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <EditText
+                android:id="@+id/etCashierCurrency"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="RM"
+                android:inputType="text"
+                android:maxLength="5"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:gravity="center" />
+
+            <EditText
+                android:id="@+id/etCashierAmount"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="0.00"
+                android:inputType="numberDecimal"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginStart="8dp"
+                android:textSize="24sp"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <!-- Description -->
+        <EditText
+            android:id="@+id/etCashierDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description (e.g. ABC STORE)"
+            android:inputType="text"
+            android:background="@android:drawable/edit_text"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Payment method buttons -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Payment Method"
+            android:textSize="13sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="6dp" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/btnPayCash"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Cash"
+                android:backgroundTint="#4CAF50" />
+
+            <Button
+                android:id="@+id/btnPayCard"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Card"
+                android:backgroundTint="#2196F3"
+                android:layout_marginStart="4dp" />
+
+            <Button
+                android:id="@+id/btnPayWallet"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="E-Wallet"
+                android:backgroundTint="#FF9800"
+                android:layout_marginStart="4dp" />
+
+        </LinearLayout>
+
+        <!-- Secondary display status -->
+        <TextView
+            android:id="@+id/tvCashierStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select payment method to trigger display"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="8dp" />
+
+        <!-- QR preview (E-Wallet only) -->
+        <ImageView
+            android:id="@+id/imgQR"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_gravity="center_horizontal"
+            android:scaleType="fitCenter"
+            android:background="#FFFFFF"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- ===== MAINTAIN TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabMaintain"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Printer Maintenance"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnCutPaper"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Cut Paper"
+                android:backgroundTint="#FF9800" />
+
+            <Button
+                android:id="@+id/btnTestAll"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Run All"
+                android:backgroundTint="#4CAF50"
+                android:layout_marginStart="6dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnDiag"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Diag"
+                android:backgroundTint="#9C27B0" />
+
+            <Button
+                android:id="@+id/btnCopy"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Copy Log"
+                android:backgroundTint="#607D8B"
+                android:layout_marginStart="6dp" />
+
+            <Button
+                android:id="@+id/btnShare"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Share Log"
+                android:backgroundTint="#009688"
+                android:layout_marginStart="6dp" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Update APK from PC"
+            android:backgroundTint="#F44336"
+            android:layout_marginBottom="12dp" />
+
+    </LinearLayout>
+
+    <!-- ===== TERMINAL / SALE TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabTerminal"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <!-- Package / Class | Pass / Fail -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="5"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Package Name"
+                    android:textSize="11sp"
+                    android:textColor="#666666" />
+
+                <EditText
+                    android:id="@+id/etTerminalPkgName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="com.coherent.centerm.cptpaterminal"
+                    android:inputType="text"
+                    android:textSize="12sp"
+                    android:background="@android:drawable/edit_text"
+                    android:padding="4dp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Class Name"
+                    android:textSize="11sp"
+                    android:textColor="#666666" />
+
+                <EditText
+                    android:id="@+id/etTerminalClassName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=".BroadcastTransactionActivity"
+                    android:inputType="text"
+                    android:textSize="12sp"
+                    android:background="@android:drawable/edit_text"
+                    android:padding="4dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Merchant Index (indexM)"
+                            android:textSize="11sp"
+                            android:textColor="#666666"
+                            android:layout_marginBottom="2dp" />
+
+                        <EditText
+                            android:id="@+id/etTerminalIndexM"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="1"
+                            android:inputType="number"
+                            android:background="@android:drawable/edit_text"
+                            android:padding="4dp"
+                            android:gravity="center" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:orientation="vertical"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Terminal Index (indexT)"
+                            android:textSize="11sp"
+                            android:textColor="#666666"
+                            android:layout_marginBottom="2dp" />
+
+                        <EditText
+                            android:id="@+id/etTerminalIndexT"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="1"
+                            android:inputType="number"
+                            android:background="@android:drawable/edit_text"
+                            android:padding="4dp"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingStart="8dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pass"
+                    android:textSize="11sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/tvTerminalPass"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#388E3C"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Fail"
+                    android:textSize="11sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/tvTerminalFail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#C62828"
+                    android:gravity="center" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Txn Amount | Order ID -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingEnd="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Txn Amount"
+                    android:textSize="11sp"
+                    android:textColor="#666666" />
+
+                <EditText
+                    android:id="@+id/etTerminalAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="0.10"
+                    android:inputType="numberDecimal"
+                    android:textSize="20sp"
+                    android:background="@android:drawable/edit_text"
+                    android:padding="6dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Order ID (optional)"
+                    android:textSize="11sp"
+                    android:textColor="#666666" />
+
+                <EditText
+                    android:id="@+id/etTerminalOrderId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="optional"
+                    android:inputType="text"
+                    android:textSize="15sp"
+                    android:background="@android:drawable/edit_text"
+                    android:padding="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SALE + Scan row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="6dp">
+
+            <Button
+                android:id="@+id/btnTerminalSale"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="SALE"
+                android:backgroundTint="#2196F3"
+                android:textSize="16sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnScanTerminal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scan"
+                android:backgroundTint="#607D8B"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/tvTerminalStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ready — enter amount and tap SALE"
+            android:textSize="13sp"
+            android:padding="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Response list -->
+        <TextView
+            android:id="@+id/tvTerminalEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="No responses yet"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <ListView
+            android:id="@+id/lvTerminalResponses"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="1dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
