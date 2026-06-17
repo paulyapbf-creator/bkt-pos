@@ -815,9 +815,19 @@ function renderBillingStep() {
     const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
     const tngEnabled = settings.tngEnabled !== false; // default on
     const duitnowEnabled = !!settings.duitnowEnabled;
+    const boostEnabled  = !!settings.boostEnabled  && !!settings.boostLink;
+    const shopeeEnabled = !!settings.shopeeEnabled && !!settings.shopeeLink;
+    const grabEnabled   = !!settings.grabEnabled   && !!settings.grabLink;
+    const maeEnabled    = !!settings.maeEnabled    && !!settings.maeLink;
+    const terminalEnabled = !!settings.terminalEnabled;
     bodyEl.innerHTML = `<div class="pay-methods">
-      ${tngEnabled ? `<button class="pay-method-btn" data-method="tng"><span class="pay-icon">💳</span><span class="pay-name">${t('tng_ewallet')}</span></button>` : ''}
+      ${tngEnabled     ? `<button class="pay-method-btn" data-method="tng"><span class="pay-icon">💚</span><span class="pay-name">Touch &amp; Go</span></button>` : ''}
       ${duitnowEnabled ? `<button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">${t('duitnow')}</span></button>` : ''}
+      ${boostEnabled   ? `<button class="pay-method-btn" data-method="boost"><span class="pay-icon">🔴</span><span class="pay-name">Boost</span></button>` : ''}
+      ${shopeeEnabled  ? `<button class="pay-method-btn" data-method="shopeepay"><span class="pay-icon">🛒</span><span class="pay-name">ShopeePay</span></button>` : ''}
+      ${grabEnabled    ? `<button class="pay-method-btn" data-method="grabpay"><span class="pay-icon">🟢</span><span class="pay-name">GrabPay</span></button>` : ''}
+      ${maeEnabled     ? `<button class="pay-method-btn" data-method="mae"><span class="pay-icon">🏧</span><span class="pay-name">MAE</span></button>` : ''}
+      ${terminalEnabled ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Card Terminal</span></button>` : ''}
       ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
       <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
     </div>`;
@@ -829,7 +839,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: t('tng_ewallet'), duitnow: t('duitnow'), cash: t('cash'), card: t('credit_card') };
+    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Card Terminal', cash: t('cash'), card: t('credit_card') };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -854,6 +864,31 @@ function renderBillingStep() {
       body = `<div class="qr-container"><div id="pay-qr-el" style="display:inline-block;"><div class="card-spinner"></div><div style="color:var(--muted);font-size:13px;margin-top:8px;">Creating DuitNow transaction...</div></div></div>`;
       body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
       body += `<div id="duitnow-status" style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">Waiting for customer to scan QR…</div>`;
+    } else if (method === 'boost' || method === 'shopeepay' || method === 'grabpay' || method === 'mae') {
+      const walletLinks = { boost: settings.boostLink, shopeepay: settings.shopeeLink, grabpay: settings.grabLink, mae: settings.maeLink };
+      const payLink = walletLinks[method] || '';
+      if (payLink) {
+        body = `<div class="qr-container"><div id="pay-qr-el" style="display:inline-block;"></div></div>`;
+        body += `<div class="pay-link-row" style="text-align:center;margin:10px 0;"><a href="${payLink}" target="_blank" style="color:#3498db;font-size:14px;text-decoration:underline;">Open Payment Link ↗</a></div>`;
+      } else {
+        body = `<div class="qr-placeholder">No payment link configured.<br>Go to Items → System Settings.</div>`;
+      }
+      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
+      body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>${getCurrency()} ${bd.total.toFixed(2)}</b> received before confirming</div>`;
+    } else if (method === 'terminal') {
+      body = `<div class="cash-pay-display">
+        <div class="cash-pay-label">Card Terminal Payment</div>
+        <div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:20px;">
+          <button id="btn-wave" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 24px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;min-width:110px;">
+            <span style="font-size:36px;">👋</span><span style="font-weight:600;">Wave</span>
+          </button>
+          <button id="btn-insert" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 24px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;min-width:110px;">
+            <span style="font-size:36px;">💳</span><span style="font-weight:600;">Insert Card</span>
+          </button>
+        </div>
+        <div id="terminal-status" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);padding:0 16px;">Select card entry method above to launch terminal</div>
+      </div>`;
     } else if (method === 'card') {
       body = `<div class="card-pay-container">
         <div class="card-pay-loading" id="card-loading"><div class="card-spinner"></div><div>Setting up card payment...</div></div>
@@ -866,9 +901,14 @@ function renderBillingStep() {
     bodyEl.innerHTML = body;
     // Render QR code from payment link
     const qrEl = document.getElementById('pay-qr-el');
-    if (method === 'tng' && qrEl && payLink && typeof qrcode === 'function') {
+    const qrLinkForMethod = method === 'tng' ? payLink
+      : method === 'boost'     ? settings.boostLink
+      : method === 'shopeepay' ? settings.shopeeLink
+      : method === 'grabpay'   ? settings.grabLink
+      : method === 'mae'       ? settings.maeLink : '';
+    if (qrEl && qrLinkForMethod && typeof qrcode === 'function') {
       try {
-        const qr = qrcode(0, 'M'); qr.addData(payLink); qr.make();
+        const qr = qrcode(0, 'M'); qr.addData(qrLinkForMethod); qr.make();
         qrEl.innerHTML = qr.createSvgTag(6, 0);
         qrEl.querySelector('svg').style.cssText = 'width:220px;height:220px;border-radius:12px;';
       } catch (e) { console.error('QR render error:', e); }
@@ -881,6 +921,10 @@ function renderBillingStep() {
       confirmBtn.textContent = t('payment_received');
       confirmBtn.classList.remove('hidden');
       initDuitNowPayment(bd.total, state.payingTable, settings);
+    } else if (method === 'terminal') {
+      confirmBtn.classList.add('hidden');
+      document.getElementById('btn-wave')?.addEventListener('click',   () => launchTerminalSale(bd.total, 'WAVE'));
+      document.getElementById('btn-insert')?.addEventListener('click', () => launchTerminalSale(bd.total, 'INSERT'));
     } else {
       confirmBtn.textContent = method === 'cash' ? t('confirm_cash') : t('payment_received');
       confirmBtn.classList.remove('hidden');
@@ -1022,7 +1066,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
 function handleBillingBack() {
   if (state.payStep === 'bill')        { state.payStep = 'list';   state.payingTable = null; }
   else if (state.payStep === 'method')   state.payStep = 'bill';
-  else if (state.payStep === 'qr')     { destroyAirwallexElement(); state.payStep = 'method'; state.payMethod = null; }
+  else if (state.payStep === 'qr')     { destroyAirwallexElement(); if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; } state.payStep = 'method'; state.payMethod = null; }
   else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
 }
@@ -1227,6 +1271,37 @@ function destroyAirwallexElement() {
   }
 }
 
+function launchTerminalSale(amount, cardType) {
+  const settings = loadSettings();
+  const pkg = settings.terminalPkg || 'com.coherent.centerm.cptpaterminal';
+  const cls = settings.terminalClass || '.BroadcastTransactionActivity';
+  const amtStr = amount.toFixed(2);
+  const statusEl = document.getElementById('terminal-status');
+  const confirmBtn = document.getElementById('pay-confirm-btn');
+
+  // Try Android bridge exposed by native BKT POS app
+  if (window.AndroidPay && typeof window.AndroidPay.launchSale === 'function') {
+    if (statusEl) statusEl.textContent = `Launching terminal for ${getCurrency()} ${amtStr}…`;
+    try {
+      window.AndroidPay.launchSale(pkg, pkg + cls, amtStr);
+      return;
+    } catch (e) {
+      console.warn('AndroidPay.launchSale failed:', e);
+    }
+  }
+
+  // Fallback: manual confirmation
+  const entryLabel = cardType === 'WAVE' ? 'contactless (wave)' : 'card insert';
+  if (statusEl) {
+    statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#fff3cd;padding:10px 14px;border-radius:8px;';
+    statusEl.textContent = `Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`;
+  }
+  if (confirmBtn) {
+    confirmBtn.textContent = 'Payment Received ✓';
+    confirmBtn.classList.remove('hidden');
+  }
+}
+
 async function confirmTablePayment() {
   const table = state.payingTable; const method = state.payMethod;
   const bills = loadActiveBills(); const bill = bills[table];
@@ -1239,7 +1314,7 @@ async function confirmTablePayment() {
   await clearActiveBill(table);
   closeBillingModal();
   updateTableBtn();
-  const labels = { tng: t('tng'), duitnow: t('duitnow'), cash: t('cash'), card: t('credit_card') };
+  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Card Terminal', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
 }

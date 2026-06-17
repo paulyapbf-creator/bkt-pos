@@ -132,6 +132,41 @@
         <p class="settings-hint" style="margin-top:4px;">Override the profile's default terminal code. Leave empty to use profile default.</p>
       </div>
 
+      <h2 class="settings-title" style="margin-top:24px;">Additional E-Wallets</h2>
+      <p class="settings-hint">Enable additional e-wallet payment options. Paste the merchant payment link and a QR code will be shown to the customer at checkout.</p>
+
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-boost-enabled"> Enable Boost eWallet</label>
+      </div>
+      <div class="settings-field">
+        <label>Boost Payment Link</label>
+        <input type="url" id="s-boost-link" placeholder="https://payment.boost.com.my/…">
+      </div>
+
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-shopee-enabled"> Enable ShopeePay</label>
+      </div>
+      <div class="settings-field">
+        <label>ShopeePay Payment Link</label>
+        <input type="url" id="s-shopee-link" placeholder="https://shopeepay.com.my/…">
+      </div>
+
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-grab-enabled"> Enable GrabPay</label>
+      </div>
+      <div class="settings-field">
+        <label>GrabPay Payment Link</label>
+        <input type="url" id="s-grab-link" placeholder="https://pay.grab.com/…">
+      </div>
+
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-mae-enabled"> Enable MAE by Maybank</label>
+      </div>
+      <div class="settings-field">
+        <label>MAE Payment Link</label>
+        <input type="url" id="s-mae-link" placeholder="https://mae.maybank2u.com.my/…">
+      </div>
+
       <h2 class="settings-title" style="margin-top:24px;" data-i18n="airwallex_card">Airwallex Card Payments</h2>
       <p class="settings-hint" data-i18n="airwallex_hint">Configure Airwallex credentials for credit/debit card payments. Use demo mode for testing.</p>
 
@@ -156,6 +191,23 @@
           <option value="demo">Demo (testing)</option>
           <option value="production">Production (live)</option>
         </select>
+      </div>
+
+      <h2 class="settings-title" style="margin-top:24px;">Card Terminal (App2App)</h2>
+      <p class="settings-hint">Connect a physical card terminal via Android App2App. Shows Wave / Insert Card buttons at checkout. Requires the BKT POS native Android app with terminal bridge support.</p>
+
+      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
+        <label class="check-label"><input type="checkbox" id="s-terminal-enabled"> Enable Card Terminal Payment</label>
+      </div>
+      <div class="settings-field">
+        <label>Terminal Package Name</label>
+        <input type="text" id="s-terminal-pkg" placeholder="com.coherent.centerm.cptpaterminal">
+        <p class="settings-hint" style="margin-top:4px;">Android package name of the terminal app.</p>
+      </div>
+      <div class="settings-field">
+        <label>Terminal Class Name</label>
+        <input type="text" id="s-terminal-class" placeholder=".BroadcastTransactionActivity">
+        <p class="settings-hint" style="margin-top:4px;">Activity class to receive App2App sale intent (include leading dot).</p>
       </div>
 
       <h2 class="settings-title" style="margin-top:24px;" data-i18n="tax_service">Tax &amp; Service Charge</h2>

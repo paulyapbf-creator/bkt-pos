@@ -517,6 +517,17 @@ function initSettings() {
   const awClientIdInput  = document.getElementById('s-aw-client-id');
   const awApiKeyInput    = document.getElementById('s-aw-api-key');
   const awEnvInput       = document.getElementById('s-aw-env');
+  const boostEnabledInput = document.getElementById('s-boost-enabled');
+  const boostLinkInput    = document.getElementById('s-boost-link');
+  const shopeeEnabledInput = document.getElementById('s-shopee-enabled');
+  const shopeeLinkInput    = document.getElementById('s-shopee-link');
+  const grabEnabledInput  = document.getElementById('s-grab-enabled');
+  const grabLinkInput     = document.getElementById('s-grab-link');
+  const maeEnabledInput   = document.getElementById('s-mae-enabled');
+  const maeLinkInput      = document.getElementById('s-mae-link');
+  const terminalEnabledInput = document.getElementById('s-terminal-enabled');
+  const terminalPkgInput     = document.getElementById('s-terminal-pkg');
+  const terminalClassInput   = document.getElementById('s-terminal-class');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -542,6 +553,17 @@ function initSettings() {
   awClientIdInput.value  = settings.airwallexClientId || '';
   awApiKeyInput.value    = settings.airwallexApiKey   || '';
   awEnvInput.value       = settings.airwallexEnv      || 'demo';
+  boostEnabledInput.checked  = !!settings.boostEnabled;
+  boostLinkInput.value       = settings.boostLink   || '';
+  shopeeEnabledInput.checked = !!settings.shopeeEnabled;
+  shopeeLinkInput.value      = settings.shopeeLink  || '';
+  grabEnabledInput.checked   = !!settings.grabEnabled;
+  grabLinkInput.value        = settings.grabLink    || '';
+  maeEnabledInput.checked    = !!settings.maeEnabled;
+  maeLinkInput.value         = settings.maeLink     || '';
+  terminalEnabledInput.checked = !!settings.terminalEnabled;
+  terminalPkgInput.value       = settings.terminalPkg   || '';
+  terminalClassInput.value     = settings.terminalClass || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -614,6 +636,17 @@ function initSettings() {
       airwallexClientId: awClientIdInput.value.trim(),
       airwallexApiKey:   awApiKeyInput.value.trim(),
       airwallexEnv:      awEnvInput.value,
+      boostEnabled:  boostEnabledInput.checked,
+      boostLink:     boostLinkInput.value.trim(),
+      shopeeEnabled: shopeeEnabledInput.checked,
+      shopeeLink:    shopeeLinkInput.value.trim(),
+      grabEnabled:   grabEnabledInput.checked,
+      grabLink:      grabLinkInput.value.trim(),
+      maeEnabled:    maeEnabledInput.checked,
+      maeLink:       maeLinkInput.value.trim(),
+      terminalEnabled: terminalEnabledInput.checked,
+      terminalPkg:     terminalPkgInput.value.trim() || 'com.coherent.centerm.cptpaterminal',
+      terminalClass:   terminalClassInput.value.trim() || '.BroadcastTransactionActivity',
     };
   }
 
