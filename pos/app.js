@@ -1314,7 +1314,17 @@ function launchTerminalSale(amount, cardType) {
     try {
       const result = window.AndroidPay.launchSale(pkg, pkg + cls, amtStr);
       if (result === 'ok') {
-        showManualConfirm(`Terminal launched. Process ${entryLabel} payment of ${getCurrency()} ${amtStr}, then tap below when done.`);
+        // Terminal is open — wait for onCoherentResult callback to auto-confirm
+        if (statusEl) {
+          statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#e8f4fd;padding:10px 14px;border-radius:8px;';
+          statusEl.textContent = `Waiting for payment on terminal… (${getCurrency()} ${amtStr})`;
+        }
+        // Fallback: show manual confirm after 3 minutes if callback never fires
+        setTimeout(() => {
+          if (confirmBtn && confirmBtn.classList.contains('hidden')) {
+            showManualConfirm(`Payment timed out. If payment was completed on terminal, tap below.`);
+          }
+        }, 180000);
       } else {
         showManualConfirm(`${result}. Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal manually, then tap below.`);
       }
@@ -1380,7 +1390,17 @@ function launchCoherentEwallet(amount) {
     try {
       const result = window.AndroidPay.launchEwallet(pkg, pkg + cls, amtStr, eWalletId);
       if (result === 'ok') {
-        showManualConfirm(`eWallet launched. Customer scans or pays ${getCurrency()} ${amtStr} on terminal, then tap below when done.`);
+        // Terminal is open showing QR — wait for onCoherentResult callback to auto-confirm
+        if (statusEl) {
+          statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#e8f4fd;padding:10px 14px;border-radius:8px;';
+          statusEl.textContent = `Waiting for customer to scan QR on terminal… (${getCurrency()} ${amtStr})`;
+        }
+        // Fallback: show manual confirm after 3 minutes if callback never fires
+        setTimeout(() => {
+          if (confirmBtn && confirmBtn.classList.contains('hidden')) {
+            showManualConfirm(`Payment timed out. If customer completed payment on terminal, tap below.`);
+          }
+        }, 180000);
       } else {
         showManualConfirm(`${result}. Process eWallet payment of ${getCurrency()} ${amtStr} on terminal manually, then tap below.`);
       }
