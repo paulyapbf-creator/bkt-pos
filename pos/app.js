@@ -1279,27 +1279,38 @@ function launchTerminalSale(amount, cardType) {
   const statusEl = document.getElementById('terminal-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');
 
+  const entryLabel = cardType === 'WAVE' ? 'contactless (wave)' : 'card insert';
+
+  function showManualConfirm(msg) {
+    if (statusEl) {
+      statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#fff3cd;padding:10px 14px;border-radius:8px;';
+      statusEl.textContent = msg;
+    }
+    if (confirmBtn) {
+      confirmBtn.textContent = 'Payment Received ✓';
+      confirmBtn.classList.remove('hidden');
+    }
+  }
+
   // Try Android bridge exposed by native BKT POS app
   if (window.AndroidPay && typeof window.AndroidPay.launchSale === 'function') {
     if (statusEl) statusEl.textContent = `Launching terminal for ${getCurrency()} ${amtStr}…`;
     try {
-      window.AndroidPay.launchSale(pkg, pkg + cls, amtStr);
-      return;
+      const result = window.AndroidPay.launchSale(pkg, pkg + cls, amtStr);
+      if (result === 'ok') {
+        showManualConfirm(`Terminal launched. Process ${entryLabel} payment of ${getCurrency()} ${amtStr}, then tap below when done.`);
+      } else {
+        showManualConfirm(`${result}. Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal manually, then tap below.`);
+      }
     } catch (e) {
-      console.warn('AndroidPay.launchSale failed:', e);
+      console.warn('AndroidPay.launchSale error:', e);
+      showManualConfirm(`Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal, then tap below.`);
     }
+    return;
   }
 
-  // Fallback: manual confirmation
-  const entryLabel = cardType === 'WAVE' ? 'contactless (wave)' : 'card insert';
-  if (statusEl) {
-    statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#fff3cd;padding:10px 14px;border-radius:8px;';
-    statusEl.textContent = `Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`;
-  }
-  if (confirmBtn) {
-    confirmBtn.textContent = 'Payment Received ✓';
-    confirmBtn.classList.remove('hidden');
-  }
+  // Fallback: no bridge (browser mode)
+  showManualConfirm(`Process ${entryLabel} payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
 }
 
 async function confirmTablePayment() {
