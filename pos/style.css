@@ -1375,7 +1375,7 @@ tr.dragging { opacity: 0.3; }
 .settings-field {
   margin-bottom: 24px;
 }
-.settings-field label {
+.settings-field label:not(.check-label) {
   display: block; font-size: 13px; font-weight: 600;
   color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
 }

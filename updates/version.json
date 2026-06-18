@@ -1,1 +1,1 @@
-{"version":"1.2.8-debug","notes":"Fix Coherent terminal launch — use trampoline activity that fires intent and calls finish() so terminal can take foreground"}
+{"version":"1.2.9-debug","notes":"Fix payment settings checkbox alignment — checkboxes now render inline with correct styling"}
