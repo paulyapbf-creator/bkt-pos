@@ -1631,17 +1631,18 @@ app.post('/api/print', async (req, res) => {
     const printerPort = parseInt(settings.printerPort, 10) || 9100;
     const printerWidth = settings.printerWidth === '80' ? IMG_WIDTH_80 : IMG_WIDTH_58;
 
-    if (!printerIp) return res.status(400).json({ error: 'No printer IP configured' });
-
     const job = req.body;
     job.printerIp   = job.printerIp || printerIp;
     job.printerPort = job.printerPort || printerPort;
 
     const escpos = buildEscPos(job, printerWidth);
-    console.log(`[print] type=${job.type} size=${escpos.length}B width=${printerWidth}px → ${printerIp}:${printerPort}`);
-
-    // Return built ESC/POS so frontend can use relay/Android fallback
     const escposB64 = escpos.toString('base64');
+    console.log(`[print] type=${job.type} size=${escpos.length}B width=${printerWidth}px → ${printerIp || 'builtin'}:${printerPort}`);
+
+    // No IP — return ESC/POS bytes for client-side built-in printer
+    if (!printerIp) {
+      return res.json({ ok: false, escpos: escposB64 });
+    }
 
     // On cloud, skip TCP (printer is on local network, not reachable from cloud)
     if (isCloud) {
