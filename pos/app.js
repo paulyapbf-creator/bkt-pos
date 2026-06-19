@@ -1352,11 +1352,12 @@ window.onCoherentResult = function(result) {
       statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#155724;background:#d4edda;padding:10px 14px;border-radius:8px;';
       statusEl.textContent = 'Payment approved! Confirming…';
     }
-    setTimeout(() => {
-      if (state.payStep === 'qr' && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
-        confirmTablePayment();
-      }
-    }, 600);
+    // Do not check state.payStep — it can be stale after the activity lifecycle
+    // resumes from the Coherent terminal. Guard via state.payingTable instead;
+    // confirmTablePayment() already returns early if the bill is gone.
+    if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
+      setTimeout(() => confirmTablePayment(), 300);
+    }
   } else {
     const msg = result && result.Value_2 ? result.Value_2 : 'Payment declined or failed';
     if (statusEl) {
