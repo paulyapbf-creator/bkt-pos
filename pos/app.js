@@ -1631,9 +1631,9 @@ function buildOrderCheckJob(table, items, bd) {
   });
 }
 
-async function sendToPrinter(job) {
+async function sendToPrinter(job, pTypeOverride) {
   const settings = loadSettings();
-  const pType = settings.printerType || 'external';
+  const pType = pTypeOverride || settings.printerType || 'external';
 
   // ── Built-in printer path (WizarPOS) ──
   if (pType === 'builtin') {
@@ -1725,11 +1725,12 @@ async function sendToPrinter(job) {
 
 function printOrderSlip(table, items, isUpdate) {
   const settings = loadSettings();
+  const pType = settings.orderSlipPrinterType || settings.printerType || 'external';
 
   // Try direct thermal print if printer configured (IP-based or built-in)
-  if (settings.printerIp || settings.printerType === 'builtin') {
+  if (settings.printerIp || pType === 'builtin') {
     const job = buildOrderSlipJob(table, items, isUpdate);
-    sendToPrinter(job).then(ok => {
+    sendToPrinter(job, pType).then(ok => {
       if (!ok) {
         showToast(t('print_failed'));
         printOrderSlipHTML(table, items, isUpdate);
@@ -1829,11 +1830,12 @@ function printOrderSlipHTML(table, items, isUpdate) {
 
 function printPaymentReceipt(table, items, bd, method, orderId) {
   const settings = loadSettings();
+  const pType = settings.receiptPrinterType || settings.printerType || 'external';
 
   // Try direct thermal print if printer configured (IP-based or built-in)
-  if (settings.printerIp || settings.printerType === 'builtin') {
+  if (settings.printerIp || pType === 'builtin') {
     const job = buildReceiptJob(table, items, bd, method, orderId);
-    sendToPrinter(job).then(ok => {
+    sendToPrinter(job, pType).then(ok => {
       if (!ok) {
         showToast(t('print_failed'));
         printPaymentReceiptHTML(table, items, bd, method, orderId);

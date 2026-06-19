@@ -255,24 +255,27 @@
       <p class="settings-hint" data-i18n="printer_hint">Configure a LAN thermal printer (ESC/POS, 80mm). Leave IP empty to use browser print dialog.</p>
 
       <div class="settings-field">
-        <label>Printer Type</label>
-        <select id="s-printer-type">
-          <option value="external">External Printer (TCP/Network)</option>
-          <option value="builtin">Built-in Printer (WizarPOS)</option>
-        </select>
-        <p class="settings-hint" style="margin-top:4px;">External: prints via IP over network. Built-in: prints directly on WizarPOS attached printer.</p>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <input type="checkbox" id="s-print-order-slip" style="width:18px;height:18px;flex-shrink:0;">
+          <label for="s-print-order-slip" style="margin:0;cursor:pointer;flex:1;" data-i18n="print_order_slip">Print order slip (kitchen)</label>
+          <select id="s-order-slip-printer-type" style="min-width:210px;">
+            <option value="external">External Printer (TCP/Network)</option>
+            <option value="builtin">Built-in Printer (WizarPOS)</option>
+          </select>
+        </div>
+        <p class="settings-hint" style="margin-top:6px;">Print a slip when an order is sent to the kitchen.</p>
       </div>
 
-      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <input type="checkbox" id="s-print-order-slip" style="width:18px;height:18px;">
-        <label for="s-print-order-slip" style="margin:0;cursor:pointer;" data-i18n="print_order_slip">Print order slip (kitchen)</label>
-        <p class="settings-hint" style="margin:0;">Print a slip when an order is sent to the kitchen.</p>
-      </div>
-
-      <div class="settings-field" style="display:flex;align-items:center;gap:12px;">
-        <input type="checkbox" id="s-print-receipt" style="width:18px;height:18px;">
-        <label for="s-print-receipt" style="margin:0;cursor:pointer;" data-i18n="print_receipt">Print payment receipt</label>
-        <p class="settings-hint" style="margin:0;">Print a receipt when payment is confirmed.</p>
+      <div class="settings-field">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <input type="checkbox" id="s-print-receipt" style="width:18px;height:18px;flex-shrink:0;">
+          <label for="s-print-receipt" style="margin:0;cursor:pointer;flex:1;" data-i18n="print_receipt">Print payment receipt</label>
+          <select id="s-receipt-printer-type" style="min-width:210px;">
+            <option value="external">External Printer (TCP/Network)</option>
+            <option value="builtin">Built-in Printer (WizarPOS)</option>
+          </select>
+        </div>
+        <p class="settings-hint" style="margin-top:6px;">Print a receipt when payment is confirmed.</p>
       </div>
 
       <div class="settings-field">

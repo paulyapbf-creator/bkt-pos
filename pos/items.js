@@ -503,9 +503,10 @@ function initSettings() {
   const duitnowTerminalInput = document.getElementById('s-duitnow-terminal');
   const walletReloadBtn     = document.getElementById('s-wallet-reload-btn');
   const duitnowProfileHint  = document.getElementById('s-duitnow-profile-hint');
-  const printOrderSlipInput = document.getElementById('s-print-order-slip');
-  const printReceiptInput   = document.getElementById('s-print-receipt');
-  const printerTypeInput = document.getElementById('s-printer-type');
+  const printOrderSlipInput       = document.getElementById('s-print-order-slip');
+  const orderSlipPrinterTypeInput = document.getElementById('s-order-slip-printer-type');
+  const printReceiptInput         = document.getElementById('s-print-receipt');
+  const receiptPrinterTypeInput   = document.getElementById('s-receipt-printer-type');
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
   const relayUrlInput    = document.getElementById('s-relay-url');
@@ -543,9 +544,10 @@ function initSettings() {
   duitnowTerminalInput.value  = settings.duitnowTerminal || '';
   // Profile options are loaded asynchronously; remember selection
   const _savedProfile         = settings.duitnowProfile || '';
-  printOrderSlipInput.checked = settings.printOrderSlip !== false;
-  printReceiptInput.checked   = settings.printReceipt !== false;
-  printerTypeInput.value = settings.printerType    || 'external';
+  printOrderSlipInput.checked       = settings.printOrderSlip !== false;
+  orderSlipPrinterTypeInput.value   = settings.orderSlipPrinterType || settings.printerType || 'external';
+  printReceiptInput.checked         = settings.printReceipt !== false;
+  receiptPrinterTypeInput.value     = settings.receiptPrinterType   || settings.printerType || 'external';
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
   relayUrlInput.value    = settings.relayUrl       || '';
@@ -630,9 +632,10 @@ function initSettings() {
       walletUrl:       walletUrlInput.value.trim(),
       duitnowProfile:  duitnowProfileInput.value.trim(),
       duitnowTerminal: duitnowTerminalInput.value.trim(),
-      printOrderSlip: printOrderSlipInput.checked,
-      printReceipt:   printReceiptInput.checked,
-      printerType:  printerTypeInput.value,
+      printOrderSlip:       printOrderSlipInput.checked,
+      orderSlipPrinterType: orderSlipPrinterTypeInput.value,
+      printReceipt:         printReceiptInput.checked,
+      receiptPrinterType:   receiptPrinterTypeInput.value,
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
       relayUrl:     relayUrlInput.value.trim(),
@@ -672,7 +675,7 @@ function initSettings() {
   // Test print button
   document.getElementById('s-test-print-btn').addEventListener('click', async () => {
     const testMsg = document.getElementById('s-test-msg');
-    const pType = printerTypeInput.value;
+    const pType = receiptPrinterTypeInput.value;
 
     // Save current settings first so the server can read them
     saveSettings(gatherSettings());
