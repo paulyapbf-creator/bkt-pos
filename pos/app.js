@@ -1726,8 +1726,8 @@ async function sendToPrinter(job) {
 function printOrderSlip(table, items, isUpdate) {
   const settings = loadSettings();
 
-  // Try direct thermal print if printer configured
-  if (settings.printerIp) {
+  // Try direct thermal print if printer configured (IP-based or built-in)
+  if (settings.printerIp || settings.printerType === 'builtin') {
     const job = buildOrderSlipJob(table, items, isUpdate);
     sendToPrinter(job).then(ok => {
       if (!ok) {
@@ -1830,8 +1830,8 @@ function printOrderSlipHTML(table, items, isUpdate) {
 function printPaymentReceipt(table, items, bd, method, orderId) {
   const settings = loadSettings();
 
-  // Try direct thermal print if printer configured
-  if (settings.printerIp) {
+  // Try direct thermal print if printer configured (IP-based or built-in)
+  if (settings.printerIp || settings.printerType === 'builtin') {
     const job = buildReceiptJob(table, items, bd, method, orderId);
     sendToPrinter(job).then(ok => {
       if (!ok) {
