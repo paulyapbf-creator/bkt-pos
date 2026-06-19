@@ -1,1 +1,1 @@
-{"version":"1.2.9-debug","notes":"Fix payment settings checkbox alignment — checkboxes now render inline with correct styling"}
+{"version":"1.2.10-debug","notes":"Fix Coherent payment broken by indexM/indexT — update Java bridge to accept 5/6-arg JS calls and pass configurable merchant/terminal index to terminal"}
