@@ -442,22 +442,11 @@ function renderCartPanel() {
   document.getElementById('cp-item-count').textContent =
     hasItems ? `${totalItems()} item${totalItems() !== 1 ? 's' : ''}` : '';
 
-  // Mobile basket bar — always visible, positioned at search bar level
-  const mb = document.getElementById('mobile-basket-bar');
-  if (mb) {
-    mb.classList.remove('hidden');
-    document.getElementById('mobile-basket-count').textContent = totalItems();
-    document.getElementById('mobile-basket-total').textContent = `${getCurrency()} ${total.toFixed(2)}`;
-    mb.classList.toggle('mobile-basket-empty', !hasItems);
-    // Position at search bar level
-    const sw = document.getElementById('search-wrap');
-    if (sw && window.innerWidth <= 640) {
-      const rect = sw.getBoundingClientRect();
-      mb.style.top = rect.top + 'px';
-      mb.style.height = rect.height + 'px';
-      mb.style.display = 'inline-flex';
-      mb.style.alignItems = 'center';
-    }
+  // Inline checkout button (next to search bar)
+  const cb = document.getElementById('checkout-btn');
+  if (cb) {
+    document.getElementById('checkout-count').textContent = totalItems();
+    document.getElementById('checkout-total').textContent = `${getCurrency()} ${total.toFixed(2)}`;
   }
 
   const sendBtn = document.getElementById('send-btn');
@@ -2075,42 +2064,11 @@ async function init() {
   if (mPaxMinus) mPaxMinus.addEventListener('click', () => { if (state.pax > 1) state.pax--; updatePaxDisplay(); });
   if (mPaxPlus)  mPaxPlus.addEventListener('click',  () => { state.pax++; updatePaxDisplay(); });
 
-  // Mobile basket bar — draggable + opens cart sheet on tap
-  const mbar = document.getElementById('mobile-basket-bar');
-  if (mbar) {
-    let dragState = null;
-    const DRAG_THRESHOLD = 8;
-
-    mbar.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      const currentTop = parseInt(mbar.style.top, 10) || mbar.getBoundingClientRect().top;
-      dragState = { startY: touch.clientY, startTop: currentTop, moved: false };
-    }, { passive: true });
-
-    mbar.addEventListener('touchmove', (e) => {
-      if (!dragState) return;
-      const touch = e.touches[0];
-      const deltaY = touch.clientY - dragState.startY;
-      if (Math.abs(deltaY) > DRAG_THRESHOLD) dragState.moved = true;
-      if (!dragState.moved) return;
-      e.preventDefault();
-      const headerH = document.getElementById('header')?.offsetHeight || 56;
-      const barH = mbar.offsetHeight;
-      const minTop = headerH;
-      const maxTop = window.innerHeight - barH - 10;
-      const newTop = Math.max(minTop, Math.min(maxTop, dragState.startTop + deltaY));
-      mbar.style.top = newTop + 'px';
-      mbar.style.transition = 'none';
-    }, { passive: false });
-
-    mbar.addEventListener('touchend', () => {
-      if (!dragState) return;
-      const wasDrag = dragState.moved;
-      dragState = null;
-      mbar.style.transition = '';
-      if (!wasDrag) {
-        document.getElementById('cart-panel').classList.add('mobile-cart-open');
-      }
+  // Inline checkout button — opens cart drawer
+  const checkoutBtn = document.getElementById('checkout-btn');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', () => {
+      document.getElementById('cart-panel').classList.add('mobile-cart-open');
     });
   }
   // Inject mobile back button into cart head (close the sheet)

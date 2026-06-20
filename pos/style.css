@@ -83,10 +83,14 @@ body {
   padding: 8px 10px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #search-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -95,6 +99,33 @@ body {
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s;
+}
+
+/* ── Inline checkout button (next to search) ────────────────────────────── */
+.checkout-btn {
+  display: none; /* shown only on mobile/native-app */
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.checkout-btn:active { opacity: 0.85; }
+.checkout-count {
+  background: rgba(255,255,255,0.25);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  min-width: 20px;
+  text-align: center;
 }
 
 #search-input::placeholder { color: var(--dim); }
@@ -2092,8 +2123,9 @@ button, a, .mli, .table-cell, .modifier-option {
     padding-top: max(14px, env(safe-area-inset-top, 14px));
   }
 
-  /* Mobile basket bar — floating, positioned at search bar level */
-  .mobile-basket-bar { display: inline-flex; right: 10px; bottom: auto; }
+  /* Checkout button visible on tablet/mobile; hide old floating bar */
+  .checkout-btn { display: inline-flex; }
+  .mobile-basket-bar { display: none !important; }
   #menu-list { padding-bottom: 20px !important; }
 
   /* Cart head: compact horizontal */
@@ -3082,7 +3114,8 @@ html.native-app #menu-area { flex: 1; min-height: 0; }
 html.native-app #cart-panel { position: fixed !important; left: 0; right: 0; bottom: 0; top: 0; width: 100% !important; max-width: none !important; min-width: 0 !important; z-index: 250; border-right: none; transform: translateY(100%); transition: transform 0.25s ease; background: var(--bg); }
 html.native-app #cart-panel.mobile-cart-open { transform: translateY(0); }
 html.native-app #cart-panel #cp-head { padding-top: max(14px, env(safe-area-inset-top, 14px)); }
-html.native-app .mobile-basket-bar { display: inline-flex !important; right: 10px; bottom: auto; }
+html.native-app .mobile-basket-bar { display: none !important; }
+html.native-app .checkout-btn { display: inline-flex !important; }
 html.native-app .mobile-table-bar { display: flex; align-items: center; gap: 4px; padding: 4px 6px; background: var(--header); border-bottom: none; }
 html.native-app .mobile-table-bar .table-select-btn { font-size: 13px; padding: 6px 8px; }
 html.native-app .mobile-table-bar .pax-inline { gap: 2px; }
