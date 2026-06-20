@@ -1,1 +1,1 @@
-{"version":"1.2.11-debug","notes":"Fix status bar overlap — WebView now starts below system status bar (time, signal, battery)"}
+{"version":"1.2.12-debug","notes":"Fix status bar overlay — clear LAYOUT_FULLSCREEN flag set by Capacitor StatusBar plugin and set overlaysWebView=false in config"}
