@@ -1,1 +1,1 @@
-{"version":"1.2.10-debug","notes":"Fix Coherent payment broken by indexM/indexT — update Java bridge to accept 5/6-arg JS calls and pass configurable merchant/terminal index to terminal"}
+{"version":"1.2.11-debug","notes":"Fix status bar overlap — WebView now starts below system status bar (time, signal, battery)"}
