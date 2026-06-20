@@ -24,6 +24,7 @@
   <!-- ── Admin tabs ── -->
   <div id="admin-tabs">
     <button class="admin-tab active" data-tab="items">📋 <span data-i18n="items">Items</span></button>
+    <button class="admin-tab" data-tab="ai-import">🤖 AI Import</button>
     <button class="admin-tab" data-tab="users">👥 <span data-i18n="users">Users</span></button>
     <button class="admin-tab" data-tab="settings">⚙️ <span data-i18n="system_settings">System Settings</span></button>
     <button class="admin-tab" data-tab="maintenance">🔧 <span data-i18n="maintenance">Maintenance</span></button>
@@ -55,6 +56,62 @@
   </div>
 
   </div><!-- /panel-items -->
+
+  <!-- ── AI Import panel ── -->
+  <div id="panel-ai-import" class="hidden">
+    <div id="ai-import-wrap" style="max-width:700px;margin:0 auto;padding:20px 16px;">
+      <h2 class="settings-title">🤖 AI Menu Import</h2>
+      <p class="settings-hint">Upload a photo, PDF, CSV or Excel of your menu and AI will extract all items automatically.</p>
+
+      <div class="settings-field">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="file" id="ai-import-file" accept="image/*,.pdf,.csv,.xlsx,.xls,.txt" multiple style="display:none;">
+          <button class="add-btn" id="ai-import-file-btn" style="padding:8px 18px;font-size:13px;">📁 Choose Files</button>
+          <span id="ai-import-file-count" style="font-size:13px;color:var(--muted);"></span>
+          <button class="add-btn" id="ai-import-extract-btn" disabled style="padding:8px 18px;font-size:13px;">Extract Menu</button>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <label>Translate to (English always included):</label>
+        <div id="ai-import-lang-picks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <label class="check-label"><input type="checkbox" value="zh" checked> 中文</label>
+          <label class="check-label"><input type="checkbox" value="ms"> Melayu</label>
+          <label class="check-label"><input type="checkbox" value="th"> ไทย</label>
+          <label class="check-label"><input type="checkbox" value="vi"> Tiếng Việt</label>
+          <label class="check-label"><input type="checkbox" value="km"> ខ្មែរ</label>
+          <label class="check-label"><input type="checkbox" value="id"> Indonesia</label>
+        </div>
+      </div>
+
+      <div id="ai-import-status" style="font-size:13px;min-height:18px;margin-top:4px;display:none;"></div>
+
+      <!-- Preview table -->
+      <div id="ai-import-preview" style="display:none;margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <span id="ai-import-count" style="font-size:14px;font-weight:600;"></span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="ai-import-mode" style="background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius,8px);padding:6px 10px;font-size:13px;">
+              <option value="replace">Replace existing menu</option>
+              <option value="append">Append to existing menu</option>
+            </select>
+            <button class="add-btn" id="ai-import-confirm-btn" style="padding:8px 18px;font-size:13px;">Import to Menu</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius,8px);overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="background:var(--header);">
+              <th style="padding:8px 10px;text-align:left;color:var(--muted);font-weight:600;">#</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--muted);font-weight:600;">Name</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--muted);font-weight:600;">Price</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--muted);font-weight:600;">Category</th>
+            </tr></thead>
+            <tbody id="ai-import-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Users panel ── -->
   <div id="panel-users" class="hidden">
@@ -393,51 +450,6 @@
           </div>
           <div id="diag-status" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
           <pre id="diag-log" style="display:none;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius,8px);font-size:11px;color:#ccc;white-space:pre-wrap;word-break:break-all;max-height:260px;overflow-y:auto;line-height:1.5;margin:0;"></pre>
-        </div>
-      </div>
-
-      <!-- AI Menu Import -->
-      <div class="maint-card" id="ai-import-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">🤖 AI Menu Import</div>
-          <div class="maint-card-desc">Upload a photo, PDF, CSV or Excel of your menu and AI will extract all items automatically.</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="file" id="ai-import-file" accept="image/*,.pdf,.csv,.xlsx,.xls,.txt" multiple style="display:none;">
-            <button class="add-btn" id="ai-import-file-btn" style="padding:8px 14px;font-size:12px;background:#555;">📁 Choose Files</button>
-            <span id="ai-import-file-count" style="font-size:12px;color:var(--muted);"></span>
-            <button class="add-btn" id="ai-import-extract-btn" disabled style="padding:8px 14px;font-size:12px;">Extract Menu</button>
-          </div>
-          <div>
-            <span style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Translate to (English always included):</span>
-            <div id="ai-import-lang-picks" style="display:flex;gap:6px;flex-wrap:wrap;">
-              <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="zh" checked> 中文</label>
-              <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="ms"> Melayu</label>
-              <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="th"> ไทย</label>
-              <label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:4px;background:var(--header);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 10px;cursor:pointer;"><input type="checkbox" value="vi"> Tiếng Việt</label>
-            </div>
-          </div>
-          <div id="ai-import-status" style="font-size:13px;min-height:18px;display:none;"></div>
-          <!-- Preview table -->
-          <div id="ai-import-preview" style="display:none;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
-              <span id="ai-import-count" style="font-size:13px;color:var(--muted);"></span>
-              <div style="display:flex;gap:8px;">
-                <select id="ai-import-mode" style="background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius,8px);padding:4px 8px;font-size:12px;">
-                  <option value="replace">Replace existing menu</option>
-                  <option value="append">Append to existing menu</option>
-                </select>
-                <button class="add-btn" id="ai-import-confirm-btn" style="padding:6px 14px;font-size:12px;">Import to Menu</button>
-              </div>
-            </div>
-            <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius,8px);">
-              <table style="width:100%;border-collapse:collapse;font-size:12px;">
-                <thead><tr style="background:var(--header);"><th style="padding:6px 8px;text-align:left;color:var(--muted);">#</th><th style="padding:6px 8px;text-align:left;color:var(--muted);">Name</th><th style="padding:6px 8px;text-align:left;color:var(--muted);">Price</th><th style="padding:6px 8px;text-align:left;color:var(--muted);">Category</th></tr></thead>
-                <tbody id="ai-import-tbody"></tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
 
