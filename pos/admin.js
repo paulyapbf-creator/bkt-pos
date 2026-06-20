@@ -276,7 +276,7 @@ document.getElementById('save-info-btn').addEventListener('click', async () => {
 });
 
 // POS Access Control — load when detail opens
-const ACCESS_KEYS = ['history', 'orders', 'kitchen', 'reports', 'maintenance'];
+const ACCESS_KEYS = ['history', 'orders', 'kitchen', 'reports', 'maintenance', 'ai-import'];
 
 async function loadAccessSettings(slug) {
   try {

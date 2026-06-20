@@ -970,6 +970,144 @@ function initMaintenance() {
     document.body.style.overflow = 'hidden';
   });
 
+  // ── AI Menu Import ───────────────────────────────────────────────────────
+  const aiCard = document.getElementById('ai-import-card');
+  if (aiCard) {
+    const s = loadSettings();
+    const posAccess = (s && s.posAccess) || {};
+    if (posAccess['ai-import'] === false) {
+      aiCard.style.display = 'none';
+    } else {
+      let aiExtractedItems = [];
+
+      function toBase64ai(file) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const fileInput  = document.getElementById('ai-import-file');
+      const fileBtn    = document.getElementById('ai-import-file-btn');
+      const fileCount  = document.getElementById('ai-import-file-count');
+      const extractBtn = document.getElementById('ai-import-extract-btn');
+      const statusEl   = document.getElementById('ai-import-status');
+      const previewEl  = document.getElementById('ai-import-preview');
+      const countEl    = document.getElementById('ai-import-count');
+      const tbody      = document.getElementById('ai-import-tbody');
+      const confirmBtn = document.getElementById('ai-import-confirm-btn');
+      const modeSelect = document.getElementById('ai-import-mode');
+
+      fileBtn.addEventListener('click', () => fileInput.click());
+
+      fileInput.addEventListener('change', () => {
+        const files = Array.from(fileInput.files);
+        extractBtn.disabled = !files.length;
+        previewEl.style.display = 'none';
+        statusEl.style.display = 'none';
+        aiExtractedItems = [];
+        fileCount.textContent = files.length ? `${files.length} file(s) selected` : '';
+      });
+
+      extractBtn.addEventListener('click', async () => {
+        const files = Array.from(fileInput.files);
+        if (!files.length) return;
+
+        statusEl.textContent = `Extracting ${files.length} file(s) with AI… please wait`;
+        statusEl.style.color = 'var(--muted)';
+        statusEl.style.display = 'block';
+        extractBtn.disabled = true;
+        previewEl.style.display = 'none';
+
+        const langs = [...document.querySelectorAll('#ai-import-lang-picks input:checked')].map(i => i.value);
+
+        try {
+          let body;
+          if (files.length === 1 && !files[0].type.startsWith('image/')) {
+            body = { fileBase64: await toBase64ai(files[0]), contentType: files[0].type || 'application/octet-stream', fileName: files[0].name, langs };
+          } else {
+            const images = [];
+            for (const f of files) images.push(await toBase64ai(f));
+            body = { images, contentType: 'image/jpeg', fileName: 'upload.jpg', langs };
+          }
+
+          const res = await fetch(`${API_BASE}/api/menu-import/extract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            statusEl.textContent = data.error || 'Extraction failed';
+            statusEl.style.color = 'var(--red, #c0392b)';
+          } else {
+            aiExtractedItems = data.items;
+            statusEl.textContent = `Extracted ${data.rawCount} item(s). Review below and click Import.`;
+            statusEl.style.color = '#27ae60';
+            tbody.innerHTML = aiExtractedItems.map((it, i) =>
+              `<tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:5px 8px;color:var(--muted)">${i + 1}</td>
+                <td style="padding:5px 8px">${it.name}</td>
+                <td style="padding:5px 8px">RM ${(it.price || 0).toFixed(2)}</td>
+                <td style="padding:5px 8px;color:var(--muted)">${it.category}</td>
+              </tr>`
+            ).join('');
+            countEl.textContent = `${aiExtractedItems.length} items extracted`;
+            previewEl.style.display = 'block';
+          }
+        } catch (e) {
+          statusEl.textContent = 'Error: ' + e.message;
+          statusEl.style.color = 'var(--red, #c0392b)';
+        }
+        extractBtn.disabled = false;
+      });
+
+      confirmBtn.addEventListener('click', async () => {
+        if (!aiExtractedItems.length) return;
+        const mode = modeSelect.value;
+
+        try {
+          let finalItems = aiExtractedItems;
+          if (mode === 'append') {
+            const r = await fetch(`${API_BASE}/api/menu`);
+            const existing = r.ok ? await r.json() : [];
+            const maxNum = existing.reduce((m, it) => Math.max(m, parseInt((it.id || '').replace(/\D/g, '')) || 0), 0);
+            finalItems = [
+              ...existing,
+              ...aiExtractedItems.map((it, idx) => ({ ...it, id: `mn${String(maxNum + idx + 1).padStart(3, '0')}` })),
+            ];
+          }
+
+          const res = await fetch(`${API_BASE}/api/menu`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalItems),
+          });
+
+          if (res.ok) {
+            items = finalItems;
+            renderItems();
+            statusEl.textContent = `Imported ${aiExtractedItems.length} items successfully!`;
+            statusEl.style.color = '#27ae60';
+            previewEl.style.display = 'none';
+            fileInput.value = '';
+            fileCount.textContent = '';
+            aiExtractedItems = [];
+          } else {
+            const d = await res.json();
+            statusEl.textContent = d.error || 'Import failed';
+            statusEl.style.color = 'var(--red, #c0392b)';
+          }
+        } catch (e) {
+          statusEl.textContent = 'Error: ' + e.message;
+          statusEl.style.color = 'var(--red, #c0392b)';
+        }
+      });
+    }
+  }
+
 }
 
 function showMaintToast(msg) {

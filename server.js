@@ -746,147 +746,111 @@ app.put('/api/admin/tenants/:slug/demo', adminAuth, async (req, res) => {
   res.json(result);
 });
 
+// ─── AI Menu Import — shared extraction helper ────────────────────────────────
+
+async function menuImportExtract(body) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) { const e = new Error('ANTHROPIC_API_KEY not configured in .env'); e.status = 400; throw e; }
+
+  const { fileBase64, images, contentType: ct, fileName, langs: requestedLangs } = body;
+  if (!fileBase64 && (!images || !images.length)) { const e = new Error('No file data received'); e.status = 400; throw e; }
+  const contentType = ct || 'image/png';
+
+  const isImage = contentType.startsWith('image/');
+  const isPdf = contentType === 'application/pdf';
+  const userContent = [];
+
+  if (images && images.length > 0) {
+    images.forEach((imgBase64, i) => {
+      if (images.length > 1) userContent.push({ type: 'text', text: `--- Menu page ${i + 1} of ${images.length} ---` });
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imgBase64 } });
+    });
+  } else if (isImage) {
+    userContent.push({ type: 'image', source: { type: 'base64', media_type: contentType, data: fileBase64 } });
+  } else if (isPdf) {
+    userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileBase64 } });
+  } else {
+    userContent.push({ type: 'text', text: `File content (${fileName}):\n\n${Buffer.from(fileBase64, 'base64').toString('utf8')}` });
+  }
+
+  const multiPage = images && images.length > 1;
+  const langDefs = {
+    zh: { field: 'nameZh', desc: 'Chinese (Simplified) name' },
+    th: { field: 'nameTh', desc: 'Thai name' },
+    vi: { field: 'nameVi', desc: 'Vietnamese name' },
+    ms: { field: 'nameMs', desc: 'Malay name' },
+    km: { field: 'nameKm', desc: 'Khmer (Cambodian) name' },
+    id: { field: 'nameId', desc: 'Indonesian name' },
+  };
+  const langs = (requestedLangs && requestedLangs.length > 0) ? requestedLangs.filter(l => langDefs[l]) : ['zh'];
+  const langFields = langs.map(l => `- ${langDefs[l].field}: ${langDefs[l].desc}`).join('\n');
+  const exampleObj = { name: 'Bak Kut Teh', price: 22.00, category: 'Main Course' };
+  langs.forEach(l => { exampleObj[langDefs[l].field] = l === 'zh' ? '肉骨茶' : 'Bak Kut Teh'; });
+
+  userContent.push({ type: 'text', text:
+    `Extract ALL menu items from ${multiPage ? 'all pages of ' : ''}this ${multiPage ? 'multi-page menu' : 'document'}. For each item, extract:\n- name: English name\n${langFields}\n- price: numeric price (number, not string)\n- category: category/section it belongs to (e.g. "Main Course", "Drinks", "Appetizer", etc.)\n- freeAddonCount: number of free add-ons/sides included with this item (integer, default 0). Look for phrases like "served with X free sides", "includes X free add-ons", "choose X free", "comes with X sides", "with choice of X sides".\n\nIf the source document has a name in a specific language, use it directly. For languages not in the document, translate the item name accurately. Use empty string "" only if translation is truly not possible.\n\nReturn ONLY a valid JSON array of objects. Example format:\n[${JSON.stringify(exampleObj)}]\n\nImportant:\n- Extract EVERY item from ${multiPage ? 'ALL pages' : 'the document'}, don't skip any\n${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicate items that appear on multiple pages\n' : ''}- If price has variants (S/M/L), use the base/smallest price\n- Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Soup", "Dessert", "Beverages", or "General"\n- Return ONLY the JSON array, no other text`
+  });
+
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8192, messages: [{ role: 'user', content: userContent }] }),
+  });
+
+  if (!claudeRes.ok) {
+    const err = await claudeRes.text();
+    const e = new Error(`Claude API error: ${err}`); e.status = 500; throw e;
+  }
+
+  const claudeData = await claudeRes.json();
+  const responseText = claudeData.content[0]?.text || '';
+  const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) { const e = new Error('Could not extract menu items from document'); e.status = 400; throw e; }
+
+  const rawItems = JSON.parse(jsonMatch[0]);
+
+  const categoryMap = {
+    'main course': 'mains', 'main dishes': 'mains', 'main': 'mains', 'mains': 'mains',
+    'rice': 'mains', 'meat': 'mains', 'seafood': 'mains', 'chicken': 'mains', 'pork': 'mains',
+    'add-on': 'addons', 'add-ons': 'addons', 'addon': 'addons', 'addons': 'addons', 'side': 'addons', 'sides': 'addons', 'extras': 'addons',
+    'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables', 'salad': 'vegetables', 'salads': 'vegetables',
+    'noodle': 'noodles', 'noodles': 'noodles', 'pasta': 'noodles', 'mee': 'noodles',
+    'soup': 'soup', 'soups': 'soup', 'broth': 'soup',
+    'dessert': 'dessert', 'desserts': 'dessert', 'sweets': 'dessert', 'sweet': 'dessert', 'cake': 'dessert', 'pastry': 'dessert',
+    'beverage': 'beverages', 'beverages': 'beverages', 'drink': 'beverages', 'drinks': 'beverages',
+  };
+
+  const normalized = rawItems.map((item, idx) => {
+    const rawCat = (item.category || 'General').toLowerCase().trim();
+    const category = categoryMap[rawCat] || 'mains';
+    const entry = {
+      id: `mn${String(idx + 1).padStart(3, '0')}`,
+      name: item.name || '',
+      price: parseFloat(item.price) || 0,
+      category,
+      isPopular: false,
+      isAvailable: true,
+      freeAddonCount: parseInt(item.freeAddonCount) || 0,
+      modifierGroups: [],
+    };
+    langs.forEach(l => { entry[langDefs[l].field] = item[langDefs[l].field] || ''; });
+    return entry;
+  });
+
+  return { items: normalized, rawCount: rawItems.length };
+}
+
 // ─── Admin: AI Menu Import (Claude API) ──────────────────────────────────────
 
 app.post('/api/admin/menu-import/extract', adminAuth, async (req, res) => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured in .env' });
+  try { res.json(await menuImportExtract(req.body)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
 
-  try {
-    // Support both single file and multiple images
-    const { fileBase64, images, contentType: ct, fileName, langs: requestedLangs } = req.body;
-    if (!fileBase64 && (!images || !images.length)) return res.status(400).json({ error: 'No file data received' });
-    const contentType = ct || 'image/png';
-
-    // Build Claude API request
-    const isImage = contentType.startsWith('image/');
-    const isPdf = contentType === 'application/pdf';
-
-    const userContent = [];
-
-    if (images && images.length > 0) {
-      // Multiple camera captures — send all as separate images
-      images.forEach((imgBase64, i) => {
-        if (images.length > 1) userContent.push({ type: 'text', text: `--- Menu page ${i + 1} of ${images.length} ---` });
-        userContent.push({
-          type: 'image',
-          source: { type: 'base64', media_type: 'image/jpeg', data: imgBase64 },
-        });
-      });
-    } else if (isImage) {
-      userContent.push({
-        type: 'image',
-        source: { type: 'base64', media_type: contentType, data: fileBase64 },
-      });
-    } else if (isPdf) {
-      userContent.push({
-        type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data: fileBase64 },
-      });
-    } else {
-      // For text/CSV/Excel — send as text content
-      const textContent = req.body.toString('utf8');
-      userContent.push({ type: 'text', text: `File content (${fileName}):\n\n${textContent}` });
-    }
-
-    const multiPage = images && images.length > 1;
-    const langDefs = {
-      zh: { field: 'nameZh', desc: 'Chinese (Simplified) name' },
-      th: { field: 'nameTh', desc: 'Thai name' },
-      vi: { field: 'nameVi', desc: 'Vietnamese name' },
-      ms: { field: 'nameMs', desc: 'Malay name' },
-      km: { field: 'nameKm', desc: 'Khmer (Cambodian) name' },
-      id: { field: 'nameId', desc: 'Indonesian name' },
-    };
-    const langs = (requestedLangs && requestedLangs.length > 0) ? requestedLangs.filter(l => langDefs[l]) : ['zh'];
-    const langFields = langs.map(l => `- ${langDefs[l].field}: ${langDefs[l].desc}`).join('\n');
-    const exampleObj = { name: 'Bak Kut Teh', price: 22.00, category: 'Main Course' };
-    langs.forEach(l => { exampleObj[langDefs[l].field] = l === 'zh' ? '肉骨茶' : 'Bak Kut Teh'; });
-
-    userContent.push({
-      type: 'text',
-      text: `Extract ALL menu items from ${multiPage ? 'all pages of ' : ''}this ${multiPage ? 'multi-page menu' : 'document'}. For each item, extract:
-- name: English name
-${langFields}
-- price: numeric price (number, not string)
-- category: category/section it belongs to (e.g. "Main Course", "Drinks", "Appetizer", etc.)
-- freeAddonCount: number of free add-ons/sides included with this item (integer, default 0). Look for phrases like "served with X free sides", "includes X free add-ons", "choose X free", "comes with X sides", "with choice of X sides".
-
-If the source document has a name in a specific language, use it directly. For languages not in the document, translate the item name accurately. Use empty string "" only if translation is truly not possible.
-
-Return ONLY a valid JSON array of objects. Example format:
-[${JSON.stringify(exampleObj)}]
-
-Important:
-- Extract EVERY item from ${multiPage ? 'ALL pages' : 'the document'}, don't skip any
-${multiPage ? '- Combine items from all pages into ONE array — do NOT duplicate items that appear on multiple pages\n' : ''}- If price has variants (S/M/L), use the base/smallest price
-- Use these category names: "Main Course", "Add-ons", "Vegetables", "Noodles", "Soup", "Dessert", "Beverages", or "General"
-- Return ONLY the JSON array, no other text`
-    });
-
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8192,
-        messages: [{ role: 'user', content: userContent }],
-      }),
-    });
-
-    if (!claudeRes.ok) {
-      const err = await claudeRes.text();
-      return res.status(500).json({ error: `Claude API error: ${err}` });
-    }
-
-    const claudeData = await claudeRes.json();
-    const responseText = claudeData.content[0]?.text || '';
-
-    // Extract JSON array from response
-    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return res.status(400).json({ error: 'Could not extract menu items from document', raw: responseText });
-
-    const items = JSON.parse(jsonMatch[0]);
-
-    // Map AI category names to POS category IDs
-    const categoryMap = {
-      'main course': 'mains', 'main dishes': 'mains', 'main': 'mains', 'mains': 'mains',
-      'rice': 'mains', 'meat': 'mains', 'seafood': 'mains', 'chicken': 'mains', 'pork': 'mains',
-      'add-on': 'addons', 'add-ons': 'addons', 'addon': 'addons', 'addons': 'addons', 'side': 'addons', 'sides': 'addons', 'extras': 'addons',
-      'vegetable': 'vegetables', 'vegetables': 'vegetables', 'veg': 'vegetables', 'greens': 'vegetables', 'salad': 'vegetables', 'salads': 'vegetables',
-      'noodle': 'noodles', 'noodles': 'noodles', 'pasta': 'noodles', 'mee': 'noodles',
-      'soup': 'soup', 'soups': 'soup', 'broth': 'soup',
-      'dessert': 'dessert', 'desserts': 'dessert', 'sweets': 'dessert', 'sweet': 'dessert', 'cake': 'dessert', 'pastry': 'dessert',
-      'beverage': 'beverages', 'beverages': 'beverages', 'drink': 'beverages', 'drinks': 'beverages',
-    };
-
-    // Normalize items to match our menu format
-    const normalized = items.map((item, idx) => {
-      const rawCat = (item.category || 'General').toLowerCase().trim();
-      const category = categoryMap[rawCat] || 'mains';
-      const entry = {
-        id: `mn${String(idx + 1).padStart(3, '0')}`,
-        name: item.name || '',
-        price: parseFloat(item.price) || 0,
-        category,
-        isPopular: false,
-        isAvailable: true,
-        freeAddonCount: parseInt(item.freeAddonCount) || 0,
-        modifierGroups: [],
-      };
-      // Only include requested language fields
-      langs.forEach(l => { entry[langDefs[l].field] = item[langDefs[l].field] || ''; });
-      return entry;
-    });
-
-    res.json({ items: normalized, rawCount: items.length });
-  } catch (e) {
-    res.status(500).json({ error: `Extraction failed: ${e.message}` });
-  }
+// Tenant-scoped AI menu import extract (no admin key required)
+app.post('/api/menu-import/extract', async (req, res) => {
+  try { res.json(await menuImportExtract(req.body)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 
 // Import extracted items into a tenant's menu
