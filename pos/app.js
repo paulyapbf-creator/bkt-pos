@@ -1671,6 +1671,7 @@ async function sendToPrinter(job, pTypeOverride) {
       const result = window.AndroidPrint.printRaw(escposB64, settings.printerIp, parseInt(settings.printerPort, 10) || 9100);
       if (result === 'ok') return true;
       console.warn('[print] AndroidPrint failed:', result);
+      showToast('Printer: ' + result);
     } catch (e) {
       console.warn('[print] AndroidPrint error:', e);
     }
@@ -1721,10 +1722,7 @@ function printOrderSlip(table, items, isUpdate) {
   if (settings.printerIp || pType === 'builtin') {
     const job = buildOrderSlipJob(table, items, isUpdate);
     sendToPrinter(job, pType).then(ok => {
-      if (!ok) {
-        showToast(t('print_failed'));
-        printOrderSlipHTML(table, items, isUpdate);
-      }
+      if (!ok) showToast(t('print_failed'));
     });
     return;
   }
@@ -1826,10 +1824,7 @@ function printPaymentReceipt(table, items, bd, method, orderId) {
   if (settings.printerIp || pType === 'builtin') {
     const job = buildReceiptJob(table, items, bd, method, orderId);
     sendToPrinter(job, pType).then(ok => {
-      if (!ok) {
-        showToast(t('print_failed'));
-        printPaymentReceiptHTML(table, items, bd, method, orderId);
-      }
+      if (!ok) showToast(t('print_failed'));
     });
     return;
   }
