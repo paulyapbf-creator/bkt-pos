@@ -84,7 +84,7 @@ const LANG_STRINGS = {
     order_sent: '✓ Order sent to kitchen · {table}',
     order_updated: '✓ Order updated · {table}',
     order_send_error: 'Error sending order — please try again',
-    print_failed: '⚠ Thermal print failed — opening browser print',
+    print_failed: '⚠ Thermal print failed',
     allow_popups: '⚠ Allow pop-ups to print order slip',
     search: 'Search…',
 
