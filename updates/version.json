@@ -1,1 +1,1 @@
-{"version":"1.2.12-debug","notes":"Fix status bar overlay — clear LAYOUT_FULLSCREEN flag set by Capacitor StatusBar plugin and set overlaysWebView=false in config"}
+{"version":"1.2.13-debug","notes":"Show Coherent card transaction result screen after payment; auto-print card slip (ESC/POS) with TID/MID/APPR CODE/AC/TVR/AMOUNT/CUSTOMER COPY; Reprint button"}

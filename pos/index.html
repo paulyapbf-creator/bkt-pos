@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=2026061701">
+  <link rel="stylesheet" href="style.css?v=2026071001">
   <script>
     // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
     if (window.Capacitor?.isNativePlatform?.() ||
@@ -171,6 +171,22 @@
     </div>
   </div>
 
+  <!-- ── Card Payment Result modal ── -->
+  <div id="card-result-modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="sheet card-result-sheet">
+      <div class="card-result-header">
+        <div class="card-result-icon">✅</div>
+        <div class="card-result-title">Transaction Successful</div>
+        <div class="card-result-subtitle" id="card-result-subtitle">Approved (00)</div>
+      </div>
+      <div class="sheet-body card-result-body" id="card-result-body"></div>
+      <div class="sheet-footer pay-footer">
+        <button id="card-result-reprint" class="secondary-btn">🖨 Reprint</button>
+        <button id="card-result-ok" class="send-btn">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Login overlay ── -->
   <div id="login-overlay" class="login-overlay hidden">
     <div class="login-box">
@@ -187,6 +203,6 @@
   <script src="i18n.js?v=1.2.13"></script>
   <script src="menuDefaults.js?v=1.2.7"></script>
   <script src="auth.js?v=1.2.7"></script>
-  <script src="app.js?v=1.2.13"></script>
+  <script src="app.js?v=1.2.14"></script>
 </body>
 </html>

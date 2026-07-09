@@ -1266,6 +1266,63 @@ tr.dragging { opacity: 0.3; }
 /* ── Payment modal ──────────────────────────────────────────────────────────── */
 .pay-sheet { max-height: 70vh; }
 
+/* ── Card Payment Result modal ─────────────────────────────────────────────── */
+.card-result-sheet { max-height: 88vh; }
+
+.card-result-header {
+  text-align: center;
+  padding: 20px 20px 12px;
+  background: linear-gradient(135deg, #1a7f3c 0%, #27ae60 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  color: #fff;
+  flex-shrink: 0;
+}
+.card-result-icon   { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+.card-result-title  { font-size: 18px; font-weight: 700; }
+.card-result-subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+.card-result-body { padding: 0 16px 8px; }
+
+.card-slip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.card-slip-table td {
+  padding: 5px 4px;
+  vertical-align: top;
+  border-bottom: 1px solid #f0f0f0;
+}
+.card-slip-table td:first-child {
+  color: #888;
+  white-space: nowrap;
+  padding-right: 12px;
+  width: 45%;
+}
+.card-slip-table td:last-child {
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+.card-slip-section {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  padding: 10px 4px 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 2px;
+}
+.card-slip-amount-row td {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  border-bottom: none;
+  padding-top: 8px;
+}
+
 .pay-footer { justify-content: space-between; gap: 10px; }
 .pay-footer .secondary-btn { flex: unset; padding: 12px 20px; }
 .pay-footer .send-btn      { flex: 1; }

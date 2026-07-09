@@ -1339,13 +1339,10 @@ window.onCoherentResult = function(result) {
   if (approved) {
     if (statusEl) {
       statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#155724;background:#d4edda;padding:10px 14px;border-radius:8px;';
-      statusEl.textContent = 'Payment approved! Confirming…';
+      statusEl.textContent = 'Payment approved!';
     }
-    // Do not check state.payStep — it can be stale after the activity lifecycle
-    // resumes from the Coherent terminal. Guard via state.payingTable instead;
-    // confirmTablePayment() already returns early if the bill is gone.
     if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
-      setTimeout(() => confirmTablePayment(), 300);
+      setTimeout(() => showCardResultScreen(result), 300);
     }
   } else {
     const msg = result && result.Value_2 ? result.Value_2 : 'Payment declined or failed';
@@ -1409,7 +1406,7 @@ function launchCoherentEwallet(amount) {
   showManualConfirm(`Process eWallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
 }
 
-async function confirmTablePayment() {
+async function confirmTablePayment(cardResult) {
   const table = state.payingTable; const method = state.payMethod;
   const bills = loadActiveBills(); const bill = bills[table];
   if (!bill) return;
@@ -1424,6 +1421,109 @@ async function confirmTablePayment() {
   const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Coherent', cewallet: 'Coherent eWallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
+  if ((method === 'terminal' || method === 'cewallet') && cardResult) {
+    printCardSlip(cardResult, bd);
+  }
+}
+
+function showCardResultScreen(result) {
+  const bills = loadActiveBills();
+  const bill = bills[state.payingTable];
+  const bd = bill ? calcBillBreakdown(getActiveBillTotal(bill.items), loadSettings()) : null;
+  state.lastCardResult = result;
+  state.lastCardBd = bd;
+
+  const subtitle = document.getElementById('card-result-subtitle');
+  if (subtitle) subtitle.textContent = `Approved (${result.Value_1 || '00'})${result.Value_2 ? ' · ' + result.Value_2 : ''}`;
+
+  const cur = getCurrency();
+  const amount = bd ? bd.total.toFixed(2) : (result.Value_3 || '');
+  const rows = (label, value) => value ? `<tr><td>${label}</td><td>${value}</td></tr>` : '';
+
+  const body = document.getElementById('card-result-body');
+  if (body) {
+    body.innerHTML = `
+      <div class="card-slip-section">Terminal</div>
+      <table class="card-slip-table">
+        ${rows('TID',        result.Value_14)}
+        ${rows('MID',        result.Value_13)}
+        ${rows('DATE',       result.Value_11)}
+        ${rows('TIME',       result.Value_12)}
+        ${rows('BATCH NO',   result.Value_9)}
+        ${rows('TRACE NO',   result.Value_10)}
+        ${rows('INVOICE NO', result.Value_15)}
+      </table>
+      <div class="card-slip-section">Card</div>
+      <table class="card-slip-table">
+        ${rows('CARD NO',    result.Value_4)}
+        ${rows('APP',        result.Value_5)}
+        ${rows('APPR CODE',  result.Value_7)}
+        ${rows('RESP CODE',  result.Value_19)}
+        ${rows('REF NO',     result.Value_8)}
+        ${rows('AC',         result.Value_17)}
+        ${rows('TVR',        result.Value_18)}
+      </table>
+      <div class="card-slip-section">Amount</div>
+      <table class="card-slip-table">
+        <tr class="card-slip-amount-row"><td>TOTAL</td><td>${cur} ${amount}</td></tr>
+      </table>`;
+  }
+
+  const modal = document.getElementById('card-result-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('card-result-ok').onclick = () => {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    confirmTablePayment(state.lastCardResult);
+  };
+  document.getElementById('card-result-reprint').onclick = () => {
+    printCardSlip(state.lastCardResult, state.lastCardBd);
+  };
+}
+
+function buildCardSlipJob(result, bd) {
+  const settings = loadSettings();
+  const now = new Date();
+  const cur = getCurrency();
+  return {
+    type: 'card_slip',
+    data: {
+      shopName:    settings.shopName    || 'BKT House',
+      shopAddress: settings.shopAddress || '',
+      currency:    cur,
+      tid:      result.Value_14 || '',
+      mid:      result.Value_13 || '',
+      date:     result.Value_11 || now.toLocaleDateString('en-MY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      time:     result.Value_12 || now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+      batch:    result.Value_9  || '',
+      trace:    result.Value_10 || '',
+      invoice:  result.Value_15 || '',
+      cardNo:   result.Value_4  || '',
+      entry:    result.Value_5  || '',
+      app:      result.Value_5  || '',
+      apprCode: result.Value_7  || '',
+      respCode: result.Value_19 || '',
+      refNo:    result.Value_8  || '',
+      ac:       result.Value_17 || '',
+      tvr:      result.Value_18 || '',
+      amount:   bd ? bd.total.toFixed(2) : (result.Value_3 || ''),
+    },
+  };
+}
+
+function printCardSlip(result, bd) {
+  if (!result) return;
+  const settings = loadSettings();
+  const pType = settings.receiptPrinterType || settings.printerType || 'external';
+  if (settings.printerIp || pType === 'builtin') {
+    const job = buildCardSlipJob(result, bd);
+    sendToPrinter(job, pType).then(ok => {
+      if (!ok) showToast('Card slip print failed');
+    });
+  }
 }
 
 // ─── HISTORY MODAL ────────────────────────────────────────────────────────────
