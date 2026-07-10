@@ -22,6 +22,7 @@ document.getElementById('auth-btn').addEventListener('click', async () => {
       document.getElementById('main').classList.remove('hidden');
       loadTenants();
       loadDemoMenuInfo();
+      loadSuperUserStatus();
     } else {
       document.getElementById('auth-err').classList.remove('hidden');
     }
@@ -40,6 +41,7 @@ document.getElementById('auth-btn').addEventListener('click', async () => {
         document.getElementById('main').classList.remove('hidden');
         loadTenants();
         loadDemoMenuInfo();
+        loadSuperUserStatus();
         return;
       }
     } catch {}
@@ -713,6 +715,48 @@ document.querySelectorAll('.detail-period').forEach(btn => {
 });
 
 // ─── Reset tenant data ───────────────────────────────────────────────────────
+
+// ─── Super User Password ──────────────────────────────────────────────────────
+
+async function loadSuperUserStatus() {
+  const el = document.getElementById('superuser-status');
+  if (!el) return;
+  try {
+    const res = await fetch('/api/admin/superuser', { headers: apiHeaders() });
+    const data = await res.json();
+    el.style.color = data.hasPassword ? '#27ae60' : 'var(--muted)';
+    el.textContent = data.hasPassword ? '✓ Super user password is set.' : 'No super user password set yet.';
+  } catch {
+    el.textContent = 'Could not load status.';
+  }
+}
+
+document.getElementById('superuser-set-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('superuser-pw-input').value.trim();
+  const msg = document.getElementById('superuser-msg');
+  msg.textContent = '';
+  if (!pw) { msg.style.color = '#e74c3c'; msg.textContent = 'Enter a password.'; return; }
+  try {
+    const res = await fetch('/api/admin/superuser', {
+      method: 'PUT',
+      headers: apiHeaders(),
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msg.style.color = '#27ae60';
+      msg.textContent = '✓ Super user password updated.';
+      document.getElementById('superuser-pw-input').value = '';
+      loadSuperUserStatus();
+    } else {
+      msg.style.color = '#e74c3c';
+      msg.textContent = data.error || 'Failed to set password.';
+    }
+  } catch {
+    msg.style.color = '#e74c3c';
+    msg.textContent = 'Server error.';
+  }
+});
 
 async function resetTenant(what) {
   if (!currentDetailSlug) return;

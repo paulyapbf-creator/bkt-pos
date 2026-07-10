@@ -517,7 +517,7 @@ wss.on('connection', (ws) => {
 
 app.use('/api', async (req, res, next) => {
   // Skip tenant resolution for tenant-list and admin endpoints
-  if (req.path === '/tenants' || req.path.startsWith('/tenants/') || req.path.startsWith('/admin')) return next();
+  if (req.path === '/tenants' || req.path.startsWith('/tenants/') || req.path.startsWith('/admin') || req.path === '/super-login') return next();
 
   if (!isSaasMode) {
     req.store = store;
@@ -570,6 +570,40 @@ function adminAuth(req, res, next) {
   }
   next();
 }
+
+// ─── Super user password ──────────────────────────────────────────────────────
+
+app.get('/api/admin/superuser', adminAuth, async (req, res) => {
+  if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const doc = await saasDb.collection('config').findOne({ _id: 'superuser' });
+  res.json({ hasPassword: !!(doc && doc.password) });
+});
+
+app.put('/api/admin/superuser', adminAuth, async (req, res) => {
+  if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const { password } = req.body;
+  if (!password || password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+  await saasDb.collection('config').updateOne(
+    { _id: 'superuser' },
+    { $set: { password, updatedAt: new Date() } },
+    { upsert: true }
+  );
+  res.json({ ok: true });
+});
+
+// Public: POS login calls this to validate super user password → redirects to admin
+app.post('/api/super-login', async (req, res) => {
+  if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'Not available' });
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Password required' });
+  try {
+    const doc = await saasDb.collection('config').findOne({ _id: 'superuser' });
+    if (doc && doc.password && doc.password === password) return res.json({ ok: true });
+    return res.status(403).json({ error: 'Invalid password' });
+  } catch {
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
 
 app.get('/api/admin/tenants', adminAuth, async (req, res) => {
   if (!isSaasMode) return res.status(400).json({ error: 'SaaS mode not enabled' });

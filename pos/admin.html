@@ -307,6 +307,18 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
       <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Shared demo menu used by tenants with demo mode enabled. Copy a tenant's menu to populate it.</p>
       <div id="demo-menu-info" style="font-size:13px;color:var(--muted);">Loading...</div>
     </div>
+
+    <div class="card">
+      <h2>Super User Password</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">When this password is entered on the POS login screen, the device will automatically open the Admin panel.</p>
+      <div id="superuser-status" style="font-size:13px;color:var(--muted);margin-bottom:12px;">Checking…</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="password" id="superuser-pw-input" placeholder="New super user password (min 4 chars)"
+          style="flex:1;background:#1a1a2e;color:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-size:13px;">
+        <button class="btn btn-sm" id="superuser-set-btn">Set</button>
+      </div>
+      <div id="superuser-msg" style="font-size:13px;margin-top:8px;min-height:18px;"></div>
+    </div>
   </div>
 
   <script src="admin.js"></script>

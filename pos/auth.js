@@ -184,6 +184,9 @@ function renderLoginUserList() {
     <div class="login-user-list">
       ${userButtons}
     </div>
+    <div style="text-align:center;margin-top:20px;">
+      <button id="super-user-btn" style="background:none;border:none;color:#666;font-size:12px;cursor:pointer;padding:4px 8px;">🔑 Super User</button>
+    </div>
   `;
 
   container.querySelectorAll('.login-user-btn').forEach(btn => {
@@ -192,6 +195,58 @@ function renderLoginUserList() {
       if (user) showPinEntry(user);
     });
   });
+
+  document.getElementById('super-user-btn').addEventListener('click', showSuperUserLogin);
+}
+
+function showSuperUserLogin() {
+  const container = document.getElementById('login-content');
+  if (!container) return;
+
+  container.innerHTML = `
+    <button class="login-back-btn" id="su-back-btn">&larr; Back</button>
+    <div class="login-title">Super User Login</div>
+    <div style="margin:24px 0 0;display:flex;flex-direction:column;gap:12px;">
+      <input type="password" id="su-pw-input" placeholder="Enter super user password"
+        style="background:var(--header,#1a1a2e);color:var(--text,#fff);border:1px solid #444;border-radius:8px;padding:13px 14px;font-size:15px;width:100%;box-sizing:border-box;outline:none;">
+      <button id="su-login-btn"
+        style="background:#C0392B;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">
+        Login
+      </button>
+      <div id="su-error" style="color:#e74c3c;font-size:13px;text-align:center;display:none;">Incorrect password. Try again.</div>
+    </div>
+  `;
+
+  document.getElementById('su-back-btn').addEventListener('click', renderLoginUserList);
+
+  async function doSuperLogin() {
+    const pw = document.getElementById('su-pw-input').value;
+    const errEl = document.getElementById('su-error');
+    errEl.style.display = 'none';
+    if (!pw) return;
+    try {
+      const res = await fetch('/api/super-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      if (res.ok) {
+        window.location.href = window.location.origin + '/admin';
+      } else {
+        errEl.style.display = 'block';
+        document.getElementById('su-pw-input').value = '';
+        document.getElementById('su-pw-input').focus();
+      }
+    } catch {
+      errEl.style.display = 'block';
+    }
+  }
+
+  document.getElementById('su-login-btn').addEventListener('click', doSuperLogin);
+  document.getElementById('su-pw-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSuperLogin();
+  });
+  setTimeout(() => document.getElementById('su-pw-input')?.focus(), 100);
 }
 
 function showPinEntry(user) {
