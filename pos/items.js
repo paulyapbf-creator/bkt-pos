@@ -553,7 +553,7 @@ function initSettings() {
   receiptPrinterTypeInput.value     = settings.receiptPrinterType   || settings.printerType || 'external';
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
-  serverUrlInput.value   = settings.serverUrl      || '';
+  serverUrlInput.value   = settings.serverUrl      || 'https://rgtech.ai';
   relayUrlInput.value    = settings.relayUrl       || '';
   sstEnabledInput.checked = !!settings.sstEnabled;
   sstRateInput.value      = settings.sstRate ?? 6;

@@ -34,7 +34,7 @@ const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 const API_BASE = (function() {
   try {
     const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
-    return (s.serverUrl || '').replace(/\/$/, '');
+    return (s.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
   } catch { return ''; }
 })();
 let posWS = null;

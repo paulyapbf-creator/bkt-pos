@@ -228,10 +228,10 @@ function showSuperUserLogin() {
     let base = '';
     try {
       const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
-      base = (s.serverUrl || '').replace(/\/$/, '');
+      base = (s.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
     } catch {}
     const isLocalhost = !base || base.startsWith('http://localhost');
-    if (!base) base = window.location.origin;
+    if (!base) base = 'https://rgtech.ai';
     try {
       const res = await fetch(`${base}/api/super-login`, {
         method: 'POST',
