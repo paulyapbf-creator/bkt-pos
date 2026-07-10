@@ -814,8 +814,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/paulyapbf-creator/bkt-pos/main/updates/version.json';
-    const GITHUB_APK_URL     = 'https://github.com/paulyapbf-creator/bkt-pos/raw/main/updates/app-release.apk';
+    const cloudBase = (settings.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
@@ -825,12 +824,12 @@ function initMaintenance() {
     const downloadLink = document.getElementById('update-download-link');
     const sizeEl       = document.getElementById('update-size');
 
-    hostInput.value = settings.serverUrl || location.origin;
+    hostInput.value = settings.serverUrl || 'https://rgtech.ai';
 
     function showUpdate(version, notes, apkUrl, sizeMb) {
       const notesTxt = notes ? ` — ${notes}` : '';
       statusEl.style.color = '#27ae60';
-      statusEl.textContent = `✓ Version ${version} available${notesTxt}`;
+      statusEl.textContent = `✓ ${version}${notesTxt}`;
       downloadLink.dataset.apkUrl = apkUrl;
       sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
       downloadWrap.style.display = 'flex';
@@ -843,21 +842,27 @@ function initMaintenance() {
 
     cloudBtn.addEventListener('click', async () => {
       statusEl.style.color = 'var(--muted)';
-      statusEl.textContent = 'Checking GitHub…';
+      statusEl.textContent = 'Checking…';
       downloadWrap.style.display = 'none';
       try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), 10000);
-        const res  = await fetch(GITHUB_VERSION_URL + '?t=' + Date.now(), { signal: ctrl.signal });
+        const res  = await fetch(`${cloudBase}/api/app-update/info?t=` + Date.now(), { signal: ctrl.signal });
         clearTimeout(tid);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        showUpdate(data.version, data.notes, GITHUB_APK_URL, null);
+        if (!data.available) {
+          statusEl.style.color = 'var(--muted)';
+          statusEl.textContent = 'No update available';
+          return;
+        }
+        const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
+        showUpdate(data.version, data.notes, `${cloudBase}/api/app-update/apk`, mb);
       } catch (err) {
         statusEl.style.color = '#e74c3c';
         statusEl.textContent = err.name === 'AbortError'
-          ? '✗ Timed out — check internet connection'
-          : '✗ Could not reach GitHub';
+          ? '✗ Timed out'
+          : '✗ Cannot reach cloud server';
       }
     });
 

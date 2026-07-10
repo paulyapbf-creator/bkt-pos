@@ -422,17 +422,19 @@
       <div class="maint-card" id="app-update-card">
         <div class="maint-card-info">
           <div class="maint-card-title">📲 App Update</div>
-          <div class="maint-card-desc">Download and install the latest Android APK from the cloud (GitHub) or from the local POS server over TCP/IP.</div>
+          <div class="maint-card-desc">Check and download the latest Android APK from the cloud server or a local POS host.</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
-          <button id="update-cloud-btn" class="add-btn" style="padding:9px 14px;font-size:13px;background:#2980b9;white-space:nowrap;">☁️ Check Cloud (GitHub)</button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="update-cloud-btn" class="add-btn" style="padding:8px 14px;font-size:13px;background:#2980b9;white-space:nowrap;">☁️ Check Cloud</button>
+            <div id="update-status" style="flex:1;font-size:13px;color:var(--muted);"></div>
+          </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:11px;color:var(--muted);white-space:nowrap;">or local host:</span>
             <input type="text" id="update-host-input" placeholder="http://192.168.1.100:3000"
               style="flex:1;background:var(--header);color:var(--text);border:1px solid var(--border);border-radius:var(--radius,8px);padding:8px 10px;font-size:13px;">
             <button id="update-check-btn" class="add-btn" style="padding:8px 14px;font-size:12px;background:#555;white-space:nowrap;">Check</button>
           </div>
-          <div id="update-status" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
           <div id="update-download-wrap" style="display:none;align-items:center;gap:10px;">
             <button id="update-download-link"
               class="add-btn" style="padding:8px 18px;font-size:13px;">
