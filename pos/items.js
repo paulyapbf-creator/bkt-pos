@@ -811,14 +811,41 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
+    const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/paulyapbf-creator/bkt-pos/main/updates/version.json';
+    const GITHUB_APK_URL     = 'https://github.com/paulyapbf-creator/bkt-pos/raw/main/updates/app-release.apk';
+
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
+    const cloudBtn     = document.getElementById('update-cloud-btn');
     const statusEl     = document.getElementById('update-status');
     const downloadWrap = document.getElementById('update-download-wrap');
     const downloadLink = document.getElementById('update-download-link');
     const sizeEl       = document.getElementById('update-size');
 
     hostInput.value = location.origin;
+
+    function showUpdate(version, notes, apkUrl, sizeMb) {
+      const notesTxt = notes ? ` — ${notes}` : '';
+      statusEl.style.color = '#27ae60';
+      statusEl.textContent = `✓ Version ${version} available${notesTxt}`;
+      downloadLink.href = apkUrl;
+      sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
+      downloadWrap.style.display = 'flex';
+    }
+
+    cloudBtn.addEventListener('click', async () => {
+      statusEl.style.color = 'var(--muted)';
+      statusEl.textContent = 'Checking GitHub…';
+      downloadWrap.style.display = 'none';
+      try {
+        const res  = await fetch(GITHUB_VERSION_URL + '?t=' + Date.now());
+        const data = await res.json();
+        showUpdate(data.version, data.notes, GITHUB_APK_URL, null);
+      } catch {
+        statusEl.style.color = '#e74c3c';
+        statusEl.textContent = '✗ Could not reach GitHub';
+      }
+    });
 
     checkBtn.addEventListener('click', async () => {
       const host = hostInput.value.trim().replace(/\/$/, '');
@@ -830,15 +857,12 @@ function initMaintenance() {
         const res  = await fetch(`${host}/api/app-update/info`);
         const data = await res.json();
         if (!data.available) {
+          statusEl.style.color = 'var(--muted)';
           statusEl.textContent = 'No APK available on this host.';
           return;
         }
         const mb = (data.size / 1024 / 1024).toFixed(1);
-        const notes = data.notes ? ` — ${data.notes}` : '';
-        statusEl.textContent = `Version ${data.version} available${notes}`;
-        downloadLink.href = `${host}/api/app-update/apk`;
-        sizeEl.textContent = `${mb} MB`;
-        downloadWrap.style.display = 'flex';
+        showUpdate(data.version, data.notes, `${host}/api/app-update/apk`, mb);
       } catch {
         statusEl.style.color = '#e74c3c';
         statusEl.textContent = '✗ Could not reach host';
