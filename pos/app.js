@@ -29,7 +29,14 @@ const ACTIVE_BILLS_KEY = 'bkt_active_bills';
 
 // ─── API + WebSocket CONFIG ──────────────────────────────────────────────────
 
-const API_BASE = '';
+// In Capacitor native app, relative URLs go to http://localhost (no API there).
+// Use serverUrl from settings when available so API calls reach the real server.
+const API_BASE = (function() {
+  try {
+    const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    return (s.serverUrl || '').replace(/\/$/, '');
+  } catch { return ''; }
+})();
 let posWS = null;
 let billsCache = {};  // local cache updated by API responses + WebSocket messages
 
@@ -2103,10 +2110,10 @@ async function init() {
   }
   applySessionToUI(session);
 
-  // ── Step 1: Load menu — from API if tenant link, else localStorage cache ──
-  const isTenantLink = !!urlParams.get('store');
+  // ── Step 1: Load menu — from API if tenant link or tenant session, else localStorage cache ──
+  const isTenantLink = !!urlParams.get('store') || !!getTenantSession();
   if (isTenantLink) {
-    // Tenant link: always load fresh from API, don't trust localStorage
+    // Tenant link or super-user selected tenant: always load fresh from API
     menuItems = [...MENU_ITEMS]; // fallback until API responds
   } else {
     try {

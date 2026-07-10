@@ -300,6 +300,12 @@ function showTenantSelectScreen(tenants, base) {
         if (res.ok) {
           const tenant = await res.json();
           setTenantSession(tenant);
+          // Clear cached menu/settings so the new tenant's data loads fresh after login
+          localStorage.removeItem('bkt_menu_items');
+          localStorage.removeItem('bkt_settings');
+          localStorage.removeItem('bkt_free_addon_counts');
+          localStorage.removeItem('bkt_active_bills');
+          localStorage.removeItem('bkt_order_history');
           // Load users for this tenant using absolute URL so it works in native app
           try {
             const ur = await fetch(`${base}/api/users`);

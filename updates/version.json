@@ -1,1 +1,1 @@
-{"version":"1.2.19-debug","notes":"Fix cloud APK check: add fetch timeout, better error messages, open download in system browser"}
+{"version":"1.2.20-debug","notes":"Fix tenant item mismatch: clear cache on tenant switch, load fresh menu from API for tenant sessions, use serverUrl as API_BASE in native app"}
