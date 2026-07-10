@@ -224,14 +224,21 @@ function showSuperUserLogin() {
     const errEl = document.getElementById('su-error');
     errEl.style.display = 'none';
     if (!pw) return;
+    // Resolve server base URL: prefer stored setting, fallback to page origin
+    let base = '';
     try {
-      const res = await fetch('/api/super-login', {
+      const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+      base = (s.serverUrl || '').replace(/\/$/, '');
+    } catch {}
+    if (!base) base = window.location.origin;
+    try {
+      const res = await fetch(`${base}/api/super-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pw }),
       });
       if (res.ok) {
-        window.location.href = window.location.origin + '/admin';
+        window.location.href = `${base}/admin`;
       } else {
         errEl.style.display = 'block';
         document.getElementById('su-pw-input').value = '';

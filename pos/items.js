@@ -511,6 +511,7 @@ function initSettings() {
   const receiptPrinterTypeInput   = document.getElementById('s-receipt-printer-type');
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
+  const serverUrlInput   = document.getElementById('s-server-url');
   const relayUrlInput    = document.getElementById('s-relay-url');
   const sstEnabledInput  = document.getElementById('s-sst-enabled');
   const sstRateInput     = document.getElementById('s-sst-rate');
@@ -552,6 +553,7 @@ function initSettings() {
   receiptPrinterTypeInput.value     = settings.receiptPrinterType   || settings.printerType || 'external';
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
+  serverUrlInput.value   = settings.serverUrl      || '';
   relayUrlInput.value    = settings.relayUrl       || '';
   sstEnabledInput.checked = !!settings.sstEnabled;
   sstRateInput.value      = settings.sstRate ?? 6;
@@ -640,6 +642,7 @@ function initSettings() {
       receiptPrinterType:   receiptPrinterTypeInput.value,
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
+      serverUrl:    serverUrlInput.value.trim().replace(/\/$/, ''),
       relayUrl:     relayUrlInput.value.trim(),
       sstEnabled:   sstEnabledInput.checked,
       sstRate:      parseFloat(sstRateInput.value) || 6,
@@ -822,7 +825,7 @@ function initMaintenance() {
     const downloadLink = document.getElementById('update-download-link');
     const sizeEl       = document.getElementById('update-size');
 
-    hostInput.value = location.origin;
+    hostInput.value = settings.serverUrl || location.origin;
 
     function showUpdate(version, notes, apkUrl, sizeMb) {
       const notesTxt = notes ? ` — ${notes}` : '';
