@@ -1,1 +1,1 @@
-{"version":"1.2.16-debug","notes":"Fix super user admin redirect — add Server URL field in System Settings; super login uses stored server URL for API call and admin navigation"}
+{"version":"1.2.17-debug","notes":"Super user login shows tenant selection screen instead of admin redirect; tap store to switch tenant and proceed to user PIN login"}

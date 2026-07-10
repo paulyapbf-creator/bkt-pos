@@ -238,7 +238,8 @@ function showSuperUserLogin() {
         body: JSON.stringify({ password: pw }),
       });
       if (res.ok) {
-        window.location.href = `${base}/admin`;
+        const data = await res.json();
+        showTenantSelectScreen(data.tenants || [], base);
       } else {
         errEl.style.display = 'block';
         document.getElementById('su-pw-input').value = '';
@@ -254,6 +255,59 @@ function showSuperUserLogin() {
     if (e.key === 'Enter') doSuperLogin();
   });
   setTimeout(() => document.getElementById('su-pw-input')?.focus(), 100);
+}
+
+function showTenantSelectScreen(tenants, base) {
+  const container = document.getElementById('login-content');
+  if (!container) return;
+
+  const tenantBtns = tenants.length > 0
+    ? tenants.map(t => `
+        <button class="login-user-btn" data-slug="${t.slug}">
+          <span class="login-user-icon">${(t.name || t.slug).charAt(0).toUpperCase()}</span>
+          <span class="login-user-name">${t.name || t.slug}</span>
+          ${t.address ? `<span class="login-role-badge role-super" style="font-size:10px;max-width:90px;overflow:hidden;text-overflow:ellipsis;">${t.address}</span>` : ''}
+        </button>`)
+      .join('')
+    : '<p style="text-align:center;color:#aaa;font-size:14px;padding:20px 0;">No active tenants found.</p>';
+
+  container.innerHTML = `
+    <button class="login-back-btn" id="su-tenant-back">&larr; Back</button>
+    <div class="login-title">Select Store</div>
+    <div class="login-user-list">${tenantBtns}</div>
+  `;
+
+  document.getElementById('su-tenant-back').addEventListener('click', renderLoginUserList);
+
+  container.querySelectorAll('.login-user-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const slug = btn.dataset.slug;
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      try {
+        const res = await fetch(`${base}/api/tenants/select`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug }),
+        });
+        if (res.ok) {
+          const tenant = await res.json();
+          setTenantSession(tenant);
+          // Load users for this tenant using absolute URL so it works in native app
+          try {
+            const ur = await fetch(`${base}/api/users`);
+            _loginUsers = ur.ok ? (await ur.json()) : [];
+          } catch { _loginUsers = []; }
+          if (!_loginUsers.length) _loginUsers = DEFAULT_USERS;
+          renderLoginUserList();
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        console.warn('Tenant select failed:', e);
+      }
+    });
+  });
 }
 
 function showPinEntry(user) {

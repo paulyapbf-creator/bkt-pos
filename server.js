@@ -591,14 +591,19 @@ app.put('/api/admin/superuser', adminAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Public: POS login calls this to validate super user password → redirects to admin
+// Public: POS login calls this to validate super user password → returns tenant list
 app.post('/api/super-login', async (req, res) => {
   if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'Not available' });
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'Password required' });
   try {
     const doc = await saasDb.collection('config').findOne({ _id: 'superuser' });
-    if (doc && doc.password && doc.password === password) return res.json({ ok: true });
+    if (doc && doc.password && doc.password === password) {
+      const tenants = await saasDb.collection('tenants')
+        .find({ status: 'active' }, { projection: { slug: 1, name: 1, address: 1 } })
+        .toArray();
+      return res.json({ ok: true, tenants });
+    }
     return res.status(403).json({ error: 'Invalid password' });
   } catch {
     return res.status(500).json({ error: 'Server error' });
