@@ -1,1 +1,1 @@
-{"version":"1.2.13-debug","notes":"Show Coherent card transaction result screen after payment; auto-print card slip (ESC/POS) with TID/MID/APPR CODE/AC/TVR/AMOUNT/CUSTOMER COPY; Reprint button"}
+{"version":"1.2.14-debug","notes":"Super user password login — tap 🔑 Super User on login screen to open admin panel; cloud update button in Maintenance"}
