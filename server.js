@@ -517,7 +517,7 @@ wss.on('connection', (ws) => {
 
 app.use('/api', async (req, res, next) => {
   // Skip tenant resolution for tenant-list and admin endpoints
-  if (req.path === '/tenants' || req.path.startsWith('/tenants/') || req.path.startsWith('/admin') || req.path === '/super-login') return next();
+  if (req.path === '/tenants' || req.path.startsWith('/tenants/') || req.path.startsWith('/admin') || req.path === '/super-login' || req.path.startsWith('/app-update')) return next();
 
   if (!isSaasMode) {
     req.store = store;
