@@ -1,1 +1,1 @@
-{"version":"1.2.17-debug","notes":"Super user login shows tenant selection screen instead of admin redirect; tap store to switch tenant and proceed to user PIN login"}
+{"version":"1.2.18-debug","notes":"Fix super user login error message — distinguish network error (Server URL not set) from wrong password"}

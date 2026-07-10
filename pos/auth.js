@@ -213,7 +213,7 @@ function showSuperUserLogin() {
         style="background:#C0392B;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">
         Login
       </button>
-      <div id="su-error" style="color:#e74c3c;font-size:13px;text-align:center;display:none;">Incorrect password. Try again.</div>
+      <div id="su-error" style="color:#e74c3c;font-size:13px;text-align:center;display:none;"></div>
     </div>
   `;
 
@@ -230,6 +230,7 @@ function showSuperUserLogin() {
       const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
       base = (s.serverUrl || '').replace(/\/$/, '');
     } catch {}
+    const isLocalhost = !base || base.startsWith('http://localhost');
     if (!base) base = window.location.origin;
     try {
       const res = await fetch(`${base}/api/super-login`, {
@@ -241,11 +242,17 @@ function showSuperUserLogin() {
         const data = await res.json();
         showTenantSelectScreen(data.tenants || [], base);
       } else {
+        errEl.textContent = 'Incorrect password. Try again.';
         errEl.style.display = 'block';
         document.getElementById('su-pw-input').value = '';
         document.getElementById('su-pw-input').focus();
       }
     } catch {
+      if (isLocalhost) {
+        errEl.textContent = 'Server not reachable. Set Server URL in Setup \u2192 System Settings first.';
+      } else {
+        errEl.textContent = 'Cannot reach server. Check your connection.';
+      }
       errEl.style.display = 'block';
     }
   }
