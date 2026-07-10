@@ -831,22 +831,33 @@ function initMaintenance() {
       const notesTxt = notes ? ` — ${notes}` : '';
       statusEl.style.color = '#27ae60';
       statusEl.textContent = `✓ Version ${version} available${notesTxt}`;
-      downloadLink.href = apkUrl;
+      downloadLink.dataset.apkUrl = apkUrl;
       sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
       downloadWrap.style.display = 'flex';
     }
+
+    downloadLink.addEventListener('click', () => {
+      const url = downloadLink.dataset.apkUrl;
+      if (url) window.open(url, '_system');
+    });
 
     cloudBtn.addEventListener('click', async () => {
       statusEl.style.color = 'var(--muted)';
       statusEl.textContent = 'Checking GitHub…';
       downloadWrap.style.display = 'none';
       try {
-        const res  = await fetch(GITHUB_VERSION_URL + '?t=' + Date.now());
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 10000);
+        const res  = await fetch(GITHUB_VERSION_URL + '?t=' + Date.now(), { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         showUpdate(data.version, data.notes, GITHUB_APK_URL, null);
-      } catch {
+      } catch (err) {
         statusEl.style.color = '#e74c3c';
-        statusEl.textContent = '✗ Could not reach GitHub';
+        statusEl.textContent = err.name === 'AbortError'
+          ? '✗ Timed out — check internet connection'
+          : '✗ Could not reach GitHub';
       }
     });
 

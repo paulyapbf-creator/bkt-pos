@@ -1,1 +1,1 @@
-{"version":"1.2.18-debug","notes":"Fix super user login error message — distinguish network error (Server URL not set) from wrong password"}
+{"version":"1.2.19-debug","notes":"Fix cloud APK check: add fetch timeout, better error messages, open download in system browser"}

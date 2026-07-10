@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Maintenance — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=1.2.7">
+  <link rel="stylesheet" href="style.css?v=1.2.18">
   <script>if(sessionStorage.getItem('bkt_app_mode'))document.documentElement.classList.add('native-app');</script>
 </head>
 <body class="admin-page">
@@ -434,10 +434,10 @@
           </div>
           <div id="update-status" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
           <div id="update-download-wrap" style="display:none;align-items:center;gap:10px;">
-            <a id="update-download-link" href="#" target="_blank"
-              class="add-btn" style="display:inline-block;padding:8px 18px;font-size:13px;text-decoration:none;">
+            <button id="update-download-link"
+              class="add-btn" style="padding:8px 18px;font-size:13px;">
               &#x1F4E5; Download APK
-            </a>
+            </button>
             <span id="update-size" style="font-size:12px;color:var(--muted);"></span>
           </div>
         </div>
@@ -606,8 +606,8 @@
 
   <script src="i18n.js?v=1.2.7"></script>
   <script src="menuDefaults.js?v=1.2.7"></script>
-  <script src="auth.js?v=1.2.14"></script>
-  <script src="items.js?v=1.2.14"></script>
+  <script src="auth.js?v=1.2.18"></script>
+  <script src="items.js?v=1.2.18"></script>
   <script>
     (function() {
       const lc = document.getElementById('header-lang');
