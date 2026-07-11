@@ -823,7 +823,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   try {
-    const APP_VERSION = '1.2.31-debug';
+    const APP_VERSION = '1.2.32-debug';
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
@@ -835,7 +835,16 @@ function initMaintenance() {
     const currentVerEl = document.getElementById('update-current-ver');
 
     if (hostInput) hostInput.value = settings.serverUrl || 'https://rgtech.ai';
-    if (currentVerEl) currentVerEl.textContent = `Installed: ${APP_VERSION}`;
+
+    // Show installed version; append server version once fetched
+    function updateVerLine(serverVer) {
+      if (!currentVerEl) return;
+      currentVerEl.textContent = serverVer
+        ? `App: ${APP_VERSION}  |  Server: ${serverVer}`
+        : `App: ${APP_VERSION}`;
+    }
+    updateVerLine(null);
+    fetch(`${API_BASE}/api/version`).then(r => r.json()).then(d => updateVerLine(d.version)).catch(() => {});
 
     function showUpdate(version, notes, apkUrl, sizeMb) {
       if (!statusEl) return;

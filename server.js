@@ -1,6 +1,6 @@
 'use strict';
 
-const BUILD_VERSION = '1.1.0-build.20260414';
+const BUILD_VERSION = '1.2.31-build.20260712';
 
 require('dotenv').config();
 
