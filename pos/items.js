@@ -814,6 +814,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
+    const APP_VERSION = '1.2.24-debug';
     const cloudBase = (settings.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
 
     const hostInput    = document.getElementById('update-host-input');
@@ -823,16 +824,20 @@ function initMaintenance() {
     const downloadWrap = document.getElementById('update-download-wrap');
     const downloadLink = document.getElementById('update-download-link');
     const sizeEl       = document.getElementById('update-size');
+    const currentVerEl = document.getElementById('update-current-ver');
 
     hostInput.value = settings.serverUrl || 'https://rgtech.ai';
+    if (currentVerEl) currentVerEl.textContent = `Installed: ${APP_VERSION}`;
 
     function showUpdate(version, notes, apkUrl, sizeMb) {
-      const notesTxt = notes ? ` — ${notes}` : '';
-      statusEl.style.color = '#27ae60';
-      statusEl.textContent = `✓ ${version}${notesTxt}`;
+      const isLatest = version === APP_VERSION;
+      statusEl.style.color = isLatest ? '#27ae60' : '#e67e22';
+      statusEl.textContent = isLatest
+        ? `✓ Already up to date (${version})`
+        : `Update available: ${version}${notes ? ' — ' + notes : ''}`;
       downloadLink.dataset.apkUrl = apkUrl;
       sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
-      downloadWrap.style.display = 'flex';
+      downloadWrap.style.display = isLatest ? 'none' : 'flex';
     }
 
     downloadLink.addEventListener('click', () => {

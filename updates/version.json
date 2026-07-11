@@ -1,1 +1,1 @@
-{"version":"1.2.24-debug","notes":"Fix login + Check Cloud: all API calls use absolute rgtech.ai URL; tenant passed as query param; fix Check button width"}
+{"version":"1.2.25-debug","notes":"Show installed version on App Update screen; compare with cloud version to show if update is available"}
