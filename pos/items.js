@@ -814,7 +814,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION = '1.2.24-debug';
+    const APP_VERSION = '1.2.26-debug';
     const cloudBase = (settings.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
 
     const hostInput    = document.getElementById('update-host-input');

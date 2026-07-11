@@ -1,1 +1,1 @@
-{"version":"1.2.25-debug","notes":"Show installed version on App Update screen; compare with cloud version to show if update is available"}
+{"version":"1.2.26-debug","notes":"Sync APP_VERSION constant with release version so Check Cloud correctly shows up to date"}
