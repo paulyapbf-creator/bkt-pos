@@ -847,7 +847,9 @@ function initMaintenance() {
       try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), 10000);
-        const res  = await fetch(`${cloudBase}/api/app-update/info?t=` + Date.now(), { signal: ctrl.signal });
+        const tenantSess = getTenantSession ? getTenantSession() : null;
+        const tenantQ = tenantSess && tenantSess.slug ? `&tenant=${tenantSess.slug}` : '';
+        const res  = await fetch(`${cloudBase}/api/app-update/info?t=${Date.now()}${tenantQ}`, { signal: ctrl.signal });
         clearTimeout(tid);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();

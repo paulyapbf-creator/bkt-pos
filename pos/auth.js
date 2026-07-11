@@ -78,13 +78,23 @@ function isSuper() {
   return s && s.role === 'super';
 }
 
+// ─── Server base URL ─────────────────────────────────────────────────────────
+
+function getServerBase() {
+  try {
+    const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    return (s.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
+  } catch { return 'https://rgtech.ai'; }
+}
+
 // ─── Fetch users from server ─────────────────────────────────────────────────
 
 const DEFAULT_USERS = [{ id: 'user_default', name: 'Admin', pin: '1234', role: 'super' }];
 
-async function loadLoginUsers() {
+async function loadLoginUsers(base) {
+  const b = base || getServerBase();
   try {
-    const res = await fetch('/api/users');
+    const res = await fetch(`${b}/api/users`);
     if (res.ok) {
       const users = await res.json();
       if (users && users.length > 0) return users;
@@ -107,17 +117,18 @@ async function showLoginOverlay(onSuccess) {
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 
+  const base = getServerBase();
+
   // SaaS mode: resolve tenant from URL ?store= param
   const urlParams = new URLSearchParams(location.search);
   const storeParam = urlParams.get('store');
   if (urlParams.get('fresh')) {
-    // Admin opened this link — clear old session to switch tenant cleanly
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem(TENANT_SESSION_KEY);
   }
   if (storeParam) {
     try {
-      const res = await fetch('/api/tenants/select', {
+      const res = await fetch(`${base}/api/tenants/select`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug: storeParam }),
@@ -125,7 +136,7 @@ async function showLoginOverlay(onSuccess) {
       if (res.ok) {
         const tenant = await res.json();
         setTenantSession(tenant);
-        _loginUsers = await loadLoginUsers();
+        _loginUsers = await loadLoginUsers(base);
         renderLoginUserList();
         return;
       }
@@ -135,21 +146,20 @@ async function showLoginOverlay(onSuccess) {
   // Check if tenant already set in session (returning user)
   const existingTenant = getTenantSession();
   if (existingTenant && existingTenant.slug) {
-    // Re-select to refresh cookie
     try {
-      await fetch('/api/tenants/select', {
+      await fetch(`${base}/api/tenants/select`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug: existingTenant.slug }),
       });
     } catch {}
-    _loginUsers = await loadLoginUsers();
+    _loginUsers = await loadLoginUsers(base);
     renderLoginUserList();
     return;
   }
 
   // Single-tenant mode: go straight to user list
-  _loginUsers = await loadLoginUsers();
+  _loginUsers = await loadLoginUsers(base);
   renderLoginUserList();
 }
 
@@ -225,13 +235,8 @@ function showSuperUserLogin() {
     errEl.style.display = 'none';
     if (!pw) return;
     // Resolve server base URL: prefer stored setting, fallback to page origin
-    let base = '';
-    try {
-      const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
-      base = (s.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
-    } catch {}
-    const isLocalhost = !base || base.startsWith('http://localhost');
-    if (!base) base = 'https://rgtech.ai';
+    const base = getServerBase();
+    const isLocalhost = base.startsWith('http://localhost');
     try {
       const res = await fetch(`${base}/api/super-login`, {
         method: 'POST',
