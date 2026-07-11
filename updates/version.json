@@ -1,1 +1,1 @@
-{"version":"1.2.34-debug","notes":"Fix Check Cloud: restore App Update inside initMaintenance, remove broken initAppUpdate call"}
+{"version":"1.2.35-debug","notes":"Fix Check Cloud: rewrite App Update block with arrow functions and explicit braces, no function-in-try"}
