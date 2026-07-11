@@ -486,6 +486,7 @@ function init() {
 
   // ── Maintenance ───────────────────────────────────────────────────────────
   initMaintenance();
+  initAppUpdate();
   initAiImport();
 
   // ── User Management (super only) ────────────────────────────────────────
@@ -786,9 +787,9 @@ function initMaintenance() {
     document.body.style.overflow = '';
   }
 
-  cancelBtn.addEventListener('click', closeConfirm);
-  closeBtn.addEventListener('click',  closeConfirm);
-  modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
+  if (cancelBtn) cancelBtn.addEventListener('click', closeConfirm);
+  if (closeBtn)  closeBtn.addEventListener('click',  closeConfirm);
+  if (modal)     modal.addEventListener('click', e => { if (e.target === modal) closeConfirm(); });
 
   // ── Network Info ──────────────────────────────────────────────────────────
   {
@@ -804,7 +805,7 @@ function initMaintenance() {
   }
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────
-  document.getElementById('maint-sync-btn').addEventListener('click', async () => {
+  document.getElementById('maint-sync-btn')?.addEventListener('click', async () => {
     const msg = document.getElementById('maint-sync-msg');
     msg.textContent = 'Syncing...';
     try {
@@ -821,101 +822,105 @@ function initMaintenance() {
     setTimeout(() => { msg.textContent = ''; }, 5000);
   });
 
-  // ── App Update ────────────────────────────────────────────────────────────
-  try {
-    const APP_VERSION = '1.2.32-debug';
+}
 
-    const hostInput    = document.getElementById('update-host-input');
-    const checkBtn     = document.getElementById('update-check-btn');
-    const cloudBtn     = document.getElementById('update-cloud-btn');
-    const statusEl     = document.getElementById('update-status');
-    const downloadWrap = document.getElementById('update-download-wrap');
-    const downloadLink = document.getElementById('update-download-link');
-    const sizeEl       = document.getElementById('update-size');
-    const currentVerEl = document.getElementById('update-current-ver');
+function initAppUpdate() {
+  const APP_VERSION  = '1.2.33-debug';
+  const hostInput    = document.getElementById('update-host-input');
+  const checkBtn     = document.getElementById('update-check-btn');
+  const cloudBtn     = document.getElementById('update-cloud-btn');
+  const statusEl     = document.getElementById('update-status');
+  const downloadWrap = document.getElementById('update-download-wrap');
+  const downloadLink = document.getElementById('update-download-link');
+  const sizeEl       = document.getElementById('update-size');
+  const currentVerEl = document.getElementById('update-current-ver');
 
-    if (hostInput) hostInput.value = settings.serverUrl || 'https://rgtech.ai';
+  if (!cloudBtn) return; // nothing to do if button not in DOM
 
-    // Show installed version; append server version once fetched
-    function updateVerLine(serverVer) {
-      if (!currentVerEl) return;
-      currentVerEl.textContent = serverVer
-        ? `App: ${APP_VERSION}  |  Server: ${serverVer}`
-        : `App: ${APP_VERSION}`;
-    }
-    updateVerLine(null);
-    fetch(`${API_BASE}/api/version`).then(r => r.json()).then(d => updateVerLine(d.version)).catch(() => {});
+  if (hostInput) hostInput.value = (function() {
+    try { return (JSON.parse(localStorage.getItem('bkt_settings') || '{}').serverUrl || 'https://rgtech.ai').replace(/\/$/, ''); } catch { return 'https://rgtech.ai'; }
+  })();
 
-    function showUpdate(version, notes, apkUrl, sizeMb) {
-      if (!statusEl) return;
-      const isLatest = version === APP_VERSION;
-      statusEl.style.color = isLatest ? '#27ae60' : '#e67e22';
-      statusEl.textContent = isLatest
-        ? `✓ Already up to date (${version})`
-        : `Update available: ${version}${notes ? ' — ' + notes : ''}`;
-      if (downloadLink) downloadLink.dataset.apkUrl = apkUrl;
-      if (sizeEl) sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
-      if (downloadWrap) downloadWrap.style.display = isLatest ? 'none' : 'flex';
-    }
+  const base = (function() {
+    try { return (JSON.parse(localStorage.getItem('bkt_settings') || '{}').serverUrl || 'https://rgtech.ai').replace(/\/$/, ''); } catch { return 'https://rgtech.ai'; }
+  })();
 
-    if (downloadLink) {
-      downloadLink.addEventListener('click', () => {
-        const url = downloadLink.dataset.apkUrl;
-        if (url) window.open(url, '_system');
-      });
-    }
-
-    if (cloudBtn) {
-      cloudBtn.addEventListener('click', async () => {
-        if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
-        if (downloadWrap) downloadWrap.style.display = 'none';
-        try {
-          const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 15000);
-          const res  = await fetch(`${API_BASE}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
-          clearTimeout(tid);
-          if (!res.ok) throw new Error('Server error ' + res.status);
-          const data = await res.json();
-          if (!data.available) {
-            if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'No update available'; }
-            return;
-          }
-          const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
-          showUpdate(data.version, data.notes, `${API_BASE}/api/app-update/apk`, mb);
-        } catch (err) {
-          if (statusEl) {
-            statusEl.style.color = '#e74c3c';
-            statusEl.textContent = err.name === 'AbortError'
-              ? `✗ Timed out (${API_BASE})`
-              : `✗ ${err.message} (${API_BASE})`;
-          }
-        }
-      });
-    }
-
-    if (checkBtn) {
-      checkBtn.addEventListener('click', async () => {
-        const host = hostInput ? hostInput.value.trim().replace(/\/$/, '') : '';
-        if (!host) return;
-        if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
-        if (downloadWrap) downloadWrap.style.display = 'none';
-        try {
-          const res  = await fetch(`${host}/api/app-update/info`);
-          const data = await res.json();
-          if (!data.available) {
-            if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'No APK available on this host.'; }
-            return;
-          }
-          const mb = (data.size / 1024 / 1024).toFixed(1);
-          showUpdate(data.version, data.notes, `${host}/api/app-update/apk`, mb);
-        } catch {
-          if (statusEl) { statusEl.style.color = '#e74c3c'; statusEl.textContent = '✗ Could not reach host'; }
-        }
-      });
-    }
-  } catch (e) {
-    console.error('App Update init error:', e);
+  // Show installed version; append server version once fetched
+  function updateVerLine(serverVer) {
+    if (!currentVerEl) return;
+    currentVerEl.textContent = serverVer
+      ? `App: ${APP_VERSION}  |  Server: ${serverVer}`
+      : `App: ${APP_VERSION}`;
   }
+  updateVerLine(null);
+  fetch(`${base}/api/version`).then(r => r.json()).then(d => updateVerLine(d.version)).catch(() => {});
+
+  function showUpdate(version, notes, apkUrl, sizeMb) {
+    if (!statusEl) return;
+    const isLatest = version === APP_VERSION;
+    statusEl.style.color = isLatest ? '#27ae60' : '#e67e22';
+    statusEl.textContent = isLatest
+      ? `✓ Already up to date (${version})`
+      : `Update available: ${version}${notes ? ' — ' + notes : ''}`;
+    if (downloadLink) downloadLink.dataset.apkUrl = apkUrl;
+    if (sizeEl) sizeEl.textContent = sizeMb ? `${sizeMb} MB` : '';
+    if (downloadWrap) downloadWrap.style.display = isLatest ? 'none' : 'flex';
+  }
+
+  if (downloadLink) {
+    downloadLink.addEventListener('click', () => {
+      const url = downloadLink.dataset.apkUrl;
+      if (url) window.open(url, '_system');
+    });
+  }
+
+  cloudBtn.addEventListener('click', async () => {
+    if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
+    if (downloadWrap) downloadWrap.style.display = 'none';
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 15000);
+      const res  = await fetch(`${base}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const data = await res.json();
+      if (!data.available) {
+        if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'No update available'; }
+        return;
+      }
+      const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
+      showUpdate(data.version, data.notes, `${base}/api/app-update/apk`, mb);
+    } catch (err) {
+      if (statusEl) {
+        statusEl.style.color = '#e74c3c';
+        statusEl.textContent = err.name === 'AbortError'
+          ? `✗ Timed out (${base})`
+          : `✗ ${err.message} (${base})`;
+      }
+    }
+  });
+
+  if (checkBtn) {
+    checkBtn.addEventListener('click', async () => {
+      const host = hostInput ? hostInput.value.trim().replace(/\/$/, '') : '';
+      if (!host) return;
+      if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
+      if (downloadWrap) downloadWrap.style.display = 'none';
+      try {
+        const res  = await fetch(`${host}/api/app-update/info`);
+        const data = await res.json();
+        if (!data.available) {
+          if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'No APK available on this host.'; }
+          return;
+        }
+        const mb = (data.size / 1024 / 1024).toFixed(1);
+        showUpdate(data.version, data.notes, `${host}/api/app-update/apk`, mb);
+      } catch {
+        if (statusEl) { statusEl.style.color = '#e74c3c'; statusEl.textContent = '✗ Could not reach host'; }
+      }
+    });
+  }
+}
 
   // ── Printer Diagnostics ───────────────────────────────────────────
   {
