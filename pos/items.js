@@ -486,7 +486,6 @@ function init() {
 
   // ── Maintenance ───────────────────────────────────────────────────────────
   initMaintenance();
-  initAppUpdate();
   initAiImport();
 
   // ── User Management (super only) ────────────────────────────────────────
@@ -822,10 +821,9 @@ function initMaintenance() {
     setTimeout(() => { msg.textContent = ''; }, 5000);
   });
 
-}
-
-function initAppUpdate() {
-  const APP_VERSION  = '1.2.33-debug';
+  // ── App Update ────────────────────────────────────────────────────────────
+  try {
+    const APP_VERSION  = '1.2.34-debug';
   const hostInput    = document.getElementById('update-host-input');
   const checkBtn     = document.getElementById('update-check-btn');
   const cloudBtn     = document.getElementById('update-cloud-btn');
@@ -835,15 +833,7 @@ function initAppUpdate() {
   const sizeEl       = document.getElementById('update-size');
   const currentVerEl = document.getElementById('update-current-ver');
 
-  if (!cloudBtn) return; // nothing to do if button not in DOM
-
-  if (hostInput) hostInput.value = (function() {
-    try { return (JSON.parse(localStorage.getItem('bkt_settings') || '{}').serverUrl || 'https://rgtech.ai').replace(/\/$/, ''); } catch { return 'https://rgtech.ai'; }
-  })();
-
-  const base = (function() {
-    try { return (JSON.parse(localStorage.getItem('bkt_settings') || '{}').serverUrl || 'https://rgtech.ai').replace(/\/$/, ''); } catch { return 'https://rgtech.ai'; }
-  })();
+    if (hostInput) hostInput.value = API_BASE;
 
   // Show installed version; append server version once fetched
   function updateVerLine(serverVer) {
@@ -853,7 +843,7 @@ function initAppUpdate() {
       : `App: ${APP_VERSION}`;
   }
   updateVerLine(null);
-  fetch(`${base}/api/version`).then(r => r.json()).then(d => updateVerLine(d.version)).catch(() => {});
+  fetch(`${API_BASE}/api/version`).then(r => r.json()).then(d => updateVerLine(d.version)).catch(() => {});
 
   function showUpdate(version, notes, apkUrl, sizeMb) {
     if (!statusEl) return;
@@ -874,13 +864,13 @@ function initAppUpdate() {
     });
   }
 
-  cloudBtn.addEventListener('click', async () => {
+  if (cloudBtn) cloudBtn.addEventListener('click', async () => {
     if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
     if (downloadWrap) downloadWrap.style.display = 'none';
     try {
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 15000);
-      const res  = await fetch(`${base}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
+      const res  = await fetch(`${API_BASE}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
       clearTimeout(tid);
       if (!res.ok) throw new Error('Server error ' + res.status);
       const data = await res.json();
@@ -889,13 +879,13 @@ function initAppUpdate() {
         return;
       }
       const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
-      showUpdate(data.version, data.notes, `${base}/api/app-update/apk`, mb);
+      showUpdate(data.version, data.notes, `${API_BASE}/api/app-update/apk`, mb);
     } catch (err) {
       if (statusEl) {
         statusEl.style.color = '#e74c3c';
         statusEl.textContent = err.name === 'AbortError'
-          ? `✗ Timed out (${base})`
-          : `✗ ${err.message} (${base})`;
+          ? `✗ Timed out (${API_BASE})`
+          : `✗ ${err.message} (${API_BASE})`;
       }
     }
   });
@@ -919,8 +909,8 @@ function initAppUpdate() {
         if (statusEl) { statusEl.style.color = '#e74c3c'; statusEl.textContent = '✗ Could not reach host'; }
       }
     });
-  }
-}
+    }
+  } catch (e) { console.error('App Update init error:', e); }
 
   // ── Printer Diagnostics ───────────────────────────────────────────
   {

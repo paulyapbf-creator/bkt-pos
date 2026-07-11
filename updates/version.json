@@ -1,1 +1,1 @@
-{"version":"1.2.33-debug","notes":"Fix Check Cloud: moved App Update to own function independent of initMaintenance crashes"}
+{"version":"1.2.34-debug","notes":"Fix Check Cloud: restore App Update inside initMaintenance, remove broken initAppUpdate call"}
