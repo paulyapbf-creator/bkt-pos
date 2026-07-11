@@ -1,1 +1,1 @@
-{"version":"1.2.27-debug","notes":"Fix API_BASE in items.js to use rgtech.ai; Check Cloud shows exact error URL; version strings bumped to bust cache"}
+{"version":"1.2.28-debug","notes":"Add /update download page; null guards in App Update block; API_BASE fix in items.js"}

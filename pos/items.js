@@ -817,7 +817,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION = '1.2.27-debug';
+    const APP_VERSION = '1.2.28-debug';
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
@@ -828,7 +828,8 @@ function initMaintenance() {
     const sizeEl       = document.getElementById('update-size');
     const currentVerEl = document.getElementById('update-current-ver');
 
-    hostInput.value = API_BASE !== 'https://rgtech.ai' ? API_BASE : (settings.serverUrl || 'https://rgtech.ai');
+    if (!cloudBtn || !statusEl) return; // guard: skip if elements missing
+    if (hostInput) hostInput.value = settings.serverUrl || 'https://rgtech.ai';
     if (currentVerEl) currentVerEl.textContent = `Installed: ${APP_VERSION}`;
 
     function showUpdate(version, notes, apkUrl, sizeMb) {

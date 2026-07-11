@@ -60,6 +60,32 @@ app.get('/api/app-update/apk', (req, res) => {
   fs.createReadStream(APK_FILE).pipe(res);
 });
 
+// Simple update page — open in any Android browser to download APK
+app.get('/update', (req, res) => {
+  const fs = require('fs');
+  let ver = {}; let sizeMb = '?';
+  try { ver = JSON.parse(fs.readFileSync(APK_INFO, 'utf8')); } catch {}
+  try { sizeMb = (fs.statSync(APK_FILE).size / 1024 / 1024).toFixed(1); } catch {}
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BKT POS Update</title>
+<style>body{font-family:sans-serif;background:#1a1a2e;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+.card{background:#16213e;border-radius:16px;padding:32px 24px;max-width:360px;width:90%;text-align:center;}
+h2{margin:0 0 8px;font-size:22px;}
+.ver{color:#aaa;font-size:14px;margin-bottom:24px;}
+.notes{font-size:13px;color:#ccc;margin-bottom:28px;line-height:1.5;}
+a.btn{display:block;background:#27ae60;color:#fff;text-decoration:none;border-radius:10px;padding:16px;font-size:17px;font-weight:700;}
+.size{color:#888;font-size:12px;margin-top:10px;}</style></head>
+<body><div class="card">
+<h2>📲 BKT POS Update</h2>
+<div class="ver">${ver.version || 'unknown'}</div>
+<div class="notes">${ver.notes || ''}</div>
+<a class="btn" href="/api/app-update/apk">⬇ Download APK (${sizeMb} MB)</a>
+<div class="size">Tap Download, then install from notification</div>
+</div></body></html>`);
+});
+
 
 const LOGS_DIR = path.join(UPDATES_DIR, "logs");
 app.post("/api/diagnostic-log", (req, res) => {
