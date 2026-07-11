@@ -1638,33 +1638,52 @@ function buildEscPos(job, imgWidth) {
   } else if (job.type === 'card_slip') {
     const d = job.data;
     const cur = d.currency || 'RM';
-    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    const title = d.isEwallet ? 'E-WALLET SALE' : 'SALE';
+    r.text(title, { bold: true, align: 'center' });
+    r.text(d.shopName || 'BKT House', { bold: true, align: 'center' });
     if (d.shopAddress) r.text(d.shopAddress, { align: 'center' });
     r.dash();
     if (d.tid)     r.lr('TID',        d.tid);
     if (d.mid)     r.lr('MID',        d.mid);
-    if (d.date)    r.lr('DATE',       d.date);
-    if (d.time)    r.lr('TIME',       d.time);
+    if (d.date && d.time) r.lr('DATE/TIME', `${d.date} ${d.time}`);
+    else {
+      if (d.date)  r.lr('DATE',       d.date);
+      if (d.time)  r.lr('TIME',       d.time);
+    }
     r.dash();
     if (d.batch)   r.lr('BATCH NO',   d.batch);
     if (d.trace)   r.lr('TRACE NO',   d.trace);
     if (d.invoice) r.lr('INVOICE NO', d.invoice);
     r.dash();
-    r.text('SALE', { bold: true, align: 'center' });
-    r.dash();
-    if (d.cardNo)  r.lr('CARD NO',    d.cardNo);
-    if (d.entry)   r.lr('ENTRY',      d.entry);
-    if (d.app)     r.lr('APP',        d.app);
-    r.dash();
-    if (d.apprCode) r.lr('APPR CODE', d.apprCode);
-    if (d.respCode) r.lr('RESP CODE', d.respCode);
-    if (d.refNo)    r.lr('REF NO',    d.refNo);
-    if (d.ac)       r.lr('AC',        d.ac);
-    if (d.tvr)      r.lr('TVR',       d.tvr);
+    if (d.isEwallet) {
+      // E-wallet specific fields
+      if (d.walletType) r.lr('E-WALLET TYPE', d.walletType);
+      if (d.txnId) {
+        // Long transaction IDs: label on one line, value on next
+        if (d.txnId.length > 12) {
+          r.text('TRANSACTION ID:', {});
+          r.text(d.txnId, { align: 'center' });
+        } else {
+          r.lr('TRANSACTION ID', d.txnId);
+        }
+      }
+      if (d.apprCode) r.lr('APPR CODE',   d.apprCode);
+      if (d.respCode) r.lr('RESP CODE',   d.respCode);
+    } else {
+      // Card specific fields
+      if (d.cardNo)   r.lr('CARD NO',    d.cardNo);
+      if (d.entry)    r.lr('ENTRY',      d.entry);
+      if (d.app)      r.lr('APP',        d.app);
+      r.dash();
+      if (d.apprCode) r.lr('APPR CODE',  d.apprCode);
+      if (d.respCode) r.lr('RESP CODE',  d.respCode);
+      if (d.refNo)    r.lr('REF NO',     d.refNo);
+      if (d.ac)       r.lr('AC',         d.ac);
+      if (d.tvr)      r.lr('TVR',        d.tvr);
+    }
     r.dash();
     r.lr('AMOUNT', `${cur} ${d.amount}`, { bold: true, big: true });
     r.dash();
-    r.text('NO PIN REQUIRED',       { align: 'center' });
     r.text('NO SIGNATURE REQUIRED', { align: 'center' });
     r.dash();
     r.text('--- CUSTOMER COPY ---', { bold: true, align: 'center' });

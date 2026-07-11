@@ -1495,28 +1495,32 @@ function buildCardSlipJob(result, bd) {
   const settings = loadSettings();
   const now = new Date();
   const cur = getCurrency();
+  const isEwallet = state.payMethod === 'cewallet';
   return {
     type: 'card_slip',
     data: {
       shopName:    settings.shopName    || 'BKT House',
       shopAddress: settings.shopAddress || '',
       currency:    cur,
-      tid:      result.Value_14 || '',
-      mid:      result.Value_13 || '',
-      date:     result.Value_11 || now.toLocaleDateString('en-MY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-      time:     result.Value_12 || now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-      batch:    result.Value_9  || '',
-      trace:    result.Value_10 || '',
-      invoice:  result.Value_15 || '',
-      cardNo:   result.Value_4  || '',
-      entry:    result.Value_5  || '',
-      app:      result.Value_5  || '',
-      apprCode: result.Value_7  || '',
-      respCode: result.Value_19 || '',
-      refNo:    result.Value_8  || '',
-      ac:       result.Value_17 || '',
-      tvr:      result.Value_18 || '',
-      amount:   bd ? bd.total.toFixed(2) : (result.Value_3 || ''),
+      isEwallet,
+      tid:        result.Value_14 || '',
+      mid:        result.Value_13 || '',
+      date:       result.Value_11 || now.toLocaleDateString('en-MY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      time:       result.Value_12 || now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+      batch:      result.Value_9  || '',
+      trace:      result.Value_10 || '',
+      invoice:    result.Value_15 || '',
+      cardNo:     result.Value_4  || '',
+      walletType: result.Value_5  || '',
+      entry:      result.Value_5  || '',
+      app:        result.Value_5  || '',
+      apprCode:   result.Value_7  || '',
+      respCode:   result.Value_19 || '',
+      refNo:      result.Value_8  || '',
+      txnId:      result.Value_8  || '',
+      ac:         result.Value_17 || '',
+      tvr:        result.Value_18 || '',
+      amount:     bd ? bd.total.toFixed(2) : (result.Value_3 || ''),
     },
   };
 }
