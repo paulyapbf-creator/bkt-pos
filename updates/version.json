@@ -1,1 +1,1 @@
-{"version":"1.2.35-debug","notes":"Fix Check Cloud: rewrite App Update block with arrow functions and explicit braces, no function-in-try"}
+{"version":"1.2.36-debug","notes":"Fix eWallet: default to centerm.cptpaterminal independent of card terminal settings (matches App2App module)"}
