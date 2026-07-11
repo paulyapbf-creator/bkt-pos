@@ -823,7 +823,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   try {
-    const APP_VERSION = '1.2.30-debug';
+    const APP_VERSION = '1.2.31-debug';
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');

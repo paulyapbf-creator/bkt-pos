@@ -1,1 +1,1 @@
-{"version":"1.2.30-debug","notes":"Add separate eWallet Terminal package/class settings so AmpersandPay or other e-wallet apps can be targeted independently from the card terminal"}
+{"version":"1.2.31-debug","notes":"Fix Check Cloud button not responding; add separate eWallet Terminal package/class for AmpersandPay support"}
