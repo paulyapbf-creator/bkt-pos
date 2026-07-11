@@ -1,1 +1,1 @@
-{"version":"1.2.29-debug","notes":"Fix e-wallet card slip: show E-WALLET SALE title, E-WALLET TYPE field, wrap long Transaction ID to next line"}
+{"version":"1.2.30-debug","notes":"Add separate eWallet Terminal package/class settings so AmpersandPay or other e-wallet apps can be targeted independently from the card terminal"}

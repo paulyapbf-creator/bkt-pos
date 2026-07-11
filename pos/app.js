@@ -1363,11 +1363,13 @@ window.onCoherentResult = function(result) {
 
 function launchCoherentEwallet(amount) {
   const settings  = loadSettings();
-  const pkg       = settings.terminalPkg    || 'com.coherent.centerm.cptpaterminal';
-  const cls       = settings.terminalClass  || '.BroadcastTransactionActivity';
+  const cardPkg   = settings.terminalPkg   || 'com.coherent.centerm.cptpaterminal';
+  const cardCls   = settings.terminalClass || '.BroadcastTransactionActivity';
+  const pkg       = settings.cewalletPkg   || cardPkg;
+  const cls       = settings.cewalletCls   || cardCls;
   const indexM    = settings.terminalIndexM ?? 1;
   const indexT    = settings.terminalIndexT ?? 1;
-  const eWalletId = settings.cewalletId     || '';
+  const eWalletId = settings.cewalletId    || '';
   const amtStr    = amount.toFixed(2);
   const statusEl = document.getElementById('cewallet-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');

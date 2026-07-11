@@ -538,6 +538,8 @@ function initSettings() {
   const terminalIndexMInput  = document.getElementById('s-terminal-index-m');
   const terminalIndexTInput  = document.getElementById('s-terminal-index-t');
   const cewalletEnabledInput = document.getElementById('s-cewallet-enabled');
+  const cewalletPkgInput     = document.getElementById('s-cewallet-pkg');
+  const cewalletClsInput     = document.getElementById('s-cewallet-cls');
   const cewalletIdInput      = document.getElementById('s-cewallet-id');
 
   shopNameInput.value    = settings.shopName      || '';
@@ -580,6 +582,8 @@ function initSettings() {
   terminalIndexMInput.value    = settings.terminalIndexM ?? 1;
   terminalIndexTInput.value    = settings.terminalIndexT ?? 1;
   cewalletEnabledInput.checked = !!settings.cewalletEnabled;
+  cewalletPkgInput.value       = settings.cewalletPkg    || '';
+  cewalletClsInput.value       = settings.cewalletCls    || '';
   cewalletIdInput.value        = settings.cewalletId     || '';
 
   function updatePreview(input, preview) {
@@ -669,6 +673,8 @@ function initSettings() {
       terminalIndexM:  parseInt(terminalIndexMInput.value, 10) || 1,
       terminalIndexT:  parseInt(terminalIndexTInput.value, 10) || 1,
       cewalletEnabled: cewalletEnabledInput.checked,
+      cewalletPkg:     cewalletPkgInput.value.trim(),
+      cewalletCls:     cewalletClsInput.value.trim(),
       cewalletId:      cewalletIdInput.value.trim(),
     };
   }
@@ -817,7 +823,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION = '1.2.28-debug';
+    const APP_VERSION = '1.2.30-debug';
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
