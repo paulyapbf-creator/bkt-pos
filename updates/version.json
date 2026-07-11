@@ -1,1 +1,1 @@
-{"version":"1.2.26-debug","notes":"Sync APP_VERSION constant with release version so Check Cloud correctly shows up to date"}
+{"version":"1.2.27-debug","notes":"Fix API_BASE in items.js to use rgtech.ai; Check Cloud shows exact error URL; version strings bumped to bust cache"}

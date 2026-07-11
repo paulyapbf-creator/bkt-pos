@@ -1,8 +1,11 @@
 'use strict';
 // STORAGE_KEY, CATEGORIES, MENU_ITEMS come from menuDefaults.js
 
-const API_BASE = '';
 const SETTINGS_KEY = 'bkt_settings';
+const API_BASE = (function() {
+  try { const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); return (s.serverUrl || 'https://rgtech.ai').replace(/\/$/, ''); }
+  catch { return 'https://rgtech.ai'; }
+})();
 
 function loadSettings() {
   try { const r = localStorage.getItem(SETTINGS_KEY); return r ? JSON.parse(r) : {}; }
@@ -814,8 +817,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION = '1.2.26-debug';
-    const cloudBase = (settings.serverUrl || 'https://rgtech.ai').replace(/\/$/, '');
+    const APP_VERSION = '1.2.27-debug';
 
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
@@ -826,7 +828,7 @@ function initMaintenance() {
     const sizeEl       = document.getElementById('update-size');
     const currentVerEl = document.getElementById('update-current-ver');
 
-    hostInput.value = settings.serverUrl || 'https://rgtech.ai';
+    hostInput.value = API_BASE !== 'https://rgtech.ai' ? API_BASE : (settings.serverUrl || 'https://rgtech.ai');
     if (currentVerEl) currentVerEl.textContent = `Installed: ${APP_VERSION}`;
 
     function showUpdate(version, notes, apkUrl, sizeMb) {
@@ -851,12 +853,10 @@ function initMaintenance() {
       downloadWrap.style.display = 'none';
       try {
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 10000);
-        const tenantSess = getTenantSession ? getTenantSession() : null;
-        const tenantQ = tenantSess && tenantSess.slug ? `&tenant=${tenantSess.slug}` : '';
-        const res  = await fetch(`${cloudBase}/api/app-update/info?t=${Date.now()}${tenantQ}`, { signal: ctrl.signal });
+        const tid = setTimeout(() => ctrl.abort(), 15000);
+        const res  = await fetch(`${API_BASE}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
         clearTimeout(tid);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (!res.ok) throw new Error('Server error ' + res.status);
         const data = await res.json();
         if (!data.available) {
           statusEl.style.color = 'var(--muted)';
@@ -864,12 +864,12 @@ function initMaintenance() {
           return;
         }
         const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
-        showUpdate(data.version, data.notes, `${cloudBase}/api/app-update/apk`, mb);
+        showUpdate(data.version, data.notes, `${API_BASE}/api/app-update/apk`, mb);
       } catch (err) {
         statusEl.style.color = '#e74c3c';
         statusEl.textContent = err.name === 'AbortError'
-          ? '✗ Timed out'
-          : '✗ Cannot reach cloud server';
+          ? `✗ Timed out (${API_BASE})`
+          : `✗ ${err.message} (${API_BASE})`;
       }
     });
 
