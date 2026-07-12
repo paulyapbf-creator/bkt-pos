@@ -2052,6 +2052,7 @@ button, a, .mli, .table-cell, .modifier-option {
 
 /* ── Mobile-only table/pax bar (top of menu panel) ───────────────────────── */
 .mobile-table-bar { display: none; }
+.mobile-shop-name { display: none; }
 @media (max-width: 1024px) {
   .mobile-table-bar {
     display: flex;
@@ -3174,14 +3175,15 @@ html.native-app #cart-panel #cp-head { padding-top: max(14px, env(safe-area-inse
 html.native-app .mobile-basket-bar { display: none !important; }
 html.native-app .checkout-btn { display: inline-flex !important; }
 html.native-app .mobile-table-bar { display: flex; align-items: center; gap: 4px; padding: 4px 6px; background: var(--header); border-bottom: none; }
-html.native-app .mobile-table-bar .table-select-btn { font-size: 13px; padding: 6px 8px; }
+html.native-app .mobile-shop-name { font-size: 13px; font-weight: 700; white-space: nowrap; flex-shrink: 0; padding: 0 4px; color: var(--text); }
+html.native-app .mobile-table-bar .table-select-btn { font-size: 11px; padding: 5px 7px; }
 html.native-app .mobile-table-bar .pax-inline { gap: 2px; }
 html.native-app .mobile-table-bar .pax-inline-btn { width: 28px; height: 28px; font-size: 16px; }
 html.native-app .mobile-table-bar .pax-inline-val { width: 24px; font-size: 14px; }
 html.native-app .mobile-table-bar .pax-inline-label { font-size: 11px; }
 html.native-app #search-wrap { padding: 3px 6px; border-bottom: 1px solid var(--border); }
 html.native-app #search-input { font-size: 15px; padding: 6px 10px; border-radius: 6px; }
-html.native-app .mobile-pay-btn { display: block !important; }
+html.native-app .mobile-pay-btn { display: flex !important; align-items: center; justify-content: center; font-size: 28px; width: 52px; height: 44px; flex-shrink: 0; }
 html.native-app #pay-bills-btn { display: none !important; }
 html.native-app .mobile-cart-back-btn { display: inline-block; }
 html.native-app #cart-panel .cp-head-row { display: none; }

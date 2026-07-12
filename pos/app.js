@@ -2133,6 +2133,8 @@ async function init() {
     const _s = loadSettings();
     const headerName = document.getElementById('header-shop-name');
     if (headerName && _s.shopName) headerName.textContent = _s.shopName;
+    const mobileShopName = document.getElementById('mobile-shop-name');
+    if (mobileShopName && _s.shopName) mobileShopName.textContent = _s.shopName;
   }
 
   // Search

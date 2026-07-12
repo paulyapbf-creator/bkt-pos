@@ -1,1 +1,1 @@
-{"version":"1.2.36-debug","notes":"Fix eWallet: default to centerm.cptpaterminal independent of card terminal settings (matches App2App module)"}
+{"version":"1.2.37-debug","notes":"Fix eWallet: default to centerm.cptpaterminal independent of card terminal settings (matches App2App module)"}
