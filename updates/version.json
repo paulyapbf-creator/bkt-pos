@@ -1,1 +1,1 @@
-{"version":"1.2.39-debug","notes":"Fix Android store name: update mobile-shop-name from API settings fetch (tenant session path)"}
+{"version":"1.2.40-debug","notes":"Swap language selector to mobile table bar, remove shop name from second row"}

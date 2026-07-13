@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=1.2.36">
+  <link rel="stylesheet" href="style.css?v=1.2.40">
   <script>
     // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
     if (window.Capacitor?.isNativePlatform?.() ||
@@ -74,7 +74,7 @@
     <div id="menu-panel">
       <!-- Mobile-only table/pax selector at top of menu -->
       <div id="mobile-table-bar" class="mobile-table-bar">
-        <span class="mobile-shop-name" id="mobile-shop-name">BKT House</span>
+        <div id="mobile-lang-slot"></div>
         <button id="mobile-table-btn" class="table-select-btn tbl-btn-no-table" type="button"><span data-i18n="select_table">Select Table</span> <span class="tbl-arrow">▾</span></button>
         <div class="pax-inline">
           <button class="pax-inline-btn" id="mobile-pax-minus" type="button">−</button>
@@ -204,6 +204,6 @@
   <script src="i18n.js?v=1.2.13"></script>
   <script src="menuDefaults.js?v=1.2.7"></script>
   <script src="auth.js?v=1.2.30"></script>
-  <script src="app.js?v=1.2.30"></script>
+  <script src="app.js?v=1.2.40"></script>
 </body>
 </html>

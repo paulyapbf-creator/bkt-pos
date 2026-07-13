@@ -2133,8 +2133,6 @@ async function init() {
     const _s = loadSettings();
     const headerName = document.getElementById('header-shop-name');
     if (headerName && _s.shopName) headerName.textContent = _s.shopName;
-    const mobileShopName = document.getElementById('mobile-shop-name');
-    if (mobileShopName && _s.shopName) mobileShopName.textContent = _s.shopName;
   }
 
   // Search
@@ -2304,6 +2302,14 @@ async function init() {
   const headerRight = document.getElementById('header-right');
   if (headerRight && typeof createLangSwitcher === 'function') {
     headerRight.insertBefore(createLangSwitcher(), headerRight.firstChild);
+    // Also add a synced lang switcher to the mobile table bar
+    const mobileLangSlot = document.getElementById('mobile-lang-slot');
+    if (mobileLangSlot) {
+      const mobileLangSwitcher = createLangSwitcher();
+      mobileLangSwitcher.id = 'mobile-lang-switch';
+      mobileLangSlot.appendChild(mobileLangSwitcher);
+      onLangChange(lang => { mobileLangSwitcher.value = lang; });
+    }
     onLangChange(() => {
       translatePage();
       renderCategoryBar();
@@ -2371,8 +2377,6 @@ async function init() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
-        const mobileShopName2 = document.getElementById('mobile-shop-name');
-        if (mobileShopName2 && s.shopName) mobileShopName2.textContent = s.shopName;
         applyPosAccess(s);
       }
     }).catch(() => {});
