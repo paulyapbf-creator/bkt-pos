@@ -2371,6 +2371,8 @@ async function init() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
+        const mobileShopName2 = document.getElementById('mobile-shop-name');
+        if (mobileShopName2 && s.shopName) mobileShopName2.textContent = s.shopName;
         applyPosAccess(s);
       }
     }).catch(() => {});

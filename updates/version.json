@@ -1,1 +1,1 @@
-{"version":"1.2.38-debug","notes":"Fix mobile web: show store name, resize table/pay buttons in media query (not just native-app)"}
+{"version":"1.2.39-debug","notes":"Fix Android store name: update mobile-shop-name from API settings fetch (tenant session path)"}
