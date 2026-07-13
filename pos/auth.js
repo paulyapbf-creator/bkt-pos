@@ -70,7 +70,9 @@ function setSession(user) {
 
 function clearSession() {
   localStorage.removeItem(AUTH_SESSION_KEY);
-  clearTenantSession();
+  // Tenant session is intentionally NOT cleared on logout — the store/tenant
+  // selection persists across user logins on the same device.
+  // Only a super-user switching stores (showTenantSelectScreen) clears it.
 }
 
 function isSuper() {
