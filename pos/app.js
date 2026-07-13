@@ -1349,7 +1349,7 @@ window.onCoherentResult = function(result) {
       statusEl.textContent = 'Payment approved!';
     }
     if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
-      setTimeout(() => showCardResultScreen(result), 300);
+      setTimeout(() => confirmTablePayment(result), 300);
     }
   } else {
     const msg = result && result.Value_2 ? result.Value_2 : 'Payment declined or failed';
