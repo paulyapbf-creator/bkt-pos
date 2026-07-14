@@ -38,11 +38,21 @@ function getTenantSession() {
 function setTenantSession(tenant) {
   localStorage.setItem(TENANT_SESSION_KEY, JSON.stringify(tenant));
   document.cookie = `bkt_tenant=${tenant.slug}; path=/; max-age=86400; SameSite=Strict`;
+  // Also persist to native storage (Capacitor Preferences / Android SharedPreferences)
+  // so the store selection survives a full app restart even if WebView localStorage is wiped.
+  try {
+    const Prefs = window.Capacitor?.Plugins?.Preferences;
+    if (Prefs) Prefs.set({ key: 'bkt_tenant', value: JSON.stringify(tenant) });
+  } catch(e) {}
 }
 
 function clearTenantSession() {
   localStorage.removeItem(TENANT_SESSION_KEY);
   document.cookie = 'bkt_tenant=; path=/; max-age=0';
+  try {
+    const Prefs = window.Capacitor?.Plugins?.Preferences;
+    if (Prefs) Prefs.remove({ key: 'bkt_tenant' });
+  } catch(e) {}
 }
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
@@ -146,7 +156,22 @@ async function showLoginOverlay(onSuccess) {
   }
 
   // Check if tenant already set in session (returning user)
-  const existingTenant = getTenantSession();
+  let existingTenant = getTenantSession();
+
+  // Fallback: restore from native Capacitor Preferences if localStorage was wiped on restart
+  if (!existingTenant) {
+    try {
+      const Prefs = window.Capacitor?.Plugins?.Preferences;
+      if (Prefs) {
+        const { value } = await Prefs.get({ key: 'bkt_tenant' });
+        if (value) {
+          existingTenant = JSON.parse(value);
+          setTenantSession(existingTenant); // restore back into localStorage
+        }
+      }
+    } catch(e) {}
+  }
+
   if (existingTenant && existingTenant.slug) {
     try {
       await fetch(`${base}/api/tenants/select`, {
