@@ -1429,7 +1429,9 @@ async function confirmTablePayment(cardResult) {
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
   if ((method === 'terminal' || method === 'cewallet') && cardResult) {
-    printCardSlip(cardResult, bd);
+    printCardSlip(cardResult, bd, 'MERCHANT COPY').then(() => {
+      showCustomerCopyPrompt(cardResult, bd);
+    });
   }
 }
 
@@ -1491,7 +1493,7 @@ function showCardResultScreen(result) {
   };
 }
 
-function buildCardSlipJob(result, bd) {
+function buildCardSlipJob(result, bd, copyType) {
   const settings = loadSettings();
   const now = new Date();
   const cur = getCurrency();
@@ -1503,6 +1505,7 @@ function buildCardSlipJob(result, bd) {
       shopAddress: settings.shopAddress || '',
       currency:    cur,
       isEwallet,
+      copyType:   copyType || 'MERCHANT COPY',
       tid:        result.Value_14 || '',
       mid:        result.Value_13 || '',
       date:       result.Value_11 || now.toLocaleDateString('en-MY', { day: '2-digit', month: '2-digit', year: 'numeric' }),
@@ -1525,16 +1528,45 @@ function buildCardSlipJob(result, bd) {
   };
 }
 
-function printCardSlip(result, bd) {
-  if (!result) return;
+function printCardSlip(result, bd, copyType) {
+  if (!result) return Promise.resolve(false);
   const settings = loadSettings();
   const pType = settings.receiptPrinterType || settings.printerType || 'external';
   if (settings.printerIp || pType === 'builtin') {
-    const job = buildCardSlipJob(result, bd);
-    sendToPrinter(job, pType).then(ok => {
-      if (!ok) showToast('Card slip print failed');
-    });
+    const job = buildCardSlipJob(result, bd, copyType);
+    return sendToPrinter(job, pType);
   }
+  return Promise.resolve(false);
+}
+
+function showCustomerCopyPrompt(result, bd) {
+  const modal    = document.getElementById('card-result-modal');
+  if (!modal) return;
+  const iconEl   = modal.querySelector('.card-result-icon');
+  const titleEl  = modal.querySelector('.card-result-title');
+  const subEl    = document.getElementById('card-result-subtitle');
+  const bodyEl   = document.getElementById('card-result-body');
+  const okBtn    = document.getElementById('card-result-ok');
+  const printBtn = document.getElementById('card-result-reprint');
+  if (iconEl)  iconEl.textContent  = '✅';
+  if (titleEl) titleEl.textContent = 'Merchant Copy Printed';
+  if (subEl)   subEl.textContent   = 'Print customer copy?';
+  if (bodyEl)  bodyEl.innerHTML    = '';
+  if (okBtn) {
+    okBtn.textContent = 'Done';
+    okBtn.onclick = () => { modal.classList.add('hidden'); document.body.style.overflow = ''; };
+  }
+  if (printBtn) {
+    printBtn.textContent = '🖨 Customer Copy';
+    printBtn.classList.remove('hidden');
+    printBtn.onclick = () => {
+      printCardSlip(result, bd, 'CUSTOMER COPY');
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    };
+  }
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 // ─── HISTORY MODAL ────────────────────────────────────────────────────────────

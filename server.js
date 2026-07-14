@@ -1686,9 +1686,10 @@ function buildEscPos(job, imgWidth) {
     r.dash();
     r.text('NO SIGNATURE REQUIRED', { align: 'center' });
     r.dash();
-    r.text('--- CUSTOMER COPY ---', { bold: true, align: 'center' });
+    const copyLabel = d.copyType || 'CUSTOMER COPY';
+    r.text(`--- ${copyLabel} ---`, { bold: true, align: 'center' });
     r.space();
-    r.text('--- CUSTOMER COPY ---', { bold: true, align: 'center' });
+    r.text(`--- ${copyLabel} ---`, { bold: true, align: 'center' });
   }
 
   const canvas = r.render();

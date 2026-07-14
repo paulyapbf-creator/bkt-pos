@@ -1,1 +1,1 @@
-{"version":"1.2.44-debug","notes":"Persist tenant in native Capacitor Preferences — survives full app restart"}
+{"version":"1.2.45-debug","notes":"Print merchant copy on card/eWallet approval, offer customer copy option"}
