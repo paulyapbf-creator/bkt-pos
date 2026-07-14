@@ -1,9 +1,12 @@
 'use strict';
 
 // ─── Language helper ─────────────────────────────────────────────────────────
+const _LANG_FIELDS = { en: 'name', zh: 'nameZh', th: 'nameTh', vi: 'nameVi', ms: 'nameMs', km: 'nameKm', id: 'nameId' };
 function localName(it) {
-  const lang = localStorage.getItem('bkt_lang') || 'zh';
-  return lang === 'zh' ? (it.nameZh || it.name) : (it.name || it.nameZh);
+  const lang = (typeof getLang === 'function' ? getLang() : null) || localStorage.getItem('bkt_lang') || 'en';
+  const field = _LANG_FIELDS[lang];
+  if (field && it[field]) return it[field];
+  return it.name || it.nameZh || '';
 }
 
 // ─── Config ──────────────────────────────────────────────────────────────────
