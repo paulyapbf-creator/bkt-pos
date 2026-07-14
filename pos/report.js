@@ -4,9 +4,14 @@
 function getApiBase() {
   const saved = localStorage.getItem('bkt_api_base');
   if (saved) return saved;
+  try {
+    const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    if (s.serverUrl) return s.serverUrl;
+  } catch(e) {}
   const loc = location;
+  // In Capacitor WebView, hostname is 'localhost' — fall back to production server
   return loc.hostname === 'localhost' || loc.hostname === '127.0.0.1'
-    ? `${loc.protocol}//${loc.hostname}:3000`
+    ? 'https://rgtech.ai'
     : `${loc.protocol}//${loc.host}`;
 }
 let API_BASE = getApiBase();

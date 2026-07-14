@@ -1,1 +1,1 @@
-{"version":"1.2.46-debug","notes":"Fix Select Table button overflow pushing Pay button off screen"}
+{"version":"1.2.47-debug","notes":"Fix Reports tab: load auth.js for x-tenant header, fix API base URL in Capacitor"}
