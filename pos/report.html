@@ -529,7 +529,7 @@ body {
       const lc = document.getElementById('header-lang');
       if (lc && typeof createLangSwitcher === 'function') {
         lc.appendChild(createLangSwitcher());
-        onLangChange(() => translatePage());
+        onLangChange(() => { translatePage(); renderActiveTab(); });
       }
       translatePage();
     })();
