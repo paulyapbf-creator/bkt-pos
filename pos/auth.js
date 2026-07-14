@@ -155,6 +155,26 @@ async function showLoginOverlay(onSuccess) {
     } catch {}
   }
 
+  // If storeSlug is configured in settings, it takes priority — ensures Android app
+  // always uses the correct tenant regardless of any stale saved session.
+  try {
+    const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    if (s.storeSlug) {
+      const res = await fetch(`${base}/api/tenants/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: s.storeSlug }),
+      });
+      if (res.ok) {
+        const tenant = await res.json();
+        setTenantSession(tenant);
+        _loginUsers = await loadLoginUsers(base);
+        renderLoginUserList();
+        return;
+      }
+    }
+  } catch(e) {}
+
   // Check if tenant already set in session (returning user)
   let existingTenant = getTenantSession();
 
@@ -167,24 +187,6 @@ async function showLoginOverlay(onSuccess) {
         if (value) {
           existingTenant = JSON.parse(value);
           setTenantSession(existingTenant); // restore back into localStorage
-        }
-      }
-    } catch(e) {}
-  }
-
-  // Fallback: auto-select tenant from saved storeSlug setting (Android app config)
-  if (!existingTenant) {
-    try {
-      const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
-      if (s.storeSlug) {
-        const res = await fetch(`${base}/api/tenants/select`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: s.storeSlug }),
-        });
-        if (res.ok) {
-          existingTenant = await res.json();
-          setTenantSession(existingTenant);
         }
       }
     } catch(e) {}
