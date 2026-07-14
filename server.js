@@ -1682,13 +1682,11 @@ function buildEscPos(job, imgWidth) {
       if (d.tvr)      r.lr('TVR',        d.tvr);
     }
     r.dash();
-    r.lr('AMOUNT', `${cur} ${d.amount}`, { bold: true, big: true });
+    r.lr('AMOUNT', `${cur} ${d.amount}`, { bold: true });
     r.dash();
     r.text('NO SIGNATURE REQUIRED', { align: 'center' });
     r.dash();
     const copyLabel = d.copyType || 'CUSTOMER COPY';
-    r.text(`--- ${copyLabel} ---`, { bold: true, align: 'center' });
-    r.space();
     r.text(`--- ${copyLabel} ---`, { bold: true, align: 'center' });
   }
 
