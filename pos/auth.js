@@ -172,6 +172,24 @@ async function showLoginOverlay(onSuccess) {
     } catch(e) {}
   }
 
+  // Fallback: auto-select tenant from saved storeSlug setting (Android app config)
+  if (!existingTenant) {
+    try {
+      const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+      if (s.storeSlug) {
+        const res = await fetch(`${base}/api/tenants/select`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: s.storeSlug }),
+        });
+        if (res.ok) {
+          existingTenant = await res.json();
+          setTenantSession(existingTenant);
+        }
+      }
+    } catch(e) {}
+  }
+
   if (existingTenant && existingTenant.slug) {
     try {
       await fetch(`${base}/api/tenants/select`, {

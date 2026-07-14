@@ -515,6 +515,7 @@ function initSettings() {
   const printerIpInput   = document.getElementById('s-printer-ip');
   const printerPortInput = document.getElementById('s-printer-port');
   const serverUrlInput   = document.getElementById('s-server-url');
+  const storeSlugInput   = document.getElementById('s-store-slug');
   const relayUrlInput    = document.getElementById('s-relay-url');
   const sstEnabledInput  = document.getElementById('s-sst-enabled');
   const sstRateInput     = document.getElementById('s-sst-rate');
@@ -559,6 +560,7 @@ function initSettings() {
   printerIpInput.value   = settings.printerIp     || '';
   printerPortInput.value = settings.printerPort   || '9100';
   serverUrlInput.value   = settings.serverUrl      || 'https://rgtech.ai';
+  if (storeSlugInput) storeSlugInput.value = settings.storeSlug || '';
   relayUrlInput.value    = settings.relayUrl       || '';
   sstEnabledInput.checked = !!settings.sstEnabled;
   sstRateInput.value      = settings.sstRate ?? 6;
@@ -650,6 +652,7 @@ function initSettings() {
       printerIp:    printerIpInput.value.trim(),
       printerPort:  printerPortInput.value.trim() || '9100',
       serverUrl:    serverUrlInput.value.trim().replace(/\/$/, ''),
+      storeSlug:    storeSlugInput ? storeSlugInput.value.trim().toLowerCase() : '',
       relayUrl:     relayUrlInput.value.trim(),
       sstEnabled:   sstEnabledInput.checked,
       sstRate:      parseFloat(sstRateInput.value) || 6,
@@ -823,7 +826,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.47-debug';
+    const APP_VERSION  = '1.2.48-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');
