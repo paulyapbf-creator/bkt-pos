@@ -1,5 +1,11 @@
 'use strict';
 
+// ─── Language helper ─────────────────────────────────────────────────────────
+function localName(it) {
+  const lang = localStorage.getItem('bkt_lang') || 'zh';
+  return lang === 'zh' ? (it.nameZh || it.name) : (it.name || it.nameZh);
+}
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 function getApiBase() {
   const saved = localStorage.getItem('bkt_api_base');
@@ -118,7 +124,7 @@ function renderDetail() {
       const mods = it.modifiers && it.modifiers.length
         ? `<span class="detail-mods">(${it.modifiers.map(m => m.name || m).join(', ')})</span>` : '';
       return `<div class="detail-item-row">
-        <span>${it.nameZh || it.name} ${mods}</span>
+        <span>${localName(it)} ${mods}</span>
         <span class="num">×${it.quantity} &nbsp; ${fmtRM(it.subtotal || (it.unitPrice || it.price || 0) * (it.quantity || 1))}</span>
       </div>`;
     }).join('');
@@ -218,7 +224,7 @@ function renderItems() {
     const pct = totalRev > 0 ? (it.revenue / totalRev) * 100 : 0;
     return `<tr>
       <td class="rank">${i + 1}</td>
-      <td>${it.nameZh || it.name}</td>
+      <td>${localName(it)}</td>
       <td class="num">${it.qty}</td>
       <td class="num">${fmtRM(it.revenue)}</td>
       <td class="num">${fmtPct(pct)}</td>
