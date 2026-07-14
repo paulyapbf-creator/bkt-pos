@@ -1,1 +1,1 @@
-{"version":"1.2.45-debug","notes":"Print merchant copy on card/eWallet approval, offer customer copy option"}
+{"version":"1.2.46-debug","notes":"Fix Select Table button overflow pushing Pay button off screen"}
