@@ -1610,6 +1610,7 @@ function buildEscPos(job, imgWidth) {
     r.space();
     r.text(d.lang === 'zh' ? '感谢您的光临！' : 'Thank you for dining with us!', { align: 'center' });
     r.text(d.lang === 'zh' ? '欢迎再来 :)' : 'Please come again :)', { align: 'center' });
+    r.space(60);
 
   } else if (job.type === 'orderCheck') {
     const d = job.data;
