@@ -1427,8 +1427,9 @@ function lrLine(left, right, cols) {
 const PRINT_FONT = '"Noto Sans SC","SimSun","Microsoft YaHei","SimHei","Arial","sans-serif"';
 
 function createRenderer(width) {
-  // Scale fonts to paper width: 384px→28/48px, 576px→24/42px
+  // Scale fonts to paper width: 384px→28/36/48px, 576px→24/32/42px
   const FONT_NORMAL = width >= 576 ? 24 : 28;
+  const FONT_MEDIUM = width >= 576 ? 32 : 36;
   const FONT_BIG    = width >= 576 ? 42 : 48;
   const LINE_PAD    = width >= 576 ? 6 : 8;
   let y = 8; // top margin
@@ -1447,12 +1448,12 @@ function createRenderer(width) {
 
   return {
     text(text, opts = {}) {
-      const fontSize = opts.big ? FONT_BIG : FONT_NORMAL;
+      const fontSize = opts.big ? FONT_BIG : opts.medium ? FONT_MEDIUM : FONT_NORMAL;
       ops.push({ type: 'text', text, y, fontSize, bold: !!opts.bold, align: opts.align || 'left' });
       y += fontSize + LINE_PAD;
     },
     lr(left, right, opts = {}) {
-      const fontSize = opts.big ? FONT_BIG : FONT_NORMAL;
+      const fontSize = opts.big ? FONT_BIG : opts.medium ? FONT_MEDIUM : FONT_NORMAL;
       ops.push({ type: 'lr', left, right, y, fontSize, bold: !!opts.bold });
       y += fontSize + LINE_PAD;
     },
@@ -1582,7 +1583,7 @@ function buildEscPos(job, imgWidth) {
     const d = job.data;
     const rl = d.labels || {};
     const cur = d.currency || 'RM';
-    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    r.text(d.shopName || 'BKT House', { bold: true, medium: true, align: 'center' });
     if (d.shopAddress) r.text(d.shopAddress, { align: 'center' });
     r.text(rl.officialReceipt || 'Official Receipt', { align: 'center' });
     r.text(rl.receipt || 'RECEIPT', { bold: true, align: 'center' });
@@ -1603,7 +1604,7 @@ function buildEscPos(job, imgWidth) {
     r.lr(rl.subtotal || 'Subtotal', `${cur}${d.subtotal || d.total}`);
     if (d.sst) r.lr(`${rl.sst || 'SST'} (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
     if (d.svc) r.lr(`${rl.service || 'Service'} (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
-    r.lr(rl.total || 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
+    r.lr(rl.total || 'TOTAL', `${cur}${d.total}`, { bold: true, medium: true });
     r.dash();
     r.lr(rl.payment || 'Payment', d.payLabel || '');
     r.space();
@@ -1613,7 +1614,7 @@ function buildEscPos(job, imgWidth) {
   } else if (job.type === 'orderCheck') {
     const d = job.data;
     const cur = d.currency || 'RM';
-    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    r.text(d.shopName || 'BKT House', { bold: true, medium: true, align: 'center' });
     r.text(d.lang === 'zh' ? '消费清单' : 'ORDER CHECK', { bold: true, align: 'center' });
     r.dash();
     r.lr(d.lang === 'zh' ? '桌号' : 'Table', d.table || '');
@@ -1631,7 +1632,7 @@ function buildEscPos(job, imgWidth) {
     r.lr(d.lang === 'zh' ? '小计' : 'Subtotal', `${cur}${d.subtotal || d.total}`);
     if (d.sst) r.lr(`SST (${d.sstRate || 6}%)`, `${cur}${d.sst}`);
     if (d.svc) r.lr(`Service (${d.svcRate || 10}%)`, `${cur}${d.svc}`);
-    r.lr(d.lang === 'zh' ? '总计' : 'TOTAL', `${cur}${d.total}`, { bold: true, big: true });
+    r.lr(d.lang === 'zh' ? '总计' : 'TOTAL', `${cur}${d.total}`, { bold: true, medium: true });
     r.dash();
     r.text(d.lang === 'zh' ? '* 此非正式收据' : '* This is not an official receipt', { align: 'center' });
 
@@ -1639,7 +1640,7 @@ function buildEscPos(job, imgWidth) {
     const d = job.data;
     const cur = d.currency || 'RM';
     const title = d.isEwallet ? 'E-WALLET SALE' : 'SALE';
-    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
+    r.text(d.shopName || 'BKT House', { bold: true, medium: true, align: 'center' });
     if (d.shopAddress) r.text(d.shopAddress, { align: 'center' });
     r.text(title, { bold: true, align: 'center' });
     r.dash();
