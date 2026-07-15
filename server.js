@@ -1639,9 +1639,9 @@ function buildEscPos(job, imgWidth) {
     const d = job.data;
     const cur = d.currency || 'RM';
     const title = d.isEwallet ? 'E-WALLET SALE' : 'SALE';
-    r.text(title, { bold: true, align: 'center' });
-    r.text(d.shopName || 'BKT House', { bold: true, align: 'center' });
+    r.text(d.shopName || 'BKT House', { bold: true, big: true, align: 'center' });
     if (d.shopAddress) r.text(d.shopAddress, { align: 'center' });
+    r.text(title, { bold: true, align: 'center' });
     r.dash();
     if (d.tid)     r.lr('TID',        d.tid);
     if (d.mid)     r.lr('MID',        d.mid);
