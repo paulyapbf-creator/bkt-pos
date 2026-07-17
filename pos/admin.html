@@ -289,6 +289,13 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
         </div>
       </div>
 
+      <!-- Backup section -->
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">BACKUP</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Download a full backup of this tenant's data as a gzipped JSON file.</p>
+        <button class="btn btn-sm btn-green" onclick="downloadBackup(currentDetailSlug)">Download Tenant Backup</button>
+      </div>
+
       <!-- Reset section -->
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
         <h3 style="font-size:13px;color:var(--muted);margin-bottom:10px;">RESET DATA</h3>
@@ -306,6 +313,12 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
       <h2>Demo Menu Database</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Shared demo menu used by tenants with demo mode enabled. Copy a tenant's menu to populate it.</p>
       <div id="demo-menu-info" style="font-size:13px;color:var(--muted);">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>Backup</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Download a full backup of all tenants' data (menu, orders, settings, users) as a gzipped JSON file. Restore by re-importing data via MongoDB or future restore feature.</p>
+      <button class="btn btn-green" onclick="downloadBackup(null)">Download Full Backup</button>
     </div>
 
     <div class="card">

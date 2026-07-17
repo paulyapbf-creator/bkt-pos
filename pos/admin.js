@@ -788,3 +788,15 @@ async function resetTenant(what) {
   msg.classList.remove('hidden');
   setTimeout(() => msg.classList.add('hidden'), 3000);
 }
+
+function downloadBackup(slug) {
+  const url = slug
+    ? `/api/admin/tenants/${slug}/backup`
+    : '/api/admin/backup';
+  const a = document.createElement('a');
+  a.href = url + '?key=' + encodeURIComponent(adminKey);
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}

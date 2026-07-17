@@ -590,7 +590,7 @@ app.post('/api/tenants/select', async (req, res) => {
 // ─── REST API: Admin tenant management (protected) ───────────────────────────
 
 function adminAuth(req, res, next) {
-  const key = req.headers['x-admin-key'];
+  const key = req.headers['x-admin-key'] || req.query.key;
   if (!process.env.SAAS_ADMIN_KEY || key !== process.env.SAAS_ADMIN_KEY) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
@@ -947,6 +947,63 @@ app.post('/api/admin/tenants/:slug/menu-import', adminAuth, async (req, res) => 
 
   broadcast(req.params.slug, ['pos', 'kds'], { type: 'admin:refresh', reason: 'menu:imported' });
   res.json({ ok: true, count: items.length });
+});
+
+// ─── Admin: Backup ───────────────────────────────────────────────────────────
+
+const BACKUP_COLLECTIONS = ['bills', 'settings', 'orderHistory', 'kdsHistory', 'users'];
+
+async function exportTenantDb(dbName) {
+  const db = saasClient.db(dbName);
+  const cols = {};
+  for (const name of BACKUP_COLLECTIONS) {
+    try { cols[name] = await db.collection(name).find({}).toArray(); }
+    catch { cols[name] = []; }
+  }
+  return cols;
+}
+
+// Full backup — all tenants
+app.get('/api/admin/backup', adminAuth, async (req, res) => {
+  if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const zlib = require('zlib');
+  try {
+    const tenants = await saasDb.collection('tenants').find({}).toArray();
+    const config  = await saasDb.collection('config').find({}).toArray();
+    const backup  = { timestamp: new Date().toISOString(), version: '1.0', saasDb: { tenants, config }, tenants: {} };
+    for (const t of tenants) {
+      backup.tenants[t.slug] = { dbName: t.dbName, collections: await exportTenantDb(t.dbName) };
+    }
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Disposition', `attachment; filename="bkt-pos-backup-${date}.json.gz"`);
+    const gz = zlib.createGzip();
+    gz.pipe(res);
+    gz.write(JSON.stringify(backup, null, 2));
+    gz.end();
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Single-tenant backup
+app.get('/api/admin/tenants/:slug/backup', adminAuth, async (req, res) => {
+  if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'SaaS mode not enabled' });
+  const zlib = require('zlib');
+  const tenant = await saasDb.collection('tenants').findOne({ slug: req.params.slug });
+  if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+  try {
+    const backup = {
+      timestamp: new Date().toISOString(), version: '1.0',
+      slug: tenant.slug, name: tenant.name, dbName: tenant.dbName,
+      collections: await exportTenantDb(tenant.dbName),
+    };
+    const date = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Disposition', `attachment; filename="bkt-pos-${tenant.slug}-${date}.json.gz"`);
+    const gz = zlib.createGzip();
+    gz.pipe(res);
+    gz.write(JSON.stringify(backup, null, 2));
+    gz.end();
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── REST API: Bills ──────────────────────────────────────────────────────────
