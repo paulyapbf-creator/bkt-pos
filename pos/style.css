@@ -52,6 +52,24 @@ body {
   white-space: nowrap;
 }
 
+.pricing-mode-btn {
+  background: var(--panel, #2d2d44);
+  border: 1px solid var(--border, #3a3a55);
+  color: var(--text, #fff);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pricing-mode-btn.delivery-mode {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+
 #header-right {
   display: flex;
   align-items: center;

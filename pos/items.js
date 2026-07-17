@@ -272,7 +272,8 @@ function openModal(item = null) {
   document.getElementById('f-name').value      = item?.name        || '';
   document.getElementById('f-namezh').value    = item?.nameZh      || '';
   document.getElementById('f-category').value  = item?.category    || 'mains';
-  document.getElementById('f-price').value     = item?.price       ?? '';
+  document.getElementById('f-price').value          = item?.price         ?? '';
+  document.getElementById('f-delivery-price').value = item?.deliveryPrice != null ? item.deliveryPrice : '';
   document.getElementById('f-desc').value      = item?.description || '';
   document.getElementById('f-desczh').value    = item?.descriptionZh || '';
   document.getElementById('f-popular').checked  = item?.isPopular  || false;
@@ -368,6 +369,8 @@ function saveItem() {
   const nameZh  = document.getElementById('f-namezh').value.trim();
   const price   = parseFloat(document.getElementById('f-price').value);
   const category = document.getElementById('f-category').value;
+  const deliveryPriceRaw = document.getElementById('f-delivery-price').value;
+  const deliveryPrice = deliveryPriceRaw !== '' ? parseFloat(deliveryPriceRaw) : null;
 
   if (!name || !nameZh || isNaN(price) || price < 0) {
     alert('Please fill in Name (EN), Name (ZH), and a valid Price (≥ 0).');
@@ -385,6 +388,7 @@ function saveItem() {
   const record = {
     id:            editingId || `item_${Date.now()}`,
     name, nameZh, category, price,
+    deliveryPrice: (deliveryPrice !== null && !isNaN(deliveryPrice) && deliveryPrice >= 0) ? deliveryPrice : null,
     description:   document.getElementById('f-desc').value.trim(),
     descriptionZh: document.getElementById('f-desczh').value.trim(),
     isPopular:      document.getElementById('f-popular').checked,

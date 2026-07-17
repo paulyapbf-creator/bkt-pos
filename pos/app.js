@@ -159,6 +159,27 @@ const state = {
   _counter:           0,
 };
 
+// ─── PRICING MODE ─────────────────────────────────────────────────────────────
+
+let pricingMode = 'base'; // 'base' | 'delivery'
+
+function getEffectivePrice(item) {
+  if (pricingMode === 'delivery' && item.deliveryPrice != null && item.deliveryPrice >= 0) {
+    return item.deliveryPrice;
+  }
+  return item.price;
+}
+
+function setPricingMode(mode) {
+  pricingMode = mode;
+  const btn = document.getElementById('pricing-mode-btn');
+  if (btn) {
+    btn.textContent = mode === 'delivery' ? '🛵 Delivery' : '🏪 Dine-in';
+    btn.classList.toggle('delivery-mode', mode === 'delivery');
+  }
+  renderMenuList();
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function totalItems() { return state.items.reduce((s, i) => s + i.quantity, 0); }
@@ -340,7 +361,7 @@ async function saveOrderToHistory(table, items, total, method) {
 // ─── MUTATIONS ────────────────────────────────────────────────────────────────
 
 function addItem(menuItem, modifiers, notes) {
-  const unitPrice = calcUnitPrice(menuItem.price, modifiers);
+  const unitPrice = calcUnitPrice(getEffectivePrice(menuItem), modifiers);
   state.items.push({
     id: `item-${++state._counter}-${Date.now()}`,
     menuItem, quantity: 1, selectedModifiers: modifiers,
@@ -353,7 +374,7 @@ function amendItem(orderItemId, modifiers, notes) {
   if (!oi) return;
   oi.selectedModifiers = modifiers;
   oi.notes  = notes;
-  oi.unitPrice = calcUnitPrice(oi.menuItem.price, modifiers);
+  oi.unitPrice = calcUnitPrice(getEffectivePrice(oi.menuItem), modifiers);
   oi.subtotal  = oi.unitPrice * oi.quantity;
 }
 
@@ -562,7 +583,7 @@ function renderMenuList() {
       <button class="mli${count > 0 ? ' mli--in-cart' : ''}" data-id="${item.id}">
         ${count > 0 ? `<span class="mli-badge">${count}</span>` : ''}
         <span class="mli-zh">${localName(item)}${item.isPopular ? ' <span class="mli-star">★</span>' : ''}</span>
-        <span class="mli-price">${getCurrency()} ${item.price.toFixed(2)}</span>
+        <span class="mli-price">${getCurrency()} ${getEffectivePrice(item).toFixed(2)}</span>
         <span class="mli-en">${item.name}${hasMods ? ' <span class="mli-opts">+Options</span>' : ''}</span>
       </button>`;
   }).join('');
@@ -707,7 +728,7 @@ function syncModalPrice() {
       const opt = g.options.find(o => o.id === state.modalSelections[g.id]);
       return sum + (opt ? opt.priceAdjustment : 0);
     }, 0);
-  document.getElementById('modal-price').textContent = `${getCurrency()} ${(item.price + adj).toFixed(2)}`;
+  document.getElementById('modal-price').textContent = `${getCurrency()} ${(getEffectivePrice(item) + adj).toFixed(2)}`;
 }
 
 function syncAddButton() {
@@ -1424,6 +1445,7 @@ async function confirmTablePayment(cardResult) {
   await saveOrderToHistory(table, bill.items, bd.total, method);
   await clearActiveBill(table);
   closeBillingModal();
+  setPricingMode('base');
   updateTableBtn();
   const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Coherent', cewallet: 'Coherent eWallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
@@ -2243,6 +2265,7 @@ async function init() {
         await addToActiveBill(sentTable, state.items);
       }
       clearOrder();
+      setPricingMode('base');
       state.tableNumber       = null;
       state.pax               = 1;
       document.getElementById('pax-display').textContent = state.pax;
@@ -2296,6 +2319,11 @@ async function init() {
       addItem(item, modifiers, state.modalNotes);
     }
     closeModifierModal(); renderCartPanel(); renderMenuList();
+  });
+
+  // Pricing mode toggle
+  document.getElementById('pricing-mode-btn').addEventListener('click', () => {
+    setPricingMode(pricingMode === 'base' ? 'delivery' : 'base');
   });
 
   // Pay bills
