@@ -163,17 +163,32 @@ const state = {
 
 let pricingMode = 'base'; // 'base' | 'delivery'
 
-function isPromoActive() {
+function getActivePromo() {
   try {
     const schedules = (loadSettings().promotionSchedules || []).filter(s => s.enabled !== false);
-    if (!schedules.length) return false;
+    if (!schedules.length) return null;
     const now = new Date();
     const day = now.getDay();
     const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-    return schedules.some(s =>
+    return schedules.find(s =>
       Array.isArray(s.days) && s.days.includes(day) && s.timeStart && s.timeEnd && t >= s.timeStart && t <= s.timeEnd
-    );
-  } catch { return false; }
+    ) || null;
+  } catch { return null; }
+}
+
+function isPromoActive() { return !!getActivePromo(); }
+
+function updatePromoStatus() {
+  const badge = document.getElementById('promo-status');
+  if (!badge) return;
+  const promo = getActivePromo();
+  if (promo) {
+    badge.textContent = '🏷️ ' + (promo.name || 'Promotion');
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+  renderMenuList(); // refresh prices if promo just started/ended
 }
 
 function getEffectivePrice(item) {
@@ -2342,6 +2357,10 @@ async function init() {
   document.getElementById('pricing-mode-btn').addEventListener('click', () => {
     setPricingMode(pricingMode === 'base' ? 'delivery' : 'base');
   });
+
+  // Promo status badge — check on load and every 30 seconds
+  updatePromoStatus();
+  setInterval(updatePromoStatus, 30000);
 
   // Pay bills
   document.getElementById('pay-bills-btn').addEventListener('click', openBillingModal);

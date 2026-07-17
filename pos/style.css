@@ -52,6 +52,22 @@ body {
   white-space: nowrap;
 }
 
+.promo-status-badge {
+  background: #27ae60;
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: promo-pulse 2s ease-in-out infinite;
+}
+@keyframes promo-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.75; }
+}
+
 .pricing-mode-btn {
   background: var(--panel, #2d2d44);
   border: 1px solid var(--border, #3a3a55);
