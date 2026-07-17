@@ -100,7 +100,7 @@ function renderTable() {
 
   const tbody = document.getElementById('im-tbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">No items found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">No items found</td></tr>';
     return;
   }
 
@@ -113,6 +113,7 @@ function renderTable() {
         <div class="td-name-en">${item.name}</div>
       </td>
       <td class="td-price">${getCurrency()} ${item.price.toFixed(2)}</td>
+      <td class="td-price">${item.deliveryPrice != null ? getCurrency() + ' ' + item.deliveryPrice.toFixed(2) : '<span class="td-dim">—</span>'}</td>
       <td class="td-center">
         <span class="status-dot ${item.isAvailable ? 'dot-on' : 'dot-off'}">
           ${item.isAvailable ? 'Active' : 'Inactive'}
