@@ -789,6 +789,60 @@ async function resetTenant(what) {
   setTimeout(() => msg.classList.add('hidden'), 3000);
 }
 
+// ─── Restore ─────────────────────────────────────────────────────────────────
+
+document.getElementById('restore-file').addEventListener('change', function() {
+  const file = this.files[0];
+  const nameEl = document.getElementById('restore-filename');
+  const btn    = document.getElementById('restore-btn');
+  if (file) {
+    nameEl.textContent = file.name;
+    btn.disabled = false;
+  } else {
+    nameEl.textContent = 'No file chosen';
+    btn.disabled = true;
+  }
+});
+
+async function doRestore() {
+  const file = document.getElementById('restore-file').files[0];
+  const msg  = document.getElementById('restore-msg');
+  if (!file) return;
+
+  if (!confirm(`Restore from "${file.name}"?\n\nThis will OVERWRITE existing data for the affected tenant(s). This cannot be undone.`)) return;
+
+  msg.textContent = 'Uploading and restoring…';
+  msg.className = 'msg msg-ok';
+  msg.classList.remove('hidden');
+  document.getElementById('restore-btn').disabled = true;
+
+  try {
+    const buf = await file.arrayBuffer();
+    const res = await fetch(`/api/admin/restore?key=${encodeURIComponent(adminKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/gzip' },
+      body: buf,
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      const lines = Object.entries(data.results).map(([slug, cols]) => {
+        if (cols.skipped) return `${slug}: skipped (${cols.skipped})`;
+        const summary = Object.entries(cols).map(([c, n]) => `${c}: ${n}`).join(', ');
+        return `${slug}: ${summary}`;
+      });
+      msg.textContent = 'Restore complete:\n' + lines.join('\n');
+      msg.className = 'msg msg-ok';
+    } else {
+      msg.textContent = 'Error: ' + (data.error || 'Unknown error');
+      msg.className = 'msg msg-err';
+    }
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message;
+    msg.className = 'msg msg-err';
+  }
+  document.getElementById('restore-btn').disabled = false;
+}
+
 function downloadBackup(slug) {
   const url = slug
     ? `/api/admin/tenants/${slug}/backup`

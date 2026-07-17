@@ -1006,6 +1006,53 @@ app.get('/api/admin/tenants/:slug/backup', adminAuth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Restore from backup
+app.post('/api/admin/restore',
+  express.raw({ limit: '100mb', type: 'application/gzip' }),
+  adminAuth,
+  async (req, res) => {
+    if (!isSaasMode || !saasDb) return res.status(400).json({ error: 'SaaS mode not enabled' });
+    const zlib = require('zlib');
+    try {
+      const json = await new Promise((resolve, reject) =>
+        zlib.gunzip(req.body, (err, buf) => err ? reject(err) : resolve(buf.toString('utf8')))
+      );
+      const backup = JSON.parse(json);
+      const results = {};
+
+      async function restoreTenantCols(dbName, collections) {
+        const db = saasClient.db(dbName);
+        const out = {};
+        for (const [colName, docs] of Object.entries(collections || {})) {
+          if (!Array.isArray(docs) || !docs.length) { out[colName] = 0; continue; }
+          await db.collection(colName).deleteMany({});
+          await db.collection(colName).insertMany(docs);
+          out[colName] = docs.length;
+        }
+        return out;
+      }
+
+      if (backup.saasDb && backup.tenants) {
+        // Full backup — restore each tenant's collections only (do not overwrite tenant list)
+        for (const [slug, tb] of Object.entries(backup.tenants)) {
+          const tenant = await saasDb.collection('tenants').findOne({ slug });
+          if (!tenant) { results[slug] = { skipped: 'tenant not found in current DB' }; continue; }
+          results[slug] = await restoreTenantCols(tenant.dbName, tb.collections);
+        }
+      } else if (backup.slug && backup.collections) {
+        // Single-tenant backup
+        const tenant = await saasDb.collection('tenants').findOne({ slug: backup.slug });
+        if (!tenant) return res.status(404).json({ error: `Tenant '${backup.slug}' not found` });
+        results[backup.slug] = await restoreTenantCols(tenant.dbName, backup.collections);
+      } else {
+        return res.status(400).json({ error: 'Invalid backup format' });
+      }
+
+      res.json({ ok: true, results });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  }
+);
+
 // ─── REST API: Bills ──────────────────────────────────────────────────────────
 
 app.get('/api/bills', async (req, res) => {

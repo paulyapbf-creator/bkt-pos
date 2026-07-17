@@ -316,9 +316,21 @@ th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size
     </div>
 
     <div class="card">
-      <h2>Backup</h2>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Download a full backup of all tenants' data (menu, orders, settings, users) as a gzipped JSON file. Restore by re-importing data via MongoDB or future restore feature.</p>
+      <h2>Backup &amp; Restore</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Download a full backup of all tenants' data (menu, orders, settings, users) as a gzipped JSON file.</p>
       <button class="btn btn-green" onclick="downloadBackup(null)">Download Full Backup</button>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="font-size:13px;color:var(--muted);margin-bottom:8px;">RESTORE FROM BACKUP</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Upload a <code>.json.gz</code> backup file (full or single-tenant). This will overwrite existing data for the affected tenant(s).</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="file" id="restore-file" accept=".gz,.json.gz" style="display:none;">
+          <button class="btn btn-sm btn-dim" onclick="document.getElementById('restore-file').click()">Choose Backup File</button>
+          <span id="restore-filename" style="font-size:12px;color:var(--muted);">No file chosen</span>
+          <button class="btn btn-sm" id="restore-btn" disabled onclick="doRestore()">Restore</button>
+        </div>
+        <div class="msg hidden" id="restore-msg" style="margin-top:8px;white-space:pre-wrap;"></div>
+      </div>
     </div>
 
     <div class="card">
