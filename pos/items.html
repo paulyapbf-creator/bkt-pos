@@ -30,6 +30,7 @@
     <button class="admin-tab" data-tab="ai-import">🤖 AI Import</button>
     <button class="admin-tab" data-tab="users">👥 <span data-i18n="users">Users</span></button>
     <button class="admin-tab" data-tab="settings">⚙️ <span data-i18n="system_settings">System Settings</span></button>
+    <button class="admin-tab" data-tab="promotions">🏷️ Promotions</button>
     <button class="admin-tab" data-tab="maintenance">🔧 <span data-i18n="maintenance">Maintenance</span></button>
   </div>
 
@@ -49,6 +50,8 @@
           <th>Item</th>
           <th class="th-price" data-i18n="base_price">Base Price</th>
           <th class="th-price">Delivery Price</th>
+          <th class="th-price">Promo Price</th>
+          <th class="th-center">Promo</th>
           <th class="th-center">Status</th>
           <th class="th-center">Pop.</th>
           <th class="th-center">Modifiers</th>
@@ -386,6 +389,20 @@
     </div>
   </div>
 
+  <!-- ── Promotions panel ── -->
+  <div id="panel-promotions" class="hidden">
+    <div style="max-width:700px;margin:0 auto;padding:20px 16px;">
+      <h2 class="settings-title">🏷️ Promotion Schedules</h2>
+      <p class="settings-hint">Define days and time periods when promotion pricing is active. Items with "Enable promotion pricing" ticked will use their promotion price during these periods (dine-in mode only).</p>
+      <div id="promo-schedule-list" style="margin-top:16px;"></div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="settings-btn" id="add-promo-btn">+ Add Schedule</button>
+        <button class="settings-btn" id="save-promo-btn" style="background:var(--green,#27ae60);">Save Schedules</button>
+        <span class="msg msg-ok hidden" id="promo-save-msg" style="margin-left:4px;">Saved</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Maintenance panel ── -->
   <div id="panel-maintenance" class="hidden">
     <div id="maintenance-wrap">
@@ -551,6 +568,16 @@
           <div class="form-field">
             <label>Delivery Price (RM) <span style="font-size:11px;color:var(--muted);">optional — leave blank to use base price</span></label>
             <input type="number" id="f-delivery-price" min="0" step="0.5" placeholder="same as base">
+          </div>
+          <div class="form-field">
+            <label>Promotion Price (RM) <span style="font-size:11px;color:var(--muted);">optional — applied during promotion schedule (dine-in only)</span></label>
+            <input type="number" id="f-promo-price" min="0" step="0.5" placeholder="0.00">
+          </div>
+          <div class="form-field full-col">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="f-promo-enabled" style="width:16px;height:16px;">
+              <span>Enable promotion pricing <span style="font-size:11px;color:var(--muted);">(dine-in only, active during promotion schedule hours)</span></span>
+            </label>
           </div>
           <div class="form-field full-col" style="background:#f0f8f0;border:1.5px solid #c3e6c3;border-radius:8px;padding:10px 12px;">
             <label style="color:#276127;font-weight:700;">Free Add-ons (Included Entitlement)</label>

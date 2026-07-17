@@ -100,7 +100,7 @@ function renderTable() {
 
   const tbody = document.getElementById('im-tbody');
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">No items found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-row">No items found</td></tr>';
     return;
   }
 
@@ -114,6 +114,8 @@ function renderTable() {
       </td>
       <td class="td-price">${getCurrency()} ${item.price.toFixed(2)}</td>
       <td class="td-price">${item.deliveryPrice != null ? getCurrency() + ' ' + item.deliveryPrice.toFixed(2) : '<span class="td-dim">—</span>'}</td>
+      <td class="td-price">${item.promoPrice != null ? getCurrency() + ' ' + item.promoPrice.toFixed(2) : '<span class="td-dim">—</span>'}</td>
+      <td class="td-center">${item.promoEnabled ? '🏷️' : '<span class="td-dim">—</span>'}</td>
       <td class="td-center">
         <span class="status-dot ${item.isAvailable ? 'dot-on' : 'dot-off'}">
           ${item.isAvailable ? 'Active' : 'Inactive'}
@@ -275,6 +277,8 @@ function openModal(item = null) {
   document.getElementById('f-category').value  = item?.category    || 'mains';
   document.getElementById('f-price').value          = item?.price         ?? '';
   document.getElementById('f-delivery-price').value = item?.deliveryPrice != null ? item.deliveryPrice : '';
+  document.getElementById('f-promo-price').value    = item?.promoPrice    != null ? item.promoPrice    : '';
+  document.getElementById('f-promo-enabled').checked = item?.promoEnabled  || false;
   document.getElementById('f-desc').value      = item?.description || '';
   document.getElementById('f-desczh').value    = item?.descriptionZh || '';
   document.getElementById('f-popular').checked  = item?.isPopular  || false;
@@ -372,6 +376,9 @@ function saveItem() {
   const category = document.getElementById('f-category').value;
   const deliveryPriceRaw = document.getElementById('f-delivery-price').value;
   const deliveryPrice = deliveryPriceRaw !== '' ? parseFloat(deliveryPriceRaw) : null;
+  const promoPriceRaw = document.getElementById('f-promo-price').value;
+  const promoPrice = promoPriceRaw !== '' ? parseFloat(promoPriceRaw) : null;
+  const promoEnabled = document.getElementById('f-promo-enabled').checked;
 
   if (!name || !nameZh || isNaN(price) || price < 0) {
     alert('Please fill in Name (EN), Name (ZH), and a valid Price (≥ 0).');
@@ -390,6 +397,8 @@ function saveItem() {
     id:            editingId || `item_${Date.now()}`,
     name, nameZh, category, price,
     deliveryPrice: (deliveryPrice !== null && !isNaN(deliveryPrice) && deliveryPrice >= 0) ? deliveryPrice : null,
+    promoPrice:    (promoPrice    !== null && !isNaN(promoPrice)    && promoPrice    >= 0) ? promoPrice    : null,
+    promoEnabled:  promoEnabled,
     description:   document.getElementById('f-desc').value.trim(),
     descriptionZh: document.getElementById('f-desczh').value.trim(),
     isPopular:      document.getElementById('f-popular').checked,
@@ -463,13 +472,14 @@ function init() {
     'ai-import': document.getElementById('panel-ai-import'),
     users:       document.getElementById('panel-users'),
     settings:    document.getElementById('panel-settings'),
+    promotions:  document.getElementById('panel-promotions'),
     maintenance: document.getElementById('panel-maintenance'),
   };
 
   function switchTab(tabName) {
     // Block restricted tabs for cashiers
     const sess = getSession();
-    if (sess && sess.role !== 'super' && (tabName === 'ai-import' || tabName === 'users' || tabName === 'settings' || tabName === 'maintenance')) return;
+    if (sess && sess.role !== 'super' && (tabName === 'ai-import' || tabName === 'users' || tabName === 'settings' || tabName === 'promotions' || tabName === 'maintenance')) return;
 
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === tabName);
@@ -488,6 +498,9 @@ function init() {
 
   // ── Payment Settings ──────────────────────────────────────────────────────
   initSettings();
+
+  // ── Promotions ────────────────────────────────────────────────────────────
+  initPromotions();
 
   // ── Maintenance ───────────────────────────────────────────────────────────
   initMaintenance();
@@ -769,6 +782,88 @@ function initSettings() {
       testMsg.textContent = ok ? '✓ Print sent!' : '✗ Failed — check printer settings';
     setTimeout(() => { testMsg.textContent = ''; }, 6000);
   });
+}
+
+// ─── Promotions ───────────────────────────────────────────────────────────────
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+let promoSchedules = [];
+
+function renderPromoSchedules() {
+  const container = document.getElementById('promo-schedule-list');
+  if (!container) return;
+  if (!promoSchedules.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">No schedules yet. Click "+ Add Schedule" to create one.</p>';
+    return;
+  }
+  container.innerHTML = promoSchedules.map((s, idx) => `
+    <div style="background:var(--panel,#2d2d44);border:1px solid var(--border,#3a3a55);border-radius:8px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="text" class="promo-name" data-idx="${idx}" value="${(s.name||'').replace(/"/g,'&quot;')}"
+          placeholder="Schedule name (e.g. Happy Hour)"
+          style="flex:1;min-width:140px;background:var(--header,#1a1a2e);color:var(--text,#fff);border:1px solid var(--border,#3a3a55);border-radius:6px;padding:7px 10px;font-size:13px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
+          <input type="checkbox" class="promo-chk-enabled" data-idx="${idx}" ${s.enabled !== false ? 'checked' : ''} style="width:15px;height:15px;"> Enabled
+        </label>
+        <button class="btn-del-promo row-btn btn-del" data-idx="${idx}" style="padding:5px 12px;font-size:12px;">Delete</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        ${DAY_LABELS.map((d, di) => `
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;background:var(--header,#1a1a2e);border:1px solid var(--border,#3a3a55);border-radius:5px;padding:5px 9px;">
+            <input type="checkbox" class="promo-chk-day" data-idx="${idx}" data-day="${di}" ${(s.days||[]).includes(di) ? 'checked' : ''} style="width:13px;height:13px;"> ${d}
+          </label>`).join('')}
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          Start <input type="time" class="promo-start" data-idx="${idx}" value="${s.timeStart||'17:00'}"
+            style="background:var(--header,#1a1a2e);color:var(--text,#fff);border:1px solid var(--border,#3a3a55);border-radius:6px;padding:5px 8px;font-size:13px;">
+        </label>
+        <label style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          End <input type="time" class="promo-end" data-idx="${idx}" value="${s.timeEnd||'19:00'}"
+            style="background:var(--header,#1a1a2e);color:var(--text,#fff);border:1px solid var(--border,#3a3a55);border-radius:6px;padding:5px 8px;font-size:13px;">
+        </label>
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.promo-name').forEach(el =>
+    el.addEventListener('input', () => { promoSchedules[+el.dataset.idx].name = el.value; }));
+  container.querySelectorAll('.promo-chk-enabled').forEach(el =>
+    el.addEventListener('change', () => { promoSchedules[+el.dataset.idx].enabled = el.checked; }));
+  container.querySelectorAll('.promo-chk-day').forEach(el =>
+    el.addEventListener('change', () => {
+      const s = promoSchedules[+el.dataset.idx]; const day = +el.dataset.day;
+      if (!s.days) s.days = [];
+      if (el.checked) { if (!s.days.includes(day)) s.days.push(day); }
+      else { s.days = s.days.filter(d => d !== day); }
+    }));
+  container.querySelectorAll('.promo-start').forEach(el =>
+    el.addEventListener('change', () => { promoSchedules[+el.dataset.idx].timeStart = el.value; }));
+  container.querySelectorAll('.promo-end').forEach(el =>
+    el.addEventListener('change', () => { promoSchedules[+el.dataset.idx].timeEnd = el.value; }));
+  container.querySelectorAll('.btn-del-promo').forEach(el =>
+    el.addEventListener('click', () => { promoSchedules.splice(+el.dataset.idx, 1); renderPromoSchedules(); }));
+}
+
+function initPromotions() {
+  const s = loadSettings();
+  promoSchedules = Array.isArray(s.promotionSchedules) ? JSON.parse(JSON.stringify(s.promotionSchedules)) : [];
+
+  document.getElementById('add-promo-btn').addEventListener('click', () => {
+    promoSchedules.push({ id: `promo_${Date.now()}`, name: 'Happy Hour', days: [1,2,3,4,5], timeStart: '17:00', timeEnd: '19:00', enabled: true });
+    renderPromoSchedules();
+  });
+
+  document.getElementById('save-promo-btn').addEventListener('click', () => {
+    const current = loadSettings();
+    current.promotionSchedules = promoSchedules;
+    saveSettings(current);
+    const msg = document.getElementById('promo-save-msg');
+    msg.classList.remove('hidden');
+    setTimeout(() => msg.classList.add('hidden'), 2000);
+  });
+
+  renderPromoSchedules();
 }
 
 function initBuildInfo() {

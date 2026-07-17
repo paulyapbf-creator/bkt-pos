@@ -163,9 +163,26 @@ const state = {
 
 let pricingMode = 'base'; // 'base' | 'delivery'
 
+function isPromoActive() {
+  try {
+    const schedules = (loadSettings().promotionSchedules || []).filter(s => s.enabled !== false);
+    if (!schedules.length) return false;
+    const now = new Date();
+    const day = now.getDay();
+    const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    return schedules.some(s =>
+      Array.isArray(s.days) && s.days.includes(day) && s.timeStart && s.timeEnd && t >= s.timeStart && t <= s.timeEnd
+    );
+  } catch { return false; }
+}
+
 function getEffectivePrice(item) {
   if (pricingMode === 'delivery' && item.deliveryPrice != null && item.deliveryPrice >= 0) {
     return item.deliveryPrice;
+  }
+  // Promotion: dine-in only, during promotion schedule
+  if (pricingMode === 'base' && item.promoEnabled && item.promoPrice != null && item.promoPrice >= 0 && isPromoActive()) {
+    return item.promoPrice;
   }
   return item.price;
 }
