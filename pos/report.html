@@ -472,6 +472,7 @@ body {
   <!-- ── Header ── -->
   <header id="header">
     <span id="app-title"><a href="/" class="back-link">← <span class="app-txt" id="shop-name">BKT House</span></a></span>
+    <button id="switch-store-btn" title="Switch store" style="background:var(--panel,#2d2d44);border:1px solid var(--border,#3a3a55);color:var(--muted,#aaa);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;">🏪 Switch Store</button>
     <div id="header-right">
       <div id="header-lang"></div>
       <span class="report-page-title">📊 <span data-i18n="reports">Reports</span></span>
@@ -479,6 +480,17 @@ body {
       <button id="print-btn" class="nav-link" onclick="window.print()">🖨️ <span class="nav-txt">Print</span></button>
     </div>
   </header>
+
+  <!-- ── Store switcher modal ── -->
+  <div id="store-switcher-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;">
+    <div style="background:var(--panel,#2d2d44);border:1px solid var(--border,#3a3a55);border-radius:12px;padding:24px;width:340px;max-width:90vw;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <span style="font-size:15px;font-weight:700;">Select Store</span>
+        <button id="store-switcher-close" style="background:none;border:none;color:var(--muted,#aaa);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div id="store-switcher-body"></div>
+    </div>
+  </div>
 
   <!-- ── API config bar ── -->
   <div id="api-config-bar" class="hidden">
