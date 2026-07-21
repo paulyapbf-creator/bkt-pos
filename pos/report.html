@@ -543,6 +543,10 @@ body {
       // If ?store=slug is in the URL, auto-select that tenant before login check
       const storeParam = new URLSearchParams(location.search).get('store');
       if (storeParam) {
+        // Hide back-link to POS — report accessed directly via URL param
+        const appTitle = document.getElementById('app-title');
+        if (appTitle) appTitle.innerHTML = '<span style="font-size:17px;font-weight:700;">📊 <span id="shop-name">BKT House</span></span>';
+
         try {
           const base = typeof getApiBase === 'function' ? getApiBase() : (localStorage.getItem('bkt_api_base') || location.origin);
           const res = await fetch(`${base}/api/tenants/select`, {
