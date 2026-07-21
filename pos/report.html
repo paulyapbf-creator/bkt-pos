@@ -561,6 +561,12 @@ body {
         } catch(e) { /* proceed anyway */ }
       }
 
+      // If accessed via ?store=, skip login gate — report is public for that store
+      if (storeParam) {
+        initReport();
+        return;
+      }
+
       // Gate report behind login — show overlay if no active session
       const sess = typeof getSession === 'function' ? getSession() : null;
       if (!sess) {
