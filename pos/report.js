@@ -352,8 +352,8 @@ async function fetchShopName() {
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-(function init() {
-  // Set default custom date inputs to today
+// Called by report.html after login is confirmed (or immediately if already logged in)
+function initReport() {
   const today = new Date().toISOString().slice(0, 10);
   document.getElementById('date-from').value = today;
   document.getElementById('date-to').value = today;
@@ -361,4 +361,4 @@ async function fetchShopName() {
   fetchShopName();
   const { from, to } = getDateRange('today');
   loadData(from, to);
-})();
+}

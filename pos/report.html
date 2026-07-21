@@ -513,6 +513,13 @@ body {
     <button class="report-tab" data-tab="items" data-i18n="item_sales">Item Sales</button>
   </div>
 
+  <!-- ── Login overlay ── -->
+  <div id="login-overlay" class="login-overlay hidden">
+    <div class="login-box">
+      <div id="login-content"></div>
+    </div>
+  </div>
+
   <!-- ── Report panels ── -->
   <div id="report-content">
     <div id="panel-summary" class="report-panel active"></div>
@@ -532,6 +539,17 @@ body {
         onLangChange(() => { translatePage(); renderActiveTab(); });
       }
       translatePage();
+
+      // Gate report behind login — show overlay if no active session
+      const sess = typeof getSession === 'function' ? getSession() : null;
+      if (!sess) {
+        showLoginOverlay(function() {
+          // After login, initialise the report
+          initReport();
+        });
+      } else {
+        initReport();
+      }
     })();
   </script>
 </body>
