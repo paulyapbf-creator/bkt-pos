@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:/Program Files/Android/Android Studio/jbr/bin/java\" -version 2>&1)",
+      "Read(//c//**)",
+      "Bash(\"/c/Program Files/Android/Android Studio1/jbr/bin/java.exe\" -version 2>&1)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio1/jbr\" ./gradlew assembleDebug)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Read(//tmp/sdk_inspect/**)",
+      "Bash(javap -p -c classes/com/cloudpos/jniinterface/SecondaryDisplayInterface.class)"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.yourcompany.pos.cashier-debug-31:/layout_activity_payment_test.xml.flat",
+        "source": "com.yourcompany.pos.cashier-main-33:/layout/activity_payment_test.xml"
+    }
+]

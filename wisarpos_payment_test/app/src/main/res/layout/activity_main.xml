@@ -1,0 +1,910 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabMode="fixed"
+        app:tabGravity="fill" />
+
+    <!-- ===== MAINTAIN TAB ===== -->
+    <ScrollView
+        android:id="@+id/tabMaintain"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Maintenance"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp" />
+
+            <!-- eWallet Settings -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="eWallet Settings"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#444444"
+                android:background="#EEEEEE"
+                android:padding="6dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Package Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletPkgName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="com.coherent.centerm.cptpaterminal"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Class Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletClassName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=".BroadcastTransactionActivity"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Merchant Index (indexM)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etEWalletIndexM"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Terminal Index (indexT)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etEWalletIndexT"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="eWallet ID (for QR, optional)"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="S95"
+                android:hint="e.g. S95, DuitNow, TNG"
+                android:inputType="text"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="8dp">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button android:id="@+id/btnEWalletIdS95"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="ALIPAY" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdDuitNow"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="DuitNow" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdTnG"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="TnG" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdBoost"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="Boost" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdShopeePay"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="ShopeePay" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdGrabPay"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="GrabPay" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdMAE"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="MAE" android:textSize="11sp"
+                        android:backgroundTint="#E0E0E0" android:textColor="#212121"
+                        android:layout_marginEnd="4dp" />
+                    <Button android:id="@+id/btnEWalletIdClear"
+                        style="@style/Widget.AppCompat.Button.Borderless"
+                        android:layout_width="wrap_content" android:layout_height="32dp"
+                        android:text="(clear)" android:textSize="11sp"
+                        android:backgroundTint="#FFCDD2" android:textColor="#B71C1C" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Order ID (optional)"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etEWalletOrderId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="optional"
+                android:inputType="text"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Terminal Settings -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Terminal Settings"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#444444"
+                android:background="#EEEEEE"
+                android:padding="6dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Package Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etTerminalPkgName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="com.coherent.centerm.cptpaterminal"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Class Name"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="2dp" />
+
+            <EditText
+                android:id="@+id/etTerminalClassName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=".BroadcastTransactionActivity"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@android:drawable/edit_text"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Merchant Index (indexM)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etTerminalIndexM"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Terminal Index (indexT)"
+                        android:textSize="12sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="2dp" />
+
+                    <EditText
+                        android:id="@+id/etTerminalIndexT"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1"
+                        android:inputType="number"
+                        android:background="@android:drawable/edit_text"
+                        android:padding="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Tools -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tools"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#444444"
+                android:background="#EEEEEE"
+                android:padding="6dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Version -->
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="App Version:"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvAppVersion"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#212121" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnCopy"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Copy Log"
+                    android:backgroundTint="#607D8B" />
+
+                <Button
+                    android:id="@+id/btnShare"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Share Log"
+                    android:backgroundTint="#009688"
+                    android:layout_marginStart="6dp" />
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnUpdate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Update APK from PC"
+                android:backgroundTint="#F44336" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ===== WALLET (eWallet App2App) TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabWallet"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <!-- Pass / Fail counters -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pass: "
+                android:textSize="13sp"
+                android:textColor="#388E3C" />
+            <TextView
+                android:id="@+id/tvEWalletPass"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#388E3C"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fail: "
+                android:textSize="13sp"
+                android:textColor="#C62828" />
+            <TextView
+                android:id="@+id/tvEWalletFail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#C62828" />
+        </LinearLayout>
+
+        <!-- Amount display -->
+        <TextView
+            android:id="@+id/etEWalletAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0.00"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:textSize="36sp"
+            android:gravity="end"
+            android:textColor="#000000"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 3D Numpad -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#D0D0D0"
+            android:padding="6dp"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnNum7" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="7" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum8" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="8" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum9" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="9" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnNum4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="4" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="5" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum6" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="6" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnNum1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="1" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="2" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="3" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <Button android:id="@+id/btnNumDot" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="00" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNum0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="0" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnNumBack" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="⌫" android:textSize="22sp" android:textStyle="bold" android:textColor="#FFFFFF" android:background="@drawable/numpad_delete" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Launch button -->
+        <Button
+            android:id="@+id/btnEWalletQR"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="E-Wallet QR"
+            android:backgroundTint="#E53935"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/tvEWalletStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enter amount and tap E-Wallet QR"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Transaction log -->
+        <TextView
+            android:id="@+id/tvEWalletEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="No transactions yet"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <ListView
+            android:id="@+id/lvEWalletResponses"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="1dp" />
+
+    </LinearLayout>
+
+    <!-- ===== TERMINAL / SALE TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabTerminal"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Card Payment"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Pass / Fail -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pass: "
+                android:textSize="13sp"
+                android:textColor="#388E3C" />
+            <TextView
+                android:id="@+id/tvTerminalPass"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#388E3C"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fail: "
+                android:textSize="13sp"
+                android:textColor="#C62828" />
+            <TextView
+                android:id="@+id/tvTerminalFail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#C62828" />
+        </LinearLayout>
+
+        <!-- Txn Amount display -->
+        <TextView
+            android:id="@+id/etTerminalAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0.00"
+            android:background="@android:drawable/edit_text"
+            android:padding="12dp"
+            android:textSize="36sp"
+            android:gravity="end"
+            android:textColor="#000000"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 3D Numpad -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#D0D0D0"
+            android:padding="6dp"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnTNum7" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="7" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum8" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="8" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum9" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="9" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnTNum4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="4" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="5" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum6" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="6" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
+                <Button android:id="@+id/btnTNum1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="1" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="2" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="3" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <Button android:id="@+id/btnTNumDot" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="00" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNum0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="0" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:background="@drawable/numpad_key" android:layout_marginEnd="6dp" android:stateListAnimator="@null" />
+                <Button android:id="@+id/btnTNumBack" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="⌫" android:textSize="22sp" android:textStyle="bold" android:textColor="#FFFFFF" android:background="@drawable/numpad_delete" android:stateListAnimator="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Order ID -->
+        <EditText
+            android:id="@+id/etTerminalOrderId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Order ID (optional)"
+            android:inputType="text"
+            android:textSize="14sp"
+            android:background="@android:drawable/edit_text"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- SALE -->
+        <Button
+            android:id="@+id/btnTerminalSale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SALE"
+            android:backgroundTint="#2196F3"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/tvTerminalStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ready — enter amount and tap SALE"
+            android:textSize="13sp"
+            android:padding="8dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Response list -->
+        <TextView
+            android:id="@+id/tvTerminalEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="No responses yet"
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <ListView
+            android:id="@+id/lvTerminalResponses"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="1dp" />
+
+    </LinearLayout>
+
+    <!-- ===== REPORT TAB ===== -->
+    <LinearLayout
+        android:id="@+id/tabReport"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <!-- Date navigation row -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:background="#1565C0"
+            android:padding="6dp">
+
+            <Button
+                android:id="@+id/btnReportPrevDay"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:text="◀"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#0D47A1"
+                android:padding="0dp"
+                android:stateListAnimator="@null" />
+
+            <TextView
+                android:id="@+id/tvReportDate"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="2026-01-01"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:gravity="center"
+                android:padding="8dp" />
+
+            <Button
+                android:id="@+id/btnReportNextDay"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:text="▶"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#0D47A1"
+                android:padding="0dp"
+                android:stateListAnimator="@null" />
+
+        </LinearLayout>
+
+        <!-- Summary card -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#E3F2FD"
+            android:padding="12dp">
+
+            <!-- eWallet row -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="4dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="eWallet Approved" android:textSize="13sp" android:textColor="#555555" />
+                <TextView android:id="@+id/tvRptWalletCount" android:layout_width="40dp" android:layout_height="wrap_content"
+                    android:text="0" android:textSize="13sp" android:textStyle="bold" android:textColor="#1B5E20" android:gravity="end" />
+                <TextView android:id="@+id/tvRptWalletAmt" android:layout_width="90dp" android:layout_height="wrap_content"
+                    android:text="MYR 0.00" android:textSize="13sp" android:textStyle="bold" android:textColor="#1B5E20" android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Card row -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="4dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="Card Approved" android:textSize="13sp" android:textColor="#555555" />
+                <TextView android:id="@+id/tvRptCardCount" android:layout_width="40dp" android:layout_height="wrap_content"
+                    android:text="0" android:textSize="13sp" android:textStyle="bold" android:textColor="#1565C0" android:gravity="end" />
+                <TextView android:id="@+id/tvRptCardAmt" android:layout_width="90dp" android:layout_height="wrap_content"
+                    android:text="MYR 0.00" android:textSize="13sp" android:textStyle="bold" android:textColor="#1565C0" android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#BBDEFB" android:layout_marginBottom="4dp" />
+
+            <!-- Total row -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="2dp">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="TOTAL APPROVED" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" />
+                <TextView android:id="@+id/tvRptTotalCount" android:layout_width="40dp" android:layout_height="wrap_content"
+                    android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#4A148C" android:gravity="end" />
+                <TextView android:id="@+id/tvRptTotalAmt" android:layout_width="90dp" android:layout_height="wrap_content"
+                    android:text="MYR 0.00" android:textSize="14sp" android:textStyle="bold" android:textColor="#4A148C" android:gravity="end" />
+            </LinearLayout>
+
+            <!-- Failed row -->
+            <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="Failed" android:textSize="12sp" android:textColor="#888888" />
+                <TextView android:id="@+id/tvRptFailCount" android:layout_width="40dp" android:layout_height="wrap_content"
+                    android:text="0" android:textSize="12sp" android:textColor="#C62828" android:gravity="end" />
+                <TextView android:layout_width="90dp" android:layout_height="wrap_content"
+                    android:text="" android:textSize="12sp" android:gravity="end" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Filter toggle -->
+        <RadioGroup
+            android:id="@+id/rgReportFilter"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="#F5F5F5">
+
+            <RadioButton
+                android:id="@+id/rbFilterBoth"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Both"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbFilterApproved"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Approved"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:buttonTint="#388E3C"
+                android:textColor="#388E3C" />
+
+            <RadioButton
+                android:id="@+id/rbFilterFailed"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Failed"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:buttonTint="#C62828"
+                android:textColor="#C62828" />
+
+        </RadioGroup>
+
+        <!-- Print button -->
+        <Button
+            android:id="@+id/btnPrintReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Print Report"
+            android:backgroundTint="#37474F"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_margin="8dp"
+            android:stateListAnimator="@null" />
+
+        <!-- Transaction list for the day -->
+        <TextView
+            android:id="@+id/tvReportEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="No transactions for this date"
+            android:textColor="#888888"
+            android:textSize="13sp" />
+
+        <ListView
+            android:id="@+id/lvReportList"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="1dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,1154 @@
+[00:06:08] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-11 00:04:13
+================================
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[DISPLAY TEST] open(0) FAIL: DeviceException[code=-6]: Error from JNI! Method not implement, Native result code = -253.
+[00:08:02] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-11 00:04:13
+================================
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[DISPLAY TEST] open(0) FAIL: DeviceException[code=-6]: Error from JNI! Method not implement, Native result code = -253.
+[STATUS] Log sent to 192.168.68.138
+[WALLET] QR generated: Boost RM 100 ref=TEST-1781107657031
+[TERMINAL] Launching VOID amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching CARD_SEARCH amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching TXN_LIST amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching SALE amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching SETTLE amount=100 inv=77075
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[00:51:20] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-12 00:49:34
+================================
+[TERMINAL] Launching SALE amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching CARD_SEARCH amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching VOID amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[WALLET] QR generated: DuitNow RM 1000 ref=TEST-1781196602990
+[WALLET] QR generated: DuitNow RM 1000 ref=TEST-1781196604941
+[WALLET] Payment confirmed: DuitNow RM 1000
+[TERMINAL] Launching SALE amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching SALE amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching TXN_LIST amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching TXN_LIST amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching TXN_LIST amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching TXN_LIST amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching CARD_SEARCH amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching CARD_SEARCH amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[TERMINAL] Launching EWALLET amount=100 inv=87352
+[TERMINAL] Failed to launch terminal: Unable to find explicit activity class {com.coherent.umobile_terminal/com.coherent.umobile_terminal.ReceiveSale}; have you declared this activity in your AndroidManifest.xml, or does your intent not match its declared <intent-filter>?
+[TERMINAL] Cancelled / no result (resultCode=0)
+[01:15:39] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:14:40
+================================
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[01:15:50] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:14:40
+================================
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[TERMINAL] ERROR: Launch failed: No Activity found to handle Intent { act=android.intent.action.VIEW dat=market://details/... }
+[STATUS] Log sent to 192.168.68.138
+[01:18:46] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:18:20
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[01:30:20] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:29:10
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=1
+[TERMINAL] Simulated INSERT CARD amt=1
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[01:45:06] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:43:41
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[01:45:12] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:43:41
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[STATUS] Log sent to 192.168.68.138
+[01:45:14] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:43:41
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[01:45:14] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:43:41
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[01:45:30] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:43:41
+================================
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Log sent to 192.168.68.138
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[TERMINAL] Terminal not installed: com.coherent.umobile_terminal
+[01:50:21] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:48:53
+================================
+[TERMINAL] Terminal not installed: com.coherent.centerm.cptpaterminal
+[TERMINAL] Terminal not installed: com.coherent.centerm.cptpaterminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] Terminal not installed: com.coherent.centerm.cptpaterminal
+[TERMINAL] Terminal not installed: com.coherent.centerm.cptpaterminal
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[TERMINAL] Terminal not installed: com.coherent.centerm.cptpaterminal
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[01:55:50] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:55:21
+================================
+[TERMINAL] No known terminal installed
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] No known terminal installed
+[01:56:34] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:55:21
+================================
+[TERMINAL] No known terminal installed
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] No known terminal installed
+[STATUS] Log sent to 192.168.68.138
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[01:57:11] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 01:55:21
+================================
+[TERMINAL] No known terminal installed
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[TERMINAL] No known terminal installed
+[STATUS] Log sent to 192.168.68.138
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[STATUS] Log sent to 192.168.68.138
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] Trying sdkDevice.open(0) + display()...
+[DISPLAY] sdkDevice approach failed: DeviceException[code=-6]: Error from JNI! Method not implement, Native result code = -253.
+[DISPLAY] Trying SecondaryDisplayInterface...
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] Trying sdkDevice.open(0) + display()...
+[DISPLAY] sdkDevice approach failed: DeviceException[code=-6]: Error from JNI! Method not implement, Native result code = -253.
+[DISPLAY] Trying SecondaryDisplayInterface...
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[TERMINAL] No known terminal installed
+[TERMINAL] Simulated WAVE amt=10
+[TERMINAL] Simulated INSERT CARD amt=10
+[17:49:08] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 17:49:05
+================================
+[17:49:36] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 17:49:05
+================================
+[STATUS] Log sent to 192.168.68.138
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=10
+[18:10:10] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-13 18:06:46
+================================
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[01:17:50] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-14 01:16:24
+================================
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=0.10
+[01:40:08] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-14 01:16:24
+================================
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=0.10
+[STATUS] Log sent to 192.168.68.138
+[STATUS] Running all tests...
+=== ALL TESTS ===
+[STATUS] Initializing SDK...
+--- Init Start ---
+SDK package loaded OK
+[STATUS] Init: SDK package loaded OK
+Found 11 services
+[STATUS] Init: Found 11 services
+  svc: com.cloudpos.sdk.server.service.MainService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.MainService
+  svc: com.cloudpos.sdk.server.service.CredicardService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.CredicardService
+  svc: com.cloudpos.sdk.server.service.HsmExtDeviceService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.HsmExtDeviceService
+  svc: com.cloudpos.sdk.server.service.SBService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.SBService
+  svc: com.cloudpos.sdk.server.service.DSService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.DSService
+  svc: com.cloudpos.sdk.server.service.OMService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.OMService
+  svc: com.cloudpos.sdk.server.service.SFeyService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.SFeyService
+  svc: com.cloudpos.sdk.server.service.MPayService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.MPayService
+  svc: com.cloudpos.sdk.server.service.IDeaLinkService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.IDeaLinkService
+  svc: com.cloudpos.sdk.server.service.PSamService
+[STATUS] Init:   svc: com.cloudpos.sdk.server.service.PSamService
+  svc: androidx.room.MultiInstanceInvalidationService
+[STATUS] Init:   svc: androidx.room.MultiInstanceInvalidationService
+bind(com.cloudpos.sdk.server.service.MainService)=true
+[STATUS] Init: bind(com.cloudpos.sdk.server.service.MainService)=true
+desc=com.cloudpos.advance.ext.IPOSTerminalExt
+[STATUS] Init: desc=com.cloudpos.advance.ext.IPOSTerminalExt
+Service proxy OK (hasGetDevice=true)
+[STATUS] Init: Service proxy OK (hasGetDevice=true)
+[STATUS] Opening printer...
+--- Trying Printer system service ---
+[STATUS] Init: --- Trying Printer system service ---
+Printer binder found, desc=""
+[STATUS] Init: Printer binder found, desc=""
+--- Scanning /system/framework/ ---
+[STATUS] Init: --- Scanning /system/framework/ ---
+All framework JARs:
+[STATUS] Init: All framework JARs:
+  vendor.qti.hardware.radio.qtiradio-V1-java.jar
+[STATUS] Init:   vendor.qti.hardware.radio.qtiradio-V1-java.jar
+  services.jar
+[STATUS] Init:   services.jar
+  requestsync.jar
+[STATUS] Init:   requestsync.jar
+  QXPerformance.jar
+[STATUS] Init:   QXPerformance.jar
+  framework-graphics.jar
+[STATUS] Init:   framework-graphics.jar
+  WfdCommon.jar
+[STATUS] Init:   WfdCommon.jar
+  am.jar
+[STATUS] Init:   am.jar
+  bmgr.jar
+[STATUS] Init:   bmgr.jar
+  org.apache.http.legacy.jar
+[STATUS] Init:   org.apache.http.legacy.jar
+  monkey.jar
+[STATUS] Init:   monkey.jar
+  hid.jar
+[STATUS] Init:   hid.jar
+  android.test.base.jar
+[STATUS] Init:   android.test.base.jar
+  vr.jar
+[STATUS] Init:   vr.jar
+  voip-common.jar
+[STATUS] Init:   voip-common.jar
+  POS_crypto.jar
+[STATUS] Init:   POS_crypto.jar
+  tcmiface.jar
+[STATUS] Init:   tcmiface.jar
+  tcmclient.jar
+[STATUS] Init:   tcmclient.jar
+  QPerformance.jar
+[STATUS] Init:   QPerformance.jar
+  com.android.media.remotedisplay.jar
+[STATUS] Init:   com.android.media.remotedisplay.jar
+  uiautomator.jar
+[STATUS] Init:   uiautomator.jar
+  javax.obex.jar
+[STATUS] Init:   javax.obex.jar
+  telephony-common.jar
+[STATUS] Init:   telephony-common.jar
+  svc.jar
+[STATUS] Init:   svc.jar
+  android.test.mock.jar
+[STATUS] Init:   android.test.mock.jar
+  ims-common.jar
+[STATUS] Init:   ims-common.jar
+  telecom.jar
+[STATUS] Init:   telecom.jar
+  incident-helper-cmd.jar
+[STATUS] Init:   incident-helper-cmd.jar
+  locksettings.jar
+[STATUS] Init:   locksettings.jar
+  appwidget.jar
+[STATUS] Init:   appwidget.jar
+  sm.jar
+[STATUS] Init:   sm.jar
+  bu.jar
+[STATUS] Init:   bu.jar
+  android.test.runner.jar
+[STATUS] Init:   android.test.runner.jar
+  ext.jar
+[STATUS] Init:   ext.jar
+  qcom.fmradio.jar
+[STATUS] Init:   qcom.fmradio.jar
+  framework.jar
+[STATUS] Init:   framework.jar
+  com.android.future.usb.accessory.jar
+[STATUS] Init:   com.android.future.usb.accessory.jar
+  android.hidl.manager-V1.0-java.jar
+[STATUS] Init:   android.hidl.manager-V1.0-java.jar
+  com.android.location.provider.jar
+[STATUS] Init:   com.android.location.provider.jar
+  com.android.nfc_extras.jar
+[STATUS] Init:   com.android.nfc_extras.jar
+  abx.jar
+[STATUS] Init:   abx.jar
+  android.hidl.base-V1.0-java.jar
+[STATUS] Init:   android.hidl.base-V1.0-java.jar
+  UxPerformance.jar
+[STATUS] Init:   UxPerformance.jar
+  com.android.mediadrm.signer.jar
+[STATUS] Init:   com.android.mediadrm.signer.jar
+  vendor.qti.hardware.data.connectionaidl-V1-java.jar
+[STATUS] Init:   vendor.qti.hardware.data.connectionaidl-V1-java.jar
+  uinput.jar
+[STATUS] Init:   uinput.jar
+  telephony-ext.jar
+[STATUS] Init:   telephony-ext.jar
+  content.jar
+[STATUS] Init:   content.jar
+--- Scanning BOOTCLASSPATH for printer classes ---
+[STATUS] Init: --- Scanning BOOTCLASSPATH for printer classes ---
+  java.time.format.DateTimeFormatterBuilder$CharLiteralPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$CharLiteralPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ChronoPrinterParser$$ExternalSyntheticLambda0 (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ChronoPrinterParser$$ExternalSyntheticLambda0 (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ChronoPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ChronoPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$CompositePrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$CompositePrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$DateTimePrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$DateTimePrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$FractionPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$FractionPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$InstantPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$InstantPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$LocalizedOffsetIdPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$LocalizedOffsetIdPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$LocalizedPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$LocalizedPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$NumberPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$NumberPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$OffsetIdPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$OffsetIdPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$PadPrinterParserDecorator (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$PadPrinterParserDecorator (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser$$ExternalSyntheticLambda0 (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser$$ExternalSyntheticLambda0 (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser-IA (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser-IA (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ReducedPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$StringLiteralPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$StringLiteralPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$TextPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$TextPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$WeekBasedFieldPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$WeekBasedFieldPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ZoneIdPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ZoneIdPrinterParser (from core-oj.jar)
+  java.time.format.DateTimeFormatterBuilder$ZoneTextPrinterParser (from core-oj.jar)
+[STATUS] Init:   java.time.format.DateTimeFormatterBuilder$ZoneTextPrinterParser (from core-oj.jar)
+  android.os.BatteryStats$HistoryPrinter (from framework.jar)
+[STATUS] Init:   android.os.BatteryStats$HistoryPrinter (from framework.jar)
+  android.print.IPrinterDiscoveryObserver$Default (from framework.jar)
+[STATUS] Init:   android.print.IPrinterDiscoveryObserver$Default (from framework.jar)
+  android.print.IPrinterDiscoveryObserver$Stub$Proxy (from framework.jar)
+[STATUS] Init:   android.print.IPrinterDiscoveryObserver$Stub$Proxy (from framework.jar)
+  => candidate interface: android.print.IPrinterDiscoveryObserver$Proxy
+[STATUS] Init:   => candidate interface: android.print.IPrinterDiscoveryObserver$Proxy
+  android.print.IPrinterDiscoveryObserver$Stub (from framework.jar)
+[STATUS] Init:   android.print.IPrinterDiscoveryObserver$Stub (from framework.jar)
+  => candidate interface: android.print.IPrinterDiscoveryObserver
+[STATUS] Init:   => candidate interface: android.print.IPrinterDiscoveryObserver
+  android.print.IPrinterDiscoveryObserver (from framework.jar)
+[STATUS] Init:   android.print.IPrinterDiscoveryObserver (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$$ExternalSyntheticLambda0 (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$$ExternalSyntheticLambda0 (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$$ExternalSyntheticLambda1 (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$$ExternalSyntheticLambda1 (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$1 (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$1 (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$Builder$$ExternalSyntheticLambda0 (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$Builder$$ExternalSyntheticLambda0 (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$Builder$$ExternalSyntheticLambda1 (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$Builder$$ExternalSyntheticLambda1 (from framework.jar)
+  android.print.PrinterCapabilitiesInfo$Builder (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo$Builder (from framework.jar)
+  android.print.PrinterCapabilitiesInfo-IA (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo-IA (from framework.jar)
+  android.print.PrinterCapabilitiesInfo (from framework.jar)
+[STATUS] Init:   android.print.PrinterCapabilitiesInfo (from framework.jar)
+  android.print.PrinterDiscoverySession$OnPrintersChangeListener (from framework.jar)
+[STATUS] Init:   android.print.PrinterDiscoverySession$OnPrintersChangeListener (from framework.jar)
+  android.print.PrinterDiscoverySession$PrinterDiscoveryObserver (from framework.jar)
+[STATUS] Init:   android.print.PrinterDiscoverySession$PrinterDiscoveryObserver (from framework.jar)
+  android.print.PrinterDiscoverySession$SessionHandler (from framework.jar)
+[STATUS] Init:   android.print.PrinterDiscoverySession$SessionHandler (from framework.jar)
+  android.print.PrinterDiscoverySession (from framework.jar)
+[STATUS] Init:   android.print.PrinterDiscoverySession (from framework.jar)
+  android.print.PrinterId$1 (from framework.jar)
+[STATUS] Init:   android.print.PrinterId$1 (from framework.jar)
+  android.print.PrinterId-IA (from framework.jar)
+[STATUS] Init:   android.print.PrinterId-IA (from framework.jar)
+  android.print.PrinterId (from framework.jar)
+[STATUS] Init:   android.print.PrinterId (from framework.jar)
+  android.print.PrinterInfo$1 (from framework.jar)
+[STATUS] Init:   android.print.PrinterInfo$1 (from framework.jar)
+  android.print.PrinterInfo$Builder (from framework.jar)
+[STATUS] Init:   android.print.PrinterInfo$Builder (from framework.jar)
+  android.print.PrinterInfo$Status (from framework.jar)
+[STATUS] Init:   android.print.PrinterInfo$Status (from framework.jar)
+  android.print.PrinterInfo-IA (from framework.jar)
+[STATUS] Init:   android.print.PrinterInfo-IA (from framework.jar)
+  android.print.PrinterInfo (from framework.jar)
+[STATUS] Init:   android.print.PrinterInfo (from framework.jar)
+  android.printservice.CustomPrinterIconCallback (from framework.jar)
+[STATUS] Init:   android.printservice.CustomPrinterIconCallback (from framework.jar)
+  android.printservice.PrinterDiscoverySession (from framework.jar)
+[STATUS] Init:   android.printservice.PrinterDiscoverySession (from framework.jar)
+  android.service.print.PrinterCapabilitiesProto (from framework.jar)
+[STATUS] Init:   android.service.print.PrinterCapabilitiesProto (from framework.jar)
+  android.service.print.PrinterDiscoverySessionProto (from framework.jar)
+[STATUS] Init:   android.service.print.PrinterDiscoverySessionProto (from framework.jar)
+  android.service.print.PrinterIdProto (from framework.jar)
+[STATUS] Init:   android.service.print.PrinterIdProto (from framework.jar)
+  android.service.print.PrinterInfoProto (from framework.jar)
+[STATUS] Init:   android.service.print.PrinterInfoProto (from framework.jar)
+  android.util.LogPrinter (from framework.jar)
+[STATUS] Init:   android.util.LogPrinter (from framework.jar)
+  android.util.PrefixPrinter (from framework.jar)
+[STATUS] Init:   android.util.PrefixPrinter (from framework.jar)
+  android.util.PrintStreamPrinter (from framework.jar)
+[STATUS] Init:   android.util.PrintStreamPrinter (from framework.jar)
+  android.util.PrintWriterPrinter (from framework.jar)
+[STATUS] Init:   android.util.PrintWriterPrinter (from framework.jar)
+  android.util.Printer (from framework.jar)
+[STATUS] Init:   android.util.Printer (from framework.jar)
+  android.util.StringBuilderPrinter (from framework.jar)
+[STATUS] Init:   android.util.StringBuilderPrinter (from framework.jar)
+  com.android.framework.protobuf.nano.MessageNanoPrinter (from framework.jar)
+[STATUS] Init:   com.android.framework.protobuf.nano.MessageNanoPrinter (from framework.jar)
+  com.android.internal.telephony.protobuf.nano.MessageNanoPrinter (from telephony-common.jar)
+[STATUS] Init:   com.android.internal.telephony.protobuf.nano.MessageNanoPrinter (from telephony-common.jar)
+  com.android.phone.ecc.nano.MessageNanoPrinter (from telephony-common.jar)
+[STATUS] Init:   com.android.phone.ecc.nano.MessageNanoPrinter (from telephony-common.jar)
+--- Trying Stub candidates ---
+[STATUS] Init: --- Trying Stub candidates ---
+--- Trying raw transact (first 3 only) ---
+[STATUS] Init: --- Trying raw transact (first 3 only) ---
+  transact(1) => SEC: null
+[STATUS] Init:   transact(1) => SEC: null
+  transact(2) => SEC: null
+[STATUS] Init:   transact(2) => SEC: null
+  transact(3) => SEC: null
+[STATUS] Init:   transact(3) => SEC: null
+--- Trying SystemExtApiService ---
+[STATUS] Init: --- Trying SystemExtApiService ---
+bind(com.wizarpos.wizarviewagentassistant.SystemExtApiService)=true
+[STATUS] Init: bind(com.wizarpos.wizarviewagentassistant.SystemExtApiService)=true
+Agent service desc=com.wizarpos.wizarviewagentassistant.aidl.ISystemExtApi
+[STATUS] Init: Agent service desc=com.wizarpos.wizarviewagentassistant.aidl.ISystemExtApi
+Agent proxy: com.wizarpos.wizarviewagentassistant.aidl.ISystemExtApi$Stub$Proxy
+[STATUS] Init: Agent proxy: com.wizarpos.wizarviewagentassistant.aidl.ISystemExtApi$Stub$Proxy
+  addToLockTaskAllowList(String) => boolean
+[STATUS] Init:   addToLockTaskAllowList(String) => boolean
+  cancelPairedBluetoothDevice(String) => boolean
+[STATUS] Init:   cancelPairedBluetoothDevice(String) => boolean
+  clearCredentials() => boolean
+[STATUS] Init:   clearCredentials() => boolean
+  deleteCaCert(String) => boolean
+[STATUS] Init:   deleteCaCert(String) => boolean
+  disableDeviceOwner(String,String) => boolean
+[STATUS] Init:   disableDeviceOwner(String,String) => boolean
+  disableNavigationBarButton(int,boolean) => void
+[STATUS] Init:   disableNavigationBarButton(int,boolean) => void
+  enableAirplaneMode(boolean) => void
+[STATUS] Init:   enableAirplaneMode(boolean) => void
+  enableAutoTime(boolean) => void
+[STATUS] Init:   enableAutoTime(boolean) => void
+  enableAutoTimeGUI(boolean) => void
+[STATUS] Init:   enableAutoTimeGUI(boolean) => void
+  enableAutoTimezone(boolean) => void
+[STATUS] Init:   enableAutoTimezone(boolean) => void
+  enableAutoTimezoneGUI(boolean) => void
+[STATUS] Init:   enableAutoTimezoneGUI(boolean) => void
+  enableLockScreen(boolean) => boolean
+[STATUS] Init:   enableLockScreen(boolean) => boolean
+  enableMtp(boolean) => void
+[STATUS] Init:   enableMtp(boolean) => void
+  enableShowTouches(boolean) => void
+[STATUS] Init:   enableShowTouches(boolean) => void
+  enableUnkownSourceApp(String,boolean) => boolean
+[STATUS] Init:   enableUnkownSourceApp(String,boolean) => boolean
+  existCaCert(String) => boolean
+[STATUS] Init:   existCaCert(String) => boolean
+  existKeyPair(String) => boolean
+[STATUS] Init:   existKeyPair(String) => boolean
+  getCaCert(String) => byte[]
+[STATUS] Init:   getCaCert(String) => byte[]
+  getEth0Mac() => byte[]
+[STATUS] Init:   getEth0Mac() => byte[]
+  getLastUserActivityTime() => long
+[STATUS] Init:   getLastUserActivityTime() => long
+  getLockScreenShowNotification() => int
+[STATUS] Init:   getLockScreenShowNotification() => int
+  getMtpStatus() => boolean
+[STATUS] Init:   getMtpStatus() => boolean
+  getPreferredNetworkType(int) => int
+[STATUS] Init:   getPreferredNetworkType(int) => int
+  getScreenshotInPNG() => byte[]
+[STATUS] Init:   getScreenshotInPNG() => byte[]
+  getShowTouchesState() => boolean
+[STATUS] Init:   getShowTouchesState() => boolean
+  getStatusbarSettingsButtonVisibility() => boolean
+[STATUS] Init:   getStatusbarSettingsButtonVisibility() => boolean
+  getSupportedNetworkTypes() => NetworkType[]
+[STATUS] Init:   getSupportedNetworkTypes() => NetworkType[]
+  getTextOnLockScreen() => String
+[STATUS] Init:   getTextOnLockScreen() => String
+  getTouchScreenWakeupValue() => String
+[STATUS] Init:   getTouchScreenWakeupValue() => String
+  getWifiMac() => byte[]
+[STATUS] Init:   getWifiMac() => byte[]
+  installCaCert(byte[]) => String
+[STATUS] Init:   installCaCert(byte[]) => String
+  installKeyPair(String,int,byte[],byte[]) => boolean
+[STATUS] Init:   installKeyPair(String,int,byte[],byte[]) => boolean
+  isAccessibilityDisplayInversion() => boolean
+[STATUS] Init:   isAccessibilityDisplayInversion() => boolean
+  isEnableAutoTime() => boolean
+[STATUS] Init:   isEnableAutoTime() => boolean
+  isEnableAutoTimeGUI() => boolean
+[STATUS] Init:   isEnableAutoTimeGUI() => boolean
+  isEnableAutoTimezone() => boolean
+[STATUS] Init:   isEnableAutoTimezone() => boolean
+  isEnableAutoTimezoneGUI() => boolean
+[STATUS] Init:   isEnableAutoTimezoneGUI() => boolean
+  isEnableBluetooth() => boolean
+[STATUS] Init:   isEnableBluetooth() => boolean
+  isEnableCamera() => boolean
+[STATUS] Init:   isEnableCamera() => boolean
+  isEnableExtMedia() => boolean
+[STATUS] Init:   isEnableExtMedia() => boolean
+  isEnableUsb() => boolean
+[STATUS] Init:   isEnableUsb() => boolean
+  isEnableWifi() => boolean
+[STATUS] Init:   isEnableWifi() => boolean
+  isEnabledShowBatteryPercent() => boolean
+[STATUS] Init:   isEnabledShowBatteryPercent() => boolean
+  isPowerKeyBlocked() => boolean
+[STATUS] Init:   isPowerKeyBlocked() => boolean
+  isTerminalRooted() => boolean
+[STATUS] Init:   isTerminalRooted() => boolean
+  lockNow() => void
+[STATUS] Init:   lockNow() => void
+  pairBTDevice(String,String) => boolean
+[STATUS] Init:   pairBTDevice(String,String) => boolean
+  removeFromLockTaskAllowList(String) => boolean
+[STATUS] Init:   removeFromLockTaskAllowList(String) => boolean
+  removeKeyPair(String) => boolean
+[STATUS] Init:   removeKeyPair(String) => boolean
+  removeWifiSSID(String) => boolean
+[STATUS] Init:   removeWifiSSID(String) => boolean
+  screenshot() => Bitmap
+[STATUS] Init:   screenshot() => Bitmap
+  setAccessibilityDisplayInversion(boolean) => void
+[STATUS] Init:   setAccessibilityDisplayInversion(boolean) => void
+  setAutoBatteryControlMode(boolean) => boolean
+[STATUS] Init:   setAutoBatteryControlMode(boolean) => boolean
+  setBatteryCounterMode(boolean) => boolean
+[STATUS] Init:   setBatteryCounterMode(boolean) => boolean
+  setBluetooth(boolean) => boolean
+[STATUS] Init:   setBluetooth(boolean) => boolean
+  setButtonWakeup(boolean) => boolean
+[STATUS] Init:   setButtonWakeup(boolean) => boolean
+  setCamera(boolean) => boolean
+[STATUS] Init:   setCamera(boolean) => boolean
+  setDeviceOwner(String,String) => boolean
+[STATUS] Init:   setDeviceOwner(String,String) => boolean
+  setExtMedia(boolean) => boolean
+[STATUS] Init:   setExtMedia(boolean) => boolean
+  setLanguage(String,String,String) => boolean
+[STATUS] Init:   setLanguage(String,String,String) => boolean
+  setLockScreenShowNotification(int) => void
+[STATUS] Init:   setLockScreenShowNotification(int) => void
+  setLockTaskAllowedPackages(String[]) => boolean
+[STATUS] Init:   setLockTaskAllowedPackages(String[]) => boolean
+  setMobileDataEnabled(int,boolean) => boolean
+[STATUS] Init:   setMobileDataEnabled(int,boolean) => boolean
+  setMobileDataRoamingEnabled(int,int) => boolean
+[STATUS] Init:   setMobileDataRoamingEnabled(int,int) => boolean
+  setPasswordLock(boolean,String) => boolean
+[STATUS] Init:   setPasswordLock(boolean,String) => boolean
+  setPatternLock(boolean,String) => boolean
+[STATUS] Init:   setPatternLock(boolean,String) => boolean
+  setPinLock(boolean,String) => boolean
+[STATUS] Init:   setPinLock(boolean,String) => boolean
+  setPowerKeyBlocked(boolean) => void
+[STATUS] Init:   setPowerKeyBlocked(boolean) => void
+  setPreferredNetworkType(int,int) => boolean
+[STATUS] Init:   setPreferredNetworkType(int,int) => boolean
+  setScreenOffTimeout(int) => boolean
+[STATUS] Init:   setScreenOffTimeout(int) => boolean
+  setShowBatteryPercent(boolean) => void
+[STATUS] Init:   setShowBatteryPercent(boolean) => void
+  setStatusBarLocked(boolean) => void
+[STATUS] Init:   setStatusBarLocked(boolean) => void
+  setStatusbarSettingsButtonVisibility(boolean) => void
+[STATUS] Init:   setStatusbarSettingsButtonVisibility(boolean) => void
+  setSystemOrientation(int) => boolean
+[STATUS] Init:   setSystemOrientation(int) => boolean
+  setTextOnLockScreen(String) => void
+[STATUS] Init:   setTextOnLockScreen(String) => void
+  setTouchScreenWakeupValue(String) => boolean
+[STATUS] Init:   setTouchScreenWakeupValue(String) => boolean
+  setUsb(boolean) => boolean
+[STATUS] Init:   setUsb(boolean) => boolean
+  setUsrProp(String,String) => boolean
+[STATUS] Init:   setUsrProp(String,String) => boolean
+  setWifi(boolean) => boolean
+[STATUS] Init:   setWifi(boolean) => boolean
+  setWifiDhcp(String) => boolean
+[STATUS] Init:   setWifiDhcp(String) => boolean
+  setWifiStaticIp(String,IpBean) => boolean
+[STATUS] Init:   setWifiStaticIp(String,IpBean) => boolean
+  startLockTaskMode(int) => boolean
+[STATUS] Init:   startLockTaskMode(int) => boolean
+  startWifiAp(String,String,String,boolean) => boolean
+[STATUS] Init:   startWifiAp(String,String,String,boolean) => boolean
+  stopApp(String) => boolean
+[STATUS] Init:   stopApp(String) => boolean
+  stopWifiAp() => boolean
+[STATUS] Init:   stopWifiAp() => boolean
+bind(com.wizarpos.wizarviewagentassistant.SystemHideApiService)=true
+[STATUS] Init: bind(com.wizarpos.wizarviewagentassistant.SystemHideApiService)=true
+timeout waiting for com.wizarpos.wizarviewagentassistant.SystemHideApiService
+[STATUS] Init: timeout waiting for com.wizarpos.wizarviewagentassistant.SystemHideApiService
+--- Service proxy methods ---
+[STATUS] Init: --- Service proxy methods ---
+  getDevice(String) => IBinder
+[STATUS] Init:   getDevice(String) => IBinder
+--- Trying getDevice ---
+[STATUS] Init: --- Trying getDevice ---
+getDevice(String) => IBinder
+[STATUS] Init: getDevice(String) => IBinder
+cloudpos-printer => null
+[STATUS] Init: cloudpos-printer => null
+com.cloudpos.device.printer => null
+[STATUS] Init: com.cloudpos.device.printer => null
+printer => null
+[STATUS] Init: printer => null
+Printer => null
+[STATUS] Init: Printer => null
+com.cloudpos.printer => null
+[STATUS] Init: com.cloudpos.printer => null
+thermal_printer => null
+[STATUS] Init: thermal_printer => null
+inner_printer => null
+[STATUS] Init: inner_printer => null
+builtin_printer => null
+[STATUS] Init: builtin_printer => null
+com.cloudpos.aidl.printer.IPrinter => null
+[STATUS] Init: com.cloudpos.aidl.printer.IPrinter => null
+com.cloudpos.aidl.printer => null
+[STATUS] Init: com.cloudpos.aidl.printer => null
+com.cloudpos.advance.ext.printer.IPrinter => null
+[STATUS] Init: com.cloudpos.advance.ext.printer.IPrinter => null
+com.cloudpos.advance.printer.IPrinter => null
+[STATUS] Init: com.cloudpos.advance.printer.IPrinter => null
+com.cloudpos.sdk.printer.IPrinter => null
+[STATUS] Init: com.cloudpos.sdk.printer.IPrinter => null
+com.cloudpos.jniinterface.printer => null
+[STATUS] Init: com.cloudpos.jniinterface.printer => null
+com.cloudpos.printer.IPrinter => null
+[STATUS] Init: com.cloudpos.printer.IPrinter => null
+com.cloudpos.printer.PrinterDevice => null
+[STATUS] Init: com.cloudpos.printer.PrinterDevice => null
+com.cloudpos.device.builtinprinter => null
+[STATUS] Init: com.cloudpos.device.builtinprinter => null
+com.cloudpos.device.thermal_printer => null
+[STATUS] Init: com.cloudpos.device.thermal_printer => null
+InnerPrinter => null
+[STATUS] Init: InnerPrinter => null
+ThermalPrinter => null
+[STATUS] Init: ThermalPrinter => null
+BuiltInPrinter => null
+[STATUS] Init: BuiltInPrinter => null
+--- Trying POSTerminal class ---
+[STATUS] Init: --- Trying POSTerminal class ---
+Loaded com.cloudpos.POSTerminal
+[STATUS] Init: Loaded com.cloudpos.POSTerminal
+getInstance(Context) => com.cloudpos.sdk.impl.POSTerminalImpl
+[STATUS] Init: getInstance(Context) => com.cloudpos.sdk.impl.POSTerminalImpl
+Terminal methods:
+[STATUS] Init: Terminal methods:
+  getAndoridContext() => Context
+[STATUS] Init:   getAndoridContext() => Context
+  getDevice(String) => Device
+[STATUS] Init:   getDevice(String) => Device
+  getDevice(String,int) => Device
+[STATUS] Init:   getDevice(String,int) => Device
+  getDeviceSpec(String) => DeviceSpec
+[STATUS] Init:   getDeviceSpec(String) => DeviceSpec
+  getInstance(Context) => POSTerminal
+[STATUS] Init:   getInstance(Context) => POSTerminal
+  getTerminalSpec() => TerminalSpec
+[STATUS] Init:   getTerminalSpec() => TerminalSpec
+  isDeviceExist(String) => boolean
+[STATUS] Init:   isDeviceExist(String) => boolean
+  listDevices() => String[]
+[STATUS] Init:   listDevices() => String[]
+POSTerminal.getDevice("cloudpos-printer") => null
+[STATUS] Init: POSTerminal.getDevice("cloudpos-printer") => null
+POSTerminal.getDevice("printer") => null
+[STATUS] Init: POSTerminal.getDevice("printer") => null
+POSTerminal.getDevice("com.cloudpos.device.printer") => com.cloudpos.sdk.printer.impl.PrinterDeviceImpl
+[STATUS] Init: POSTerminal.getDevice("com.cloudpos.device.printer") => com.cloudpos.sdk.printer.impl.PrinterDeviceImpl
+Printer device: com.cloudpos.sdk.printer.impl.PrinterDeviceImpl
+[STATUS] Init: Printer device: com.cloudpos.sdk.printer.impl.PrinterDeviceImpl
+Printer methods:
+[STATUS] Init: Printer methods:
+  close()
+[STATUS] Init:   close()
+  cutPaper()
+[STATUS] Init:   cutPaper()
+  open()
+[STATUS] Init:   open()
+  open(int)
+[STATUS] Init:   open(int)
+  printBarcode(Format,int,String)
+[STATUS] Init:   printBarcode(Format,int,String)
+  printBitmap(Bitmap)
+[STATUS] Init:   printBitmap(Bitmap)
+  printBitmap(Format,Bitmap)
+[STATUS] Init:   printBitmap(Format,Bitmap)
+  printBitmap(Format,Bitmap,int)
+[STATUS] Init:   printBitmap(Format,Bitmap,int)
+  printBitmapAutoGrayscale(Bitmap)
+[STATUS] Init:   printBitmapAutoGrayscale(Bitmap)
+  printBitmapAutoGrayscale(Format,Bitmap)
+[STATUS] Init:   printBitmapAutoGrayscale(Format,Bitmap)
+  printBitmapAutoGrayscale(Format,Bitmap,int)
+[STATUS] Init:   printBitmapAutoGrayscale(Format,Bitmap,int)
+  printHTML(String)
+[STATUS] Init:   printHTML(String)
+  printHTML(Context,String)
+[STATUS] Init:   printHTML(Context,String)
+  printHTML(String,PrinterHtmlListener)
+[STATUS] Init:   printHTML(String,PrinterHtmlListener)
+  printHTML(Context,String,PrinterHtmlListener)
+[STATUS] Init:   printHTML(Context,String,PrinterHtmlListener)
+  printPDF(InputStream)
+[STATUS] Init:   printPDF(InputStream)
+  printPDF(InputStream,int)
+[STATUS] Init:   printPDF(InputStream,int)
+  printPDFWithBrightness(InputStream,int,int)
+[STATUS] Init:   printPDFWithBrightness(InputStream,int,int)
+  printText(String)
+[STATUS] Init:   printText(String)
+  printText(Format,String)
+[STATUS] Init:   printText(Format,String)
+  printlnText(String)
+[STATUS] Init:   printlnText(String)
+  printlnText(Format,String)
+[STATUS] Init:   printlnText(Format,String)
+Printer open() OK
+[STATUS] Init: Printer open() OK
+Printer opened OK
+[STATUS] Printer ready
+[STATUS] Printing text...
+--- Text Print ---
+Text print OK
+[STATUS] Text print completed
+[STATUS] Printing image...
+--- Image Print ---
+Image print OK
+[STATUS] Image print completed
+[STATUS] Feed & cut...
+Cut paper OK
+[STATUS] Paper cut done
+=== ALL DONE ===
+[STATUS] All tests completed
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=0.10
+[DISPLAY] --- Init Customer Display ---
+[DISPLAY] Trying Android DisplayManager...
+[DISPLAY] Total displays: 1
+[DISPLAY]   [0] Built-in Screen state=2 size=720x1504
+[DISPLAY] No secondary display via DisplayManager
+[DISPLAY] Trying CloudPOS SDK...
+[DISPLAY] POSTerminal OK
+[DISPLAY] SDK device: "cloudpos.device.secondarydisplay"
+[DISPLAY] Trying sdkDevice.open(0) + display()...
+[DISPLAY] sdkDevice approach failed: DeviceException[code=-6]: Error from JNI! Method not implement, Native result code = -253.
+[DISPLAY] Trying SecondaryDisplayInterface...
+[DISPLAY] JNI open()=-253
+[DISPLAY] displayDefaultScreen()=-255 FAILED
+[DISPLAY] CloudPOS JNI not accessible (result=-255)
+[DISPLAY] ERROR: No secondary display accessible
+[23:41:19] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-17 22:34:52
+================================
+[EWALLET] E-Wallet launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[23:42:12] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-06-17 22:34:52
+================================
+[EWALLET] E-Wallet launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[STATUS] Log sent to 192.168.51.130
+[EWALLET] E-Wallet launched pkg=com.coherent.centerm.cptpaterminal amt=1.00
+[02:33:55] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-07-25 02:31:10
+================================
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=10.00
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=10.00
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=0.10
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=0.00
+[02:34:06] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-07-25 02:31:10
+================================
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=10.00
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=10.00
+[TERMINAL] SALE launched pkg=com.coherent.centerm.cptpaterminal amt=0.10
+[EWALLET] E-Wallet QR launched pkg=com.coherent.centerm.cptpaterminal amt=0.00
+[22:02:02] === WizarPOS Diagnostic Log ===
+Device:  SHWP WIZARPOS Q2 pro
+Android: 14 (API 34)
+Path:    /data/user/0/com.example.printerdemo/files/logs/printer_diag.log
+Dir OK:  true
+Started: 2026-07-26 22:01:13
+================================
