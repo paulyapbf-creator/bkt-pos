@@ -877,20 +877,34 @@ function renderBillingStep() {
       ${shopeeEnabled  ? `<button class="pay-method-btn" data-method="shopeepay"><span class="pay-icon">🛒</span><span class="pay-name">ShopeePay</span></button>` : ''}
       ${grabEnabled    ? `<button class="pay-method-btn" data-method="grabpay"><span class="pay-icon">🟢</span><span class="pay-name">GrabPay</span></button>` : ''}
       ${maeEnabled     ? `<button class="pay-method-btn" data-method="mae"><span class="pay-icon">🏧</span><span class="pay-name">MAE</span></button>` : ''}
-      ${terminalEnabled  ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Coherent</span></button>` : ''}
-      ${cewalletEnabled  ? `<button class="pay-method-btn" data-method="cewallet"><span class="pay-icon">📱</span><span class="pay-name">Coherent eWallet</span></button>` : ''}
+      ${terminalEnabled  ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Credit Card</span></button>` : ''}
+      ${cewalletEnabled  ? `<button class="pay-method-btn" data-method="cewallet"><span class="pay-icon">📱</span><span class="pay-name">Wallet</span></button>` : ''}
       ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
       <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
     </div>`;
     bodyEl.querySelectorAll('.pay-method-btn').forEach(btn => {
-      btn.addEventListener('click', () => { state.payMethod = btn.dataset.method; state.payStep = 'qr'; renderBillingStep(); });
+      btn.addEventListener('click', () => {
+        const m = btn.dataset.method;
+        state.payMethod = m;
+        if (m === 'cewallet' || m === 'terminal') {
+          // Skip intermediate screen — launch directly
+          const bills = loadActiveBills();
+          const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
+          const bd = calcBillBreakdown(subtotal, loadSettings());
+          if (m === 'cewallet') launchCoherentEwallet(bd.total);
+          else launchTerminalSale(bd.total, 'WAVE');
+        } else {
+          state.payStep = 'qr';
+          renderBillingStep();
+        }
+      });
     });
 
   } else if (state.payStep === 'qr') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Coherent', cewallet: 'Coherent eWallet', cash: t('cash'), card: t('credit_card') };
+    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -928,7 +942,7 @@ function renderBillingStep() {
       body += `<div style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">⚠️ Verify <b>${getCurrency()} ${bd.total.toFixed(2)}</b> received before confirming</div>`;
     } else if (method === 'cewallet') {
       body = `<div class="cash-pay-display">
-        <div class="cash-pay-label">Coherent eWallet Payment</div>
+        <div class="cash-pay-label">Wallet Payment</div>
         <div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div>
         <div style="margin-top:20px;text-align:center;">
           <button id="btn-launch-ewallet" style="display:inline-flex;flex-direction:column;align-items:center;gap:8px;padding:18px 32px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;">
@@ -939,7 +953,7 @@ function renderBillingStep() {
       </div>`;
     } else if (method === 'terminal') {
       body = `<div class="cash-pay-display">
-        <div class="cash-pay-label">Coherent Card Payment</div>
+        <div class="cash-pay-label">Credit Card Payment</div>
         <div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div>
         <div style="display:flex;gap:16px;justify-content:center;margin-top:20px;">
           <button id="btn-wave" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 24px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;min-width:110px;">
@@ -1479,7 +1493,7 @@ async function confirmTablePayment(cardResult) {
   closeBillingModal();
   setPricingMode('base');
   updateTableBtn();
-  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Coherent', cewallet: 'Coherent eWallet', cash: t('cash'), card: t('credit_card') };
+  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
   if ((method === 'terminal' || method === 'cewallet') && cardResult) {
