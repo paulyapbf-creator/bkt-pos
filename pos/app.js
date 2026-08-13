@@ -2200,19 +2200,15 @@ async function init() {
   }
   applySessionToUI(session);
 
-  // ── Step 1: Load menu — from API if tenant link or tenant session, else localStorage cache ──
+  // ── Step 1: Load menu — always from localStorage first (items.js writes there synchronously),
+  //    then background API fetch will override with fresh server data.
   const isTenantLink = !!urlParams.get('store') || !!getTenantSession();
-  if (isTenantLink) {
-    // Tenant link or super-user selected tenant: always load fresh from API
-    menuItems = [...MENU_ITEMS]; // fallback until API responds
-  } else {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
-      applyFreeAddonCounts(menuItems);
-      if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
-    } catch (e) { menuItems = [...MENU_ITEMS]; }
-  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    menuItems = saved ? JSON.parse(saved) : [...MENU_ITEMS];
+    applyFreeAddonCounts(menuItems);
+    if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
+  } catch (e) { menuItems = [...MENU_ITEMS]; }
 
   // Shop name from settings (skip cache if tenant link — will load from API)
   if (!isTenantLink) {
@@ -2497,11 +2493,30 @@ async function init() {
   // storage event: fires when another tab (e.g. maintenance) writes to localStorage
   window.addEventListener('storage', e => {
     if (e.key === ACTIVE_BILLS_KEY) syncBillsFromStorage();
+    if (e.key === STORAGE_KEY) {
+      // items.js saved a menu change — reload menu from localStorage immediately
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) { menuItems = JSON.parse(saved); applyFreeAddonCounts(menuItems); renderCategoryBar(); renderMenuList(); }
+      } catch (_) {}
+    }
   });
 
   // visibilitychange: re-sync when user navigates back to this tab
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) syncBillsFromStorage();
+  });
+
+  // pageshow: handles Android bfcache restoration (back button from maintenance page)
+  // When the page is restored from bfcache, init() does not re-run — reload menu manually.
+  window.addEventListener('pageshow', e => {
+    if (!e.persisted) return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) { menuItems = JSON.parse(saved); applyFreeAddonCounts(menuItems); renderCategoryBar(); renderMenuList(); }
+    } catch (_) {}
+    // Also re-sync bills
+    syncBillsFromStorage();
   });
 }
 
