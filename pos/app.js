@@ -2428,6 +2428,10 @@ async function init() {
   if (location.host) {
     // Refresh menu from API
     fetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiMenu => {
+      // Skip override if items.js saved to localStorage within the last 15 seconds
+      // (the keepalive PUT may still be in-flight, so the server has stale data)
+      const savedAt = parseInt(localStorage.getItem('menu_saved_at') || '0', 10);
+      if (Date.now() - savedAt < 15000) return;
       if (apiMenu && apiMenu.length > 0) {
         // Merge freeAddonCount from localStorage into API response.
         // The PUT from items.js may have been in-flight when the user navigated away,

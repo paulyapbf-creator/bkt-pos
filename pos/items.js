@@ -73,6 +73,7 @@ function persist() {
     localStorage.setItem(FREE_ADDONS_KEY, JSON.stringify(counts));
   } catch (_) {}
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem('menu_saved_at', Date.now().toString());
   fetch(`${API_BASE}/api/menu`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
