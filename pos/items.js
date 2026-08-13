@@ -43,14 +43,26 @@ function applyFreeAddonCounts(arr) {
 }
 
 function loadItems() {
+  // Step 1: load from localStorage immediately for fast display
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     items = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(MENU_ITEMS));
     applyFreeAddonCounts(items);
-    if (!raw) persist();
   } catch (e) {
     items = JSON.parse(JSON.stringify(MENU_ITEMS));
   }
+  // Step 2: sync from API — ensures we always edit the server's authoritative data
+  fetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiData => {
+    if (apiData && apiData.length > 0) {
+      items = apiData;
+      applyFreeAddonCounts(items);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      renderTable();
+    } else if (!apiData) {
+      // API unreachable — persist localStorage data to API so it stays in sync
+      persist();
+    }
+  }).catch(() => { persist(); });
 }
 
 function persist() {
