@@ -345,7 +345,7 @@ function exportItemMasterCsv(items) {
 }
 
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
-const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, items: renderItems, itemmaster: renderItemMaster };
+const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, itemmaster: renderItemMaster };
 let activeTab = 'summary';
 
 function renderActiveTab() {
