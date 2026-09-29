@@ -432,6 +432,21 @@ body {
 .collection-amount { font-weight: 700; }
 .collection-pct { color: var(--muted); }
 
+/* ── Export button ────────────────────────────────────────────────────────── */
+.export-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
+}
+.export-btn:hover { opacity: 0.85; }
+
 /* ── Print media query ────────────────────────────────────────────────────── */
 @media print {
   body { background: #fff; color: #000; }
@@ -511,6 +526,7 @@ body {
     <button class="report-tab" data-tab="detail" data-i18n="sales_detail">Sales Detail</button>
     <button class="report-tab" data-tab="collection" data-i18n="collection">Collection</button>
     <button class="report-tab" data-tab="items" data-i18n="item_sales">Item Sales</button>
+    <button class="report-tab" data-tab="itemmaster">Item Master</button>
   </div>
 
   <!-- ── Login overlay ── -->
@@ -526,6 +542,7 @@ body {
     <div id="panel-detail" class="report-panel"></div>
     <div id="panel-collection" class="report-panel"></div>
     <div id="panel-items" class="report-panel"></div>
+    <div id="panel-itemmaster" class="report-panel"></div>
   </div>
 
   <script src="auth.js"></script>

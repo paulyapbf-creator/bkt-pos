@@ -247,8 +247,105 @@ function renderItems() {
   `;
 }
 
+// ─── Render: Item Master ─────────────────────────────────────────────────────
+async function renderItemMaster() {
+  const panel = document.getElementById('panel-itemmaster');
+  panel.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  let items = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/menu`);
+    if (res.ok) items = await res.json();
+  } catch (e) { /* ignore */ }
+
+  if (!items.length) {
+    panel.innerHTML = '<div class="empty-state">No menu items found</div>';
+    return;
+  }
+
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
+  const categories = [...new Set(items.map(i => i.category).filter(Boolean))];
+
+  const rows = items.map((it, i) => `<tr>
+    <td class="rank">${i + 1}</td>
+    <td>${it.name || ''}</td>
+    <td>${it.nameZh || ''}</td>
+    <td>${it.category || ''}</td>
+    <td class="num">${cur} ${(it.price || 0).toFixed(2)}</td>
+    <td class="num">${it.deliveryPrice != null ? cur + ' ' + it.deliveryPrice.toFixed(2) : '—'}</td>
+    <td class="num">${it.promoPrice != null ? cur + ' ' + it.promoPrice.toFixed(2) : '—'}</td>
+    <td class="num">${it.promoEnabled ? '✓' : '—'}</td>
+    <td class="num">${it.isAvailable !== false ? '✓' : '—'}</td>
+    <td class="num">${it.isPopular ? '✓' : '—'}</td>
+    <td class="num">${it.freeAddonCount || 0}</td>
+  </tr>`).join('');
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <div class="kpi-card" style="flex:1;min-width:120px;"><div class="kpi-label">Total Items</div><div class="kpi-value">${items.length}</div></div>
+      <div class="kpi-card" style="flex:1;min-width:120px;"><div class="kpi-label">Available</div><div class="kpi-value">${items.filter(i => i.isAvailable !== false).length}</div></div>
+      <div class="kpi-card" style="flex:1;min-width:120px;"><div class="kpi-label">Categories</div><div class="kpi-value">${categories.length}</div></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button id="export-itemmaster-btn" class="export-btn">⬇ Export Excel</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="report-table">
+        <thead><tr>
+          <th>#</th><th>Name (EN)</th><th>Name (ZH)</th><th>Category</th>
+          <th class="num">Price</th><th class="num">Delivery Price</th><th class="num">Promo Price</th>
+          <th class="num">Promo</th><th class="num">Available</th><th class="num">Popular</th><th class="num">Free Addons</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('export-itemmaster-btn').addEventListener('click', () => exportItemMasterCsv(items));
+}
+
+function exportItemMasterCsv(items) {
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
+  const headers = [
+    '#', 'Name (EN)', 'Name (ZH)', 'Category',
+    `Price (${cur})`, `Delivery Price (${cur})`, `Promo Price (${cur})`,
+    'Promo Enabled', 'Available', 'Popular', 'Free Addons',
+    'Description', 'Description (ZH)',
+  ];
+  const dataRows = items.map((it, i) => [
+    i + 1,
+    it.name || '',
+    it.nameZh || '',
+    it.category || '',
+    (it.price || 0).toFixed(2),
+    it.deliveryPrice != null ? it.deliveryPrice.toFixed(2) : '',
+    it.promoPrice != null ? it.promoPrice.toFixed(2) : '',
+    it.promoEnabled ? 'Yes' : 'No',
+    it.isAvailable !== false ? 'Yes' : 'No',
+    it.isPopular ? 'Yes' : 'No',
+    it.freeAddonCount || 0,
+    it.description || '',
+    it.descriptionZh || '',
+  ]);
+
+  const csv = [headers, ...dataRows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+
+  const bom = '\uFEFF'; // UTF-8 BOM so Excel reads Chinese correctly
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `item-master-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
-const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, items: renderItems };
+const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, items: renderItems, itemmaster: renderItemMaster };
 let activeTab = 'summary';
 
 function renderActiveTab() {
@@ -294,6 +391,9 @@ document.querySelectorAll('.report-tab').forEach(btn => {
     btn.classList.add('active');
     activeTab = btn.dataset.tab;
     document.getElementById(`panel-${activeTab}`).classList.add('active');
+    // Hide date filter for tabs that don't use date ranges
+    const filterBar = document.getElementById('report-filter-bar');
+    if (filterBar) filterBar.style.display = activeTab === 'itemmaster' ? 'none' : '';
     renderActiveTab();
   });
 });
