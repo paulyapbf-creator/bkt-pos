@@ -858,65 +858,70 @@ function renderBillingStep() {
     const subtotal = getActiveBillTotal(bill.items); const billSettings = loadSettings();
     const bd = calcBillBreakdown(subtotal, billSettings);
     const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
-    titleEl.textContent = `${t('bill')} — ${table}`; subEl.textContent = `${itemQty} ${t('item_s')}`;
+    titleEl.textContent = `${t('bill')} — ${table}`;
+    subEl.innerHTML = `${itemQty} ${t('item_s')} &nbsp;·&nbsp; <strong style="color:#c0392b;">${getCurrency()} ${bd.total.toFixed(2)}</strong>`;
+
     let breakdownRows = `<tr class="bill-total-row"><td class="bill-total-label">${t('subtotal')}</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.subtotal.toFixed(2)}</td></tr>`;
     if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.sst.toFixed(2)}</td></tr>`;
     if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.svc.toFixed(2)}</td></tr>`;
     breakdownRows += `<tr class="bill-total-row bill-grand-total"><td class="bill-total-label">${t('total')}</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.total.toFixed(2)}</td></tr>`;
-    bodyEl.innerHTML = `<table class="bill-table">
-      ${bill.items.map(bi => `<tr>
-        <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span>
-          ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
-        </td>
-        <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
-      ${breakdownRows}
-    </table>`;
-    checkBtn.classList.remove('hidden');
-    confirmBtn.textContent = `${t('proceed_to_payment')} ${getCurrency()} ${bd.total.toFixed(2)}`; confirmBtn.classList.remove('hidden');
 
-  } else if (state.payStep === 'method') {
-    const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
-    const settings = loadSettings();
-    const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = t('select_payment'); subEl.innerHTML = `${state.payingTable} &nbsp;·&nbsp; <strong style="color:#c0392b;font-size:15px;">${getCurrency()} ${bd.total.toFixed(2)}</strong>`;
-    const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
-    const tngEnabled = settings.tngEnabled !== false; // default on
-    const duitnowEnabled = !!settings.duitnowEnabled;
-    const boostEnabled  = !!settings.boostEnabled  && !!settings.boostLink;
-    const shopeeEnabled = !!settings.shopeeEnabled && !!settings.shopeeLink;
-    const grabEnabled   = !!settings.grabEnabled   && !!settings.grabLink;
-    const maeEnabled    = !!settings.maeEnabled    && !!settings.maeLink;
-    const terminalEnabled  = !!settings.terminalEnabled;
-    const cewalletEnabled  = !!settings.cewalletEnabled;
-    bodyEl.innerHTML = `<div class="pay-methods">
-      ${tngEnabled     ? `<button class="pay-method-btn" data-method="tng"><span class="pay-icon">💚</span><span class="pay-name">Touch &amp; Go</span></button>` : ''}
-      ${duitnowEnabled ? `<button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">${t('duitnow')}</span></button>` : ''}
-      ${boostEnabled   ? `<button class="pay-method-btn" data-method="boost"><span class="pay-icon">🔴</span><span class="pay-name">Boost</span></button>` : ''}
-      ${shopeeEnabled  ? `<button class="pay-method-btn" data-method="shopeepay"><span class="pay-icon">🛒</span><span class="pay-name">ShopeePay</span></button>` : ''}
-      ${grabEnabled    ? `<button class="pay-method-btn" data-method="grabpay"><span class="pay-icon">🟢</span><span class="pay-name">GrabPay</span></button>` : ''}
-      ${maeEnabled     ? `<button class="pay-method-btn" data-method="mae"><span class="pay-icon">🏧</span><span class="pay-name">MAE</span></button>` : ''}
-      ${terminalEnabled  ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Credit Card</span></button>` : ''}
-      ${cewalletEnabled  ? `<button class="pay-method-btn" data-method="cewallet"><span class="pay-icon">📱</span><span class="pay-name">Wallet</span></button>` : ''}
-      ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
-      <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
-    </div>`;
+    const cardConfigured = billSettings.airwallexEnabled && billSettings.airwallexClientId && billSettings.airwallexApiKey;
+    const tngEnabled      = billSettings.tngEnabled !== false;
+    const duitnowEnabled  = !!billSettings.duitnowEnabled;
+    const boostEnabled    = !!billSettings.boostEnabled  && !!billSettings.boostLink;
+    const shopeeEnabled   = !!billSettings.shopeeEnabled && !!billSettings.shopeeLink;
+    const grabEnabled     = !!billSettings.grabEnabled   && !!billSettings.grabLink;
+    const maeEnabled      = !!billSettings.maeEnabled    && !!billSettings.maeLink;
+    const terminalEnabled = !!billSettings.terminalEnabled;
+    const cewalletEnabled = !!billSettings.cewalletEnabled;
+
+    bodyEl.innerHTML = `
+      <div class="bill-pay-combined">
+        <div class="bill-pay-items">
+          <table class="bill-table">
+            ${bill.items.map(bi => `<tr>
+              <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span>
+                ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
+              </td>
+              <td class="hi-qty">×${bi.quantity}</td><td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
+            ${breakdownRows}
+          </table>
+        </div>
+        <div class="bill-pay-methods">
+          <div class="pay-section-label">Select Payment</div>
+          <div class="pay-methods">
+            ${tngEnabled     ? `<button class="pay-method-btn" data-method="tng"><span class="pay-icon">💚</span><span class="pay-name">Touch &amp; Go</span></button>` : ''}
+            ${duitnowEnabled ? `<button class="pay-method-btn" data-method="duitnow"><span class="pay-icon">🏦</span><span class="pay-name">${t('duitnow')}</span></button>` : ''}
+            ${boostEnabled   ? `<button class="pay-method-btn" data-method="boost"><span class="pay-icon">🔴</span><span class="pay-name">Boost</span></button>` : ''}
+            ${shopeeEnabled  ? `<button class="pay-method-btn" data-method="shopeepay"><span class="pay-icon">🛒</span><span class="pay-name">ShopeePay</span></button>` : ''}
+            ${grabEnabled    ? `<button class="pay-method-btn" data-method="grabpay"><span class="pay-icon">🟢</span><span class="pay-name">GrabPay</span></button>` : ''}
+            ${maeEnabled     ? `<button class="pay-method-btn" data-method="mae"><span class="pay-icon">🏧</span><span class="pay-name">MAE</span></button>` : ''}
+            ${terminalEnabled  ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Credit Card</span></button>` : ''}
+            ${cewalletEnabled  ? `<button class="pay-method-btn" data-method="cewallet"><span class="pay-icon">📱</span><span class="pay-name">Wallet</span></button>` : ''}
+            ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
+            <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
+          </div>
+        </div>
+      </div>`;
+
     bodyEl.querySelectorAll('.pay-method-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const m = btn.dataset.method;
         state.payMethod = m;
         if (m === 'cewallet' || m === 'terminal') {
-          // Skip intermediate screen — launch directly
-          const bills = loadActiveBills();
-          const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
-          const bd = calcBillBreakdown(subtotal, loadSettings());
-          if (m === 'cewallet') launchCoherentEwallet(bd.total);
-          else launchTerminalSale(bd.total, 'WAVE');
+          const subtotal2 = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
+          const bd2 = calcBillBreakdown(subtotal2, loadSettings());
+          if (m === 'cewallet') launchCoherentEwallet(bd2.total);
+          else launchTerminalSale(bd2.total, 'WAVE');
         } else {
           state.payStep = 'qr';
           renderBillingStep();
         }
       });
     });
+    checkBtn.classList.remove('hidden');
+    confirmBtn.classList.add('hidden');
 
   } else if (state.payStep === 'qr') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
@@ -1162,8 +1167,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
 
 function handleBillingBack() {
   if (state.payStep === 'bill')        { state.payStep = 'list';   state.payingTable = null; }
-  else if (state.payStep === 'method')   state.payStep = 'bill';
-  else if (state.payStep === 'qr')     { destroyAirwallexElement(); if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; } state.payStep = 'method'; state.payMethod = null; }
+  else if (state.payStep === 'qr')     { destroyAirwallexElement(); if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; } state.payStep = 'bill'; state.payMethod = null; }
   else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
 }
@@ -1187,8 +1191,7 @@ function handleOrderCheck() {
 }
 
 function handleBillingConfirm() {
-  if (state.payStep === 'bill') { state.payStep = 'method'; renderBillingStep(); }
-  else if (state.payStep === 'qr') confirmTablePayment();
+  if (state.payStep === 'qr') confirmTablePayment();
 }
 
 // ─── AIRWALLEX CARD PAYMENT ───────────────────────────────────────────────────

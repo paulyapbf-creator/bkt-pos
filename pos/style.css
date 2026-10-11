@@ -1388,7 +1388,38 @@ tr.dragging { opacity: 0.3; }
 .pay-footer .secondary-btn { flex: unset; padding: 12px 20px; }
 .pay-footer .send-btn      { flex: 1; }
 
-.pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 8px 0; }
+/* ── Combined bill + payment layout ─────────────────────────────────────────── */
+.bill-pay-combined { display: flex; flex-direction: column; gap: 0; }
+
+.bill-pay-items {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+
+.bill-pay-methods { padding-top: 4px; }
+
+.pay-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #aaa;
+  padding: 12px 0 6px;
+  border-top: 1px solid #eee;
+}
+
+.pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 0 8px; }
+
+/* Desktop: side-by-side */
+@media (min-width: 768px) {
+  .sheet.pay-combined-sheet { width: 680px; }
+  .bill-pay-combined { flex-direction: row; gap: 20px; align-items: flex-start; }
+  .bill-pay-items { flex: 1; max-height: 420px; padding-bottom: 0; }
+  .bill-pay-methods { flex: 0 0 260px; padding-top: 0; }
+  .pay-section-label { border-top: none; padding-top: 0; }
+  .pay-methods { grid-template-columns: 1fr; }
+}
 
 .pay-method-btn {
   display: flex; align-items: center; gap: 12px;

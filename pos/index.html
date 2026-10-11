@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=1.2.56">
+  <link rel="stylesheet" href="style.css?v=1.2.57">
   <script>
     // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
     if (window.Capacitor?.isNativePlatform?.() ||
@@ -142,7 +142,7 @@
 
   <!-- ── Billing / Payment modal ── -->
   <div id="payment-modal" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="sheet pay-sheet">
+    <div class="sheet pay-sheet pay-combined-sheet">
       <div class="sheet-header">
         <div>
           <div id="pay-modal-title" class="sheet-title" data-i18n="unpaid_bills">Unpaid Bills</div>
