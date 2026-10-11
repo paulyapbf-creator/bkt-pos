@@ -65,8 +65,12 @@ function refreshBillsCache() {
 function connectWS() {
   if (!location.host) return;  // skip when opened as file://
   try {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    posWS = new WebSocket(`${proto}://${location.host}`);
+    // In Capacitor APK, location.host is 'localhost' (internal server) — use API_BASE instead
+    const base = (API_BASE && !API_BASE.includes('localhost'))
+      ? API_BASE
+      : `${location.protocol}//${location.host}`;
+    const wsUrl = base.replace(/^https/, 'wss').replace(/^http/, 'ws');
+    posWS = new WebSocket(wsUrl);
   } catch (e) { setTimeout(connectWS, 5000); return; }
 
   posWS.onopen = () => {
@@ -295,8 +299,16 @@ async function addToActiveBill(table, cartItems) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
     });
-    if (res.ok) billsCache[table] = await res.json();
+    if (res.ok) {
+      billsCache[table] = await res.json();
+    } else {
+      // Server returned error (e.g. auth/tenant issue) — save locally as fallback
+      console.warn(`addToActiveBill: server returned ${res.status}, saving locally`);
+      if (!billsCache[table]) billsCache[table] = { startedAt: Date.now(), items: [] };
+      items.forEach(i => billsCache[table].items.push(i));
+    }
   } catch (e) {
+    // Network error — save locally as offline fallback
     if (!billsCache[table]) billsCache[table] = { startedAt: Date.now(), items: [] };
     items.forEach(i => billsCache[table].items.push(i));
   }
@@ -318,7 +330,13 @@ async function setActiveBill(table, cartItems) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
     });
-    if (res.ok) billsCache[table] = await res.json();
+    if (res.ok) {
+      billsCache[table] = await res.json();
+    } else {
+      console.warn(`setActiveBill: server returned ${res.status}, saving locally`);
+      if (billsCache[table]) billsCache[table].items = items;
+      else billsCache[table] = { startedAt: Date.now(), items };
+    }
   } catch (e) {
     if (billsCache[table]) billsCache[table].items = items;
     else billsCache[table] = { startedAt: Date.now(), items };
@@ -2555,6 +2573,9 @@ async function init() {
     // Sync settings from API
     fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
       if (s && Object.keys(s).length > 0) {
+        // Preserve local-only fields (device-specific, not stored on server)
+        const local = loadSettings();
+        ['serverUrl', 'storeSlug', 'relayUrl'].forEach(k => { if (local[k] && !s[k]) s[k] = local[k]; });
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
