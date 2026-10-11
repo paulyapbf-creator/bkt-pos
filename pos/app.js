@@ -2522,6 +2522,12 @@ async function init() {
     // Apply access control from cached settings on load
     applyPosAccess(loadSettings());
 
+    // Show build version in header
+    fetch(`${API_BASE}/api/version`).then(r => r.ok ? r.json() : null).then(d => {
+      const el = document.getElementById('header-version');
+      if (el && d && d.version) el.textContent = `v${d.version}`;
+    }).catch(() => {});
+
     // Connect WebSocket
     connectWS();
   }
