@@ -3311,3 +3311,54 @@ html.native-app #menu-list { grid-template-columns: repeat(2, 1fr); gap: 8px; pa
 html.native-app .mli { padding: 12px 10px; min-height: 96px; }
 html.native-app #cp-foot { padding: 14px 16px 18px; border-top: 1px solid var(--border); background: var(--header); }
 html.native-app #send-btn { font-size: 16px; padding: 16px 8px; min-height: 52px; width: 100%; }
+
+/* ── Native tablet (Capacitor) — keep desktop split layout, touch-optimised ── */
+html.native-tablet #header {
+  padding: 0 12px;
+  padding-top: env(safe-area-inset-top, 0px);
+  min-height: 52px;
+  gap: 8px;
+}
+html.native-tablet #app-title { font-size: 18px; }
+html.native-tablet #header-shop-name { display: inline; }
+html.native-tablet .nav-link { min-height: 44px; min-width: 44px; padding: 8px 10px; font-size: 14px; }
+html.native-tablet .pay-bills-btn { min-height: 44px; padding: 8px 14px; }
+html.native-tablet .user-chip { min-height: 44px; min-width: 44px; }
+/* Main layout: desktop row (split), full height minus header + safe area bottom */
+html.native-tablet #main-layout {
+  flex-direction: row;
+  height: calc(100dvh - 52px - env(safe-area-inset-top, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Cart panel: fixed sidebar width, not an overlay */
+html.native-tablet #cart-panel {
+  position: relative !important;
+  transform: none !important;
+  width: 300px !important;
+  min-width: 280px !important;
+  max-width: 340px !important;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+html.native-tablet #menu-panel { flex: 1; min-width: 0; }
+/* Keep the desktop cp-head-row (table/pax) visible */
+html.native-tablet #cart-panel .cp-head-row { display: flex; }
+/* Larger touch targets in cart */
+html.native-tablet .pax-inline-btn { width: 36px; height: 36px; font-size: 18px; }
+html.native-tablet .table-select-btn { min-height: 40px; font-size: 14px; }
+html.native-tablet #cp-foot { padding: 14px 16px 18px; border-top: 1px solid var(--border); background: var(--header); }
+html.native-tablet #send-btn { font-size: 16px; padding: 16px 8px; min-height: 52px; width: 100%; }
+/* Menu: 3 columns on tablet */
+html.native-tablet #menu-list { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
+html.native-tablet .mli { padding: 14px 12px; min-height: 100px; font-size: 15px; }
+/* Hide mobile-only elements */
+html.native-tablet .mobile-basket-bar { display: none !important; }
+html.native-tablet .mobile-table-bar { display: none !important; }
+html.native-tablet .mobile-cart-back-btn { display: none !important; }
+html.native-tablet .checkout-btn { display: none !important; }
+html.native-tablet #pay-bills-btn { display: inline-flex !important; }
+/* Category bar touch targets */
+html.native-tablet .cat-btn { min-height: 40px; font-size: 14px; padding: 8px 14px; }
+/* Search bar */
+html.native-tablet #search-input { font-size: 15px; padding: 8px 12px; }
