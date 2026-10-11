@@ -528,7 +528,7 @@ function renderCartPanel() {
   let lastCat = null;
   body.innerHTML = state.items.map(oi => {
     const cat     = oi.menuItem.category;
-    const catName = typeof t === 'function' ? t('cat_' + cat) : (CATEGORIES.find(c => c.id === cat)?.name || cat);
+    const catName = catDisplayName(CATEGORIES.find(c => c.id === cat) || { name: cat });
     let divider   = '';
     if (cat !== lastCat) { divider = `<div class="cp-cat-divider">${catName}</div>`; lastCat = cat; }
     return `${divider}
@@ -581,11 +581,20 @@ function renderCartPanel() {
 
 // ─── RENDER: Category bar ─────────────────────────────────────────────────────
 
+function catDisplayName(cat) {
+  if (typeof getLang === 'function') {
+    const lang = getLang();
+    const field = LANG_NAME_FIELDS[lang];
+    if (field && cat[field]) return cat[field];
+  }
+  return cat.name;
+}
+
 function renderCategoryBar() {
   const bar = document.getElementById('category-bar');
   bar.innerHTML = CATEGORIES.map(cat => `
     <button class="cat-btn${cat.id === state.selectedCategory ? ' active' : ''}" data-cat="${cat.id}">
-      ${typeof t === 'function' ? t('cat_' + cat.id) : cat.name}
+      ${catDisplayName(cat)}
     </button>
   `).join('');
   bar.querySelectorAll('.cat-btn').forEach(btn => {
