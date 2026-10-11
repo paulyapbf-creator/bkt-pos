@@ -1,1 +1,1 @@
-{"version":"1.2.56-debug","notes":"Fix data sync: WebSocket URL, silent order loss, settings overwrite"}
+{"version":"1.2.57-debug","notes":"Phone/tablet variant support for app updates"}
