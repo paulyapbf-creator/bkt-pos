@@ -101,6 +101,28 @@ function catName(id) {
   return CATEGORIES.find(c => c.id === id)?.name || id;
 }
 
+// Apply saved categories from settings, update CATEGORIES global and #f-category select
+function applyCategories(savedCats) {
+  if (!savedCats || !savedCats.length) return;
+  // Preserve 'all' as first entry, replace the rest with saved order/names
+  const allCat = CATEGORIES.find(c => c.id === 'all');
+  CATEGORIES.length = 0;
+  if (allCat) CATEGORIES.push(allCat);
+  savedCats.forEach(c => CATEGORIES.push(c));
+  populateCategorySelect();
+}
+
+function populateCategorySelect() {
+  const sel = document.getElementById('f-category');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = CATEGORIES
+    .filter(c => c.id !== 'all')
+    .map(c => `<option value="${c.id}">${c.name}</option>`)
+    .join('');
+  if (current) sel.value = current;
+}
+
 function renderTable() {
   const q = searchQ.toLowerCase();
   const filtered = q
@@ -453,6 +475,8 @@ function init() {
   applySessionToItemsUI(session);
 
   loadItems();
+  applyCategories(loadSettings().categories);
+  populateCategorySelect();
   renderTable();
 
   document.getElementById('im-search').addEventListener('input', e => {
@@ -917,6 +941,128 @@ function initMaintenance() {
         <strong>Report:</strong> <span style="user-select:all">${base}/report.html</span>
       </div>`;
     }
+  }
+
+  // ── Category Management ───────────────────────────────────────────────────
+  {
+    const listEl = document.getElementById('cat-mgmt-list');
+    const saveBtn = document.getElementById('cat-mgmt-save');
+    const msgEl2 = document.getElementById('cat-mgmt-msg');
+
+    // Editable categories = CATEGORIES without 'all'
+    function getCatList() {
+      return CATEGORIES.filter(c => c.id !== 'all').map(c => ({ ...c }));
+    }
+
+    function renderCatMgmt() {
+      const cats = getCatList();
+      listEl.innerHTML = cats.map((cat, i) => `
+        <div class="cat-mgmt-row" draggable="true" data-cat-id="${cat.id}"
+             style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--header);border-radius:var(--radius,8px);border:1px solid var(--border);cursor:default;">
+          <span class="drag-handle" style="cursor:grab;color:var(--muted);font-size:18px;line-height:1;flex-shrink:0;">⠿</span>
+          <input type="text" value="${cat.name}" data-field="name"
+                 style="flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:13px;">
+          <input type="text" value="${cat.nameZh || ''}" data-field="nameZh" placeholder="中文"
+                 style="width:80px;flex-shrink:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:13px;">
+        </div>`).join('');
+      initCatDrag();
+    }
+
+    function initCatDrag() {
+      let dragEl = null;
+      let placeholder = null;
+
+      function getElAtY(y) {
+        for (const row of listEl.querySelectorAll('.cat-mgmt-row[data-cat-id]')) {
+          const r = row.getBoundingClientRect();
+          if (y >= r.top && y <= r.bottom) return { row, after: y > r.top + r.height / 2 };
+        }
+        return null;
+      }
+
+      function finishDrag() {
+        if (!dragEl || !placeholder) return;
+        listEl.insertBefore(dragEl, placeholder);
+        placeholder.remove();
+        dragEl.style.opacity = '';
+        dragEl = null; placeholder = null;
+      }
+
+      listEl.addEventListener('dragstart', e => {
+        const row = e.target.closest('.cat-mgmt-row');
+        if (!row) return;
+        dragEl = row;
+        placeholder = document.createElement('div');
+        placeholder.style.cssText = 'height:3px;background:#C0392B;border-radius:2px;margin:2px 0;';
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+        requestAnimationFrame(() => { dragEl.style.opacity = '0.4'; });
+      });
+
+      listEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragEl || !placeholder) return;
+        const hit = getElAtY(e.clientY);
+        if (hit && hit.row !== dragEl) {
+          hit.after ? hit.row.after(placeholder) : listEl.insertBefore(placeholder, hit.row);
+        }
+      });
+
+      listEl.addEventListener('dragend', () => finishDrag());
+
+      // Touch support
+      listEl.addEventListener('touchstart', e => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        dragEl = handle.closest('.cat-mgmt-row');
+        if (!dragEl) return;
+        e.preventDefault();
+        placeholder = document.createElement('div');
+        placeholder.style.cssText = 'height:3px;background:#C0392B;border-radius:2px;margin:2px 0;';
+        dragEl.style.opacity = '0.4';
+        listEl.insertBefore(placeholder, dragEl.nextSibling);
+      }, { passive: false });
+
+      listEl.addEventListener('touchmove', e => {
+        if (!dragEl || !placeholder) return;
+        e.preventDefault();
+        const hit = getElAtY(e.touches[0].clientY);
+        if (hit && hit.row !== dragEl) {
+          hit.after ? hit.row.after(placeholder) : listEl.insertBefore(placeholder, hit.row);
+        }
+      }, { passive: false });
+
+      listEl.addEventListener('touchend', () => finishDrag());
+    }
+
+    saveBtn?.addEventListener('click', () => {
+      // Gather new order and names from DOM
+      const rows = listEl.querySelectorAll('.cat-mgmt-row[data-cat-id]');
+      const newCats = Array.from(rows).map(row => {
+        const orig = CATEGORIES.find(c => c.id === row.dataset.catId) || { id: row.dataset.catId };
+        const nameInput = row.querySelector('[data-field="name"]');
+        const nameZhInput = row.querySelector('[data-field="nameZh"]');
+        return {
+          id: orig.id,
+          name: nameInput ? nameInput.value.trim() || orig.name : orig.name,
+          nameZh: nameZhInput ? nameZhInput.value.trim() : (orig.nameZh || ''),
+        };
+      });
+
+      // Update CATEGORIES in place
+      applyCategories(newCats);
+      populateCategorySelect();
+
+      // Persist to settings
+      const s = loadSettings();
+      s.categories = newCats;
+      saveSettings(s);
+
+      msgEl2.textContent = '✓ Saved';
+      setTimeout(() => { msgEl2.textContent = ''; }, 3000);
+    });
+
+    renderCatMgmt();
   }
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────

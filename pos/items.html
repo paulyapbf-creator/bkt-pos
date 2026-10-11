@@ -494,6 +494,18 @@
         </div>
       </div>
 
+      <div class="maint-card">
+        <div class="maint-card-info">
+          <div class="maint-card-title">📂 Category Management</div>
+          <div class="maint-card-desc">Rename or reorder categories. Drag to reposition. Changes apply to the category bar and item form.</div>
+        </div>
+        <div id="cat-mgmt-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+          <button id="cat-mgmt-save" class="add-btn" style="padding:8px 20px;font-size:13px;">Save</button>
+          <span id="cat-mgmt-msg" style="font-size:13px;color:#888;"></span>
+        </div>
+      </div>
+
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">
           <div class="maint-card-title">🚀 <span data-i18n="reset_go_live">Reset &amp; Go Live</span></div>
@@ -551,15 +563,7 @@
           </div>
           <div class="form-field">
             <label><span data-i18n="category">Category</span> <span class="req">*</span></label>
-            <select id="f-category">
-              <option value="mains" data-i18n="cat_mains">Main Dishes</option>
-              <option value="addons" data-i18n="cat_addons">Add-ons</option>
-              <option value="vegetables" data-i18n="cat_vegetables">Vegetables</option>
-              <option value="noodles" data-i18n="cat_noodles">Noodles</option>
-              <option value="soup" data-i18n="cat_soup">Soup</option>
-              <option value="dessert" data-i18n="cat_dessert">Dessert</option>
-              <option value="beverages" data-i18n="cat_beverages">Beverages</option>
-            </select>
+            <select id="f-category"></select>
           </div>
           <div class="form-field">
             <label><span data-i18n="base_price">Base Price</span> (RM) <span class="req">*</span></label>

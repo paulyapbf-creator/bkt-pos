@@ -6,7 +6,7 @@ const STORAGE_KEY = 'bkt_menu_items';
 // Separate key for free addon counts — never overwritten by background menu sync
 const FREE_ADDONS_KEY = 'bkt_free_addon_counts';
 
-const CATEGORIES = [
+let CATEGORIES = [
   { id: 'all',        name: 'All',         nameZh: '全部' },
   { id: 'mains',      name: 'Main Dishes', nameZh: '主菜' },
   { id: 'addons',     name: 'Add-ons',     nameZh: '加料' },

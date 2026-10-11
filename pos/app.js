@@ -2224,8 +2224,9 @@ async function init() {
     if (!saved) localStorage.setItem(STORAGE_KEY, JSON.stringify(menuItems));
   } catch (e) { menuItems = [...MENU_ITEMS]; }
 
-  // Shop name from settings (skip cache if tenant link — will load from API)
-  if (!isTenantLink) {
+  // Shop name from settings — always load from cache immediately to avoid flash,
+  // API fetch below will overwrite with fresh server value.
+  {
     const _s = loadSettings();
     const headerName = document.getElementById('header-shop-name');
     if (headerName && _s.shopName) headerName.textContent = _s.shopName;
@@ -2487,12 +2488,27 @@ async function init() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
+        if (s.categories && s.categories.length) {
+          const allCat = CATEGORIES.find(c => c.id === 'all');
+          CATEGORIES.length = 0;
+          if (allCat) CATEGORIES.push(allCat);
+          s.categories.forEach(c => CATEGORIES.push(c));
+          renderCategoryBar();
+        }
         applyPosAccess(s);
       }
     }).catch(() => {});
 
-    // Apply access control from cached settings on load
-    applyPosAccess(loadSettings());
+    // Apply cached settings on load (access control + categories)
+    const _cachedS = loadSettings();
+    applyPosAccess(_cachedS);
+    if (_cachedS.categories && _cachedS.categories.length) {
+      const allCat = CATEGORIES.find(c => c.id === 'all');
+      CATEGORIES.length = 0;
+      if (allCat) CATEGORIES.push(allCat);
+      _cachedS.categories.forEach(c => CATEGORIES.push(c));
+      renderCategoryBar();
+    }
 
     // Connect WebSocket
     connectWS();
