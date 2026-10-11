@@ -850,11 +850,11 @@ function renderBillingStep() {
     const bd = calcBillBreakdown(subtotal, billSettings);
     const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
     titleEl.textContent = `${t('bill')} — ${table}`; subEl.textContent = `${itemQty} ${t('item_s')}`;
-    let breakdownRows = `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('subtotal')}</td><td class="bill-total-amt">${getCurrency()} ${bd.subtotal.toFixed(2)}</td></tr>`;
-    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td class="bill-total-amt">${getCurrency()} ${bd.sst.toFixed(2)}</td></tr>`;
-    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td colspan="2" class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td class="bill-total-amt">${getCurrency()} ${bd.svc.toFixed(2)}</td></tr>`;
-    breakdownRows += `<tr class="bill-total-row" style="font-size:1.1em;"><td colspan="2" class="bill-total-label" style="font-weight:bold;">${t('total')}</td><td class="bill-total-amt" style="font-weight:bold;">${getCurrency()} ${bd.total.toFixed(2)}</td></tr>`;
-    bodyEl.innerHTML = `<table class="hist-items-table bill-table">
+    let breakdownRows = `<tr class="bill-total-row"><td class="bill-total-label">${t('subtotal')}</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.subtotal.toFixed(2)}</td></tr>`;
+    if (bd.sst) breakdownRows += `<tr class="bill-total-row"><td class="bill-total-label">${t('sst')} (${bd.sstRate}%)</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.sst.toFixed(2)}</td></tr>`;
+    if (bd.svc) breakdownRows += `<tr class="bill-total-row"><td class="bill-total-label">${t('service')} (${bd.svcRate}%)</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.svc.toFixed(2)}</td></tr>`;
+    breakdownRows += `<tr class="bill-total-row bill-grand-total"><td class="bill-total-label">${t('total')}</td><td></td><td class="bill-total-amt">${getCurrency()} ${bd.total.toFixed(2)}</td></tr>`;
+    bodyEl.innerHTML = `<table class="bill-table">
       ${bill.items.map(bi => `<tr>
         <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span>
           ${bi.selectedModifiers && bi.selectedModifiers.length ? `<span class="hi-mods">${bi.selectedModifiers.map(m => m.optionLabel).join(', ')}</span>` : ''}
@@ -863,13 +863,13 @@ function renderBillingStep() {
       ${breakdownRows}
     </table>`;
     checkBtn.classList.remove('hidden');
-    confirmBtn.textContent = t('proceed_to_payment'); confirmBtn.classList.remove('hidden');
+    confirmBtn.textContent = `${t('proceed_to_payment')} ${getCurrency()} ${bd.total.toFixed(2)}`; confirmBtn.classList.remove('hidden');
 
   } else if (state.payStep === 'method') {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    titleEl.textContent = t('select_payment'); subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
+    titleEl.textContent = t('select_payment'); subEl.innerHTML = `${state.payingTable} &nbsp;·&nbsp; <strong style="color:#c0392b;font-size:15px;">${getCurrency()} ${bd.total.toFixed(2)}</strong>`;
     const cardConfigured = settings.airwallexEnabled && settings.airwallexClientId && settings.airwallexApiKey;
     const tngEnabled = settings.tngEnabled !== false; // default on
     const duitnowEnabled = !!settings.duitnowEnabled;
