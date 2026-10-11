@@ -156,6 +156,7 @@ const state = {
   payStep:            'list',
   payingTable:        null,
   payMethod:          null,
+  paymentMode:        'hold', // 'express' | 'direct' | 'hold'
   _counter:           0,
 };
 
@@ -445,6 +446,44 @@ function isTableRequired() {
   return loadSettings().tableRequired !== false; // default true
 }
 
+function getTablePaymentMode(table) {
+  if (!table) return 'hold';
+  const s = loadSettings();
+  return (s.tablePaymentModes && s.tablePaymentModes[table]) || 'hold';
+}
+
+function setTablePaymentMode(table, mode) {
+  if (!table) return;
+  const s = loadSettings();
+  if (!s.tablePaymentModes) s.tablePaymentModes = {};
+  s.tablePaymentModes[table] = mode;
+  saveSettings(s);
+}
+
+function renderPayModeRow() {
+  const row = document.getElementById('pay-mode-row');
+  if (!row) return;
+  if (!state.tableNumber) { row.classList.add('hidden'); return; }
+  row.classList.remove('hidden');
+  const mode = state.paymentMode;
+  const modes = [
+    { id: 'express', label: '⚡ Express', title: 'Immediate cash on send' },
+    { id: 'direct',  label: '→ Direct',  title: 'Go to payment after send' },
+    { id: 'hold',    label: '📋 Hold',   title: 'Pay later (current)' },
+  ];
+  row.innerHTML = modes.map(m =>
+    `<button class="pay-mode-btn${mode === m.id ? ' active mode-' + m.id : ''}" data-mode="${m.id}" title="${m.title}">${m.label}</button>`
+  ).join('');
+  row.querySelectorAll('.pay-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = btn.dataset.mode;
+      state.paymentMode = m;
+      setTablePaymentMode(state.tableNumber, m);
+      renderPayModeRow();
+    });
+  });
+}
+
 function renderTablePickerBody() {
   // Always read fresh from localStorage so maintenance changes are reflected immediately
   try { billsCache = JSON.parse(localStorage.getItem(ACTIVE_BILLS_KEY) || '{}'); } catch (_) {}
@@ -469,8 +508,10 @@ function renderTablePickerBody() {
   document.querySelectorAll('.table-cell').forEach(btn => {
     btn.addEventListener('click', () => {
       state.tableNumber = btn.dataset.table;
+      state.paymentMode = getTablePaymentMode(state.tableNumber);
       updateTableBtn();
       updateCartPanelHeader();
+      renderPayModeRow();
       closeTablePicker();
     });
   });
@@ -2323,6 +2364,7 @@ async function init() {
     if (!state.tableNumber) { openTablePicker(true); return; }
     const sentTable   = state.tableNumber;
     const wasEditing  = state.editingActiveBill === sentTable;
+    const sentMode    = state.paymentMode;
     const slipItems   = state.items.map(i => ({ ...i })); // snapshot before clear
     try {
       if (wasEditing) {
@@ -2334,18 +2376,38 @@ async function init() {
       setPricingMode('base');
       state.tableNumber       = null;
       state.pax               = 1;
+      state.paymentMode       = 'hold';
       document.getElementById('pax-display').textContent = state.pax;
       state.editingActiveBill = null;
       renderCartPanel();
       renderMenuList();
       updateTableBtn();
+      renderPayModeRow();
       // Mobile: close cart drawer and return to menu
       document.getElementById('cart-panel').classList.remove('mobile-cart-open');
       showToast(wasEditing ? t('order_updated', { table: sentTable }) : t('order_sent', { table: sentTable }));
       const _ps = loadSettings();
       if (_ps.printOrderSlip !== false) printOrderSlip(sentTable, slipItems, wasEditing);
-      // Prompt table for next order
-      if (isTableRequired()) setTimeout(() => openTablePicker(true), 600);
+      // Act based on payment mode
+      if (sentMode === 'express') {
+        // Immediate cash payment — confirm without opening modal
+        state.payingTable = sentTable;
+        state.payMethod   = 'cash';
+        await fetchBillsFromAPI();
+        await confirmTablePayment(null);
+      } else if (sentMode === 'direct') {
+        // Go straight to payment screen
+        state.payStep     = 'bill';
+        state.payingTable = sentTable;
+        state.payMethod   = null;
+        await fetchBillsFromAPI();
+        renderBillingStep();
+        document.getElementById('payment-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Hold: prompt table for next order
+        if (isTableRequired()) setTimeout(() => openTablePicker(true), 600);
+      }
     } catch (e) {
       showToast(t('order_send_error'));
     }

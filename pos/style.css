@@ -1674,6 +1674,20 @@ tr.dragging { opacity: 0.3; }
 .occ-swatch { background: #3a1a1a; border-color: var(--red); }
 .sel-swatch { background: #1a3a2a; border-color: var(--green); }
 
+/* ── Payment mode selector (cart header) ─────────────────────────────────── */
+.pay-mode-row {
+  display: flex; gap: 6px; padding: 4px 0 2px;
+}
+.pay-mode-btn {
+  flex: 1; padding: 5px 4px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid #ddd; border-radius: 8px; background: #fafafa;
+  color: #555; cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.pay-mode-btn:hover { border-color: #aaa; background: #f0f0f0; }
+.pay-mode-btn.active.mode-express { background: #fff3e0; border-color: #f59e0b; color: #b45309; }
+.pay-mode-btn.active.mode-direct  { background: #e8f4fd; border-color: #3b82f6; color: #1d4ed8; }
+.pay-mode-btn.active.mode-hold    { background: #f0fdf4; border-color: #22c55e; color: #15803d; }
+
 /* ── Pax inline (cart header) ─────────────────────────────────────────────── */
 .cp-head-row {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
