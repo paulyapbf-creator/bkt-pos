@@ -310,19 +310,19 @@ body {
 
 .cat-btn {
   flex-shrink: 0;
-  padding: 10px 12px;
+  padding: 7px 14px;
   background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 2px solid transparent;
+  border-radius: 20px;
   cursor: pointer;
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
-.cat-btn:hover  { color: var(--text); }
-.cat-btn.active { color: var(--text); border-bottom-color: var(--red); }
+.cat-btn:hover  { color: var(--text); background: var(--border); }
+.cat-btn.active { color: #fff; background: var(--red); border-color: var(--red); }
 
 /* ── Menu area ───────────────────────────────────────────────────────────────  */
 #menu-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
@@ -2262,7 +2262,7 @@ button, a, .mli, .table-cell, .modifier-option {
   .mli-badge  { font-size: 11px; padding: 1px 6px; }
 
   /* Category tabs */
-  .cat-btn { padding: 10px 12px; font-size: 13px; }
+  .cat-btn { padding: 8px 14px; font-size: 13px; }
 
   /* Search bar */
   #search-input { font-size: 16px; padding: 10px 14px; }
