@@ -1513,6 +1513,8 @@ async function confirmTablePayment(cardResult) {
   updateTableBtn();
   const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
+  // Prompt table for next order
+  if (isTableRequired()) setTimeout(() => openTablePicker(true), 800);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
   if ((method === 'terminal' || method === 'cewallet') && cardResult) {
     printCardSlip(cardResult, bd, 'MERCHANT COPY').then(() => {
@@ -2339,6 +2341,8 @@ async function init() {
       showToast(wasEditing ? t('order_updated', { table: sentTable }) : t('order_sent', { table: sentTable }));
       const _ps = loadSettings();
       if (_ps.printOrderSlip !== false) printOrderSlip(sentTable, slipItems, wasEditing);
+      // Prompt table for next order
+      if (isTableRequired()) setTimeout(() => openTablePicker(true), 600);
     } catch (e) {
       showToast(t('order_send_error'));
     }
