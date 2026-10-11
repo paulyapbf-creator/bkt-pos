@@ -943,6 +943,141 @@ function initMaintenance() {
     }
   }
 
+  // ── Table Management ──────────────────────────────────────────────────────
+  {
+    const listEl   = document.getElementById('tbl-mgmt-list');
+    const saveBtn  = document.getElementById('tbl-mgmt-save');
+    const addBtn   = document.getElementById('tbl-add-btn');
+    const msgEl    = document.getElementById('tbl-mgmt-msg');
+    const reqChk   = document.getElementById('tbl-required-chk');
+
+    function defaultTables() {
+      return Array.from({ length: 20 }, (_, i) => `T${i + 1}`);
+    }
+
+    function loadTables() {
+      const s = loadSettings();
+      return (s.tables && s.tables.length) ? s.tables : defaultTables();
+    }
+
+    // Populate checkbox from settings
+    reqChk.checked = loadSettings().tableRequired !== false; // default true
+
+    function renderTblMgmt() {
+      const tables = loadTables();
+      listEl.innerHTML = tables.map((name, i) => `
+        <div class="cat-mgmt-row" draggable="true" data-tbl-idx="${i}"
+             style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--header);border-radius:var(--radius,8px);border:1px solid var(--border);">
+          <span class="drag-handle" style="cursor:grab;color:var(--muted);font-size:18px;line-height:1;flex-shrink:0;">⠿</span>
+          <input type="text" value="${name}" data-field="tblname"
+                 style="flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:14px;font-weight:600;">
+          <button data-del="${i}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 6px;flex-shrink:0;" title="Remove">✕</button>
+        </div>`).join('');
+
+      // Delete buttons
+      listEl.querySelectorAll('[data-del]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.del);
+          const tables = gatherTables();
+          tables.splice(idx, 1);
+          rebuildList(tables);
+        });
+      });
+
+      initTblDrag();
+    }
+
+    function gatherTables() {
+      return Array.from(listEl.querySelectorAll('[data-field="tblname"]'))
+        .map(inp => inp.value.trim()).filter(Boolean);
+    }
+
+    function rebuildList(tables) {
+      listEl.innerHTML = '';
+      // Temporarily set in settings so renderTblMgmt picks them up
+      const s = loadSettings(); s.tables = tables; localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      renderTblMgmt();
+    }
+
+    function initTblDrag() {
+      let dragEl = null, placeholder = null;
+
+      function getElAtY(y) {
+        for (const row of listEl.querySelectorAll('.cat-mgmt-row[data-tbl-idx]')) {
+          const r = row.getBoundingClientRect();
+          if (y >= r.top && y <= r.bottom) return { row, after: y > r.top + r.height / 2 };
+        }
+        return null;
+      }
+
+      function finishDrag() {
+        if (!dragEl || !placeholder) return;
+        listEl.insertBefore(dragEl, placeholder);
+        placeholder.remove();
+        dragEl.style.opacity = '';
+        dragEl = null; placeholder = null;
+      }
+
+      listEl.addEventListener('dragstart', e => {
+        const row = e.target.closest('.cat-mgmt-row');
+        if (!row) return;
+        dragEl = row;
+        placeholder = document.createElement('div');
+        placeholder.style.cssText = 'height:3px;background:#C0392B;border-radius:2px;margin:2px 0;';
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', '');
+        requestAnimationFrame(() => { dragEl.style.opacity = '0.4'; });
+      });
+      listEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragEl || !placeholder) return;
+        const hit = getElAtY(e.clientY);
+        if (hit && hit.row !== dragEl) hit.after ? hit.row.after(placeholder) : listEl.insertBefore(placeholder, hit.row);
+      });
+      listEl.addEventListener('dragend', () => finishDrag());
+
+      listEl.addEventListener('touchstart', e => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        dragEl = handle.closest('.cat-mgmt-row');
+        if (!dragEl) return;
+        e.preventDefault();
+        placeholder = document.createElement('div');
+        placeholder.style.cssText = 'height:3px;background:#C0392B;border-radius:2px;margin:2px 0;';
+        dragEl.style.opacity = '0.4';
+        listEl.insertBefore(placeholder, dragEl.nextSibling);
+      }, { passive: false });
+      listEl.addEventListener('touchmove', e => {
+        if (!dragEl || !placeholder) return;
+        e.preventDefault();
+        const hit = getElAtY(e.touches[0].clientY);
+        if (hit && hit.row !== dragEl) hit.after ? hit.row.after(placeholder) : listEl.insertBefore(placeholder, hit.row);
+      }, { passive: false });
+      listEl.addEventListener('touchend', () => finishDrag());
+    }
+
+    addBtn?.addEventListener('click', () => {
+      const tables = gatherTables();
+      tables.push(`T${tables.length + 1}`);
+      rebuildList(tables);
+      // Focus the new input
+      const inputs = listEl.querySelectorAll('[data-field="tblname"]');
+      if (inputs.length) { const last = inputs[inputs.length - 1]; last.focus(); last.select(); }
+    });
+
+    saveBtn?.addEventListener('click', () => {
+      const tables = gatherTables();
+      const s = loadSettings();
+      s.tables = tables;
+      s.tableRequired = reqChk.checked;
+      saveSettings(s);
+      msgEl.textContent = '✓ Saved';
+      setTimeout(() => { msgEl.textContent = ''; }, 3000);
+    });
+
+    renderTblMgmt();
+  }
+
   // ── Category Management ───────────────────────────────────────────────────
   {
     const listEl = document.getElementById('cat-mgmt-list');

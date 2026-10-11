@@ -436,21 +436,30 @@ function closeTablePicker() {
   document.body.style.overflow = '';
 }
 
+function getTableList() {
+  const s = loadSettings();
+  return (s.tables && s.tables.length) ? s.tables : Array.from({ length: 20 }, (_, i) => `T${i + 1}`);
+}
+
+function isTableRequired() {
+  return loadSettings().tableRequired !== false; // default true
+}
+
 function renderTablePickerBody() {
   // Always read fresh from localStorage so maintenance changes are reflected immediately
   try { billsCache = JSON.parse(localStorage.getItem(ACTIVE_BILLS_KEY) || '{}'); } catch (_) {}
   const bills = loadActiveBills();
+  const tables = getTableList();
   let html = '<div class="table-picker-grid">';
-  for (let i = 1; i <= 20; i++) {
-    const t        = `T${i}`;
-    const occupied = !!bills[t];
-    const selected = state.tableNumber === t;
+  tables.forEach(tbl => {
+    const occupied = !!bills[tbl];
+    const selected = state.tableNumber === tbl;
     html += `
-      <button class="table-cell${occupied ? ' occupied' : ''}${selected ? ' selected' : ''}" data-table="${t}">
-        <span class="table-num">${t}</span>
+      <button class="table-cell${occupied ? ' occupied' : ''}${selected ? ' selected' : ''}" data-table="${tbl}">
+        <span class="table-num">${tbl}</span>
         ${occupied ? '<span class="table-occ-dot"></span>' : ''}
       </button>`;
-  }
+  });
   html += `</div>
   <div class="table-picker-legend">
     <span class="legend-item"><span class="legend-swatch occ-swatch"></span>Has active order</span>
@@ -631,7 +640,7 @@ function renderMenuList() {
 
   list.querySelectorAll('.mli').forEach(row => {
     row.addEventListener('click', () => {
-      if (!state.tableNumber) { openTablePicker(true); return; }
+      if (!state.tableNumber && isTableRequired()) { openTablePicker(true); return; }
       const item = menuItems.find(i => i.id === row.dataset.id);
       if (!item) return;
       if ((item.modifierGroups && item.modifierGroups.length > 0) || item.freeAddonCount > 0) {
@@ -1718,7 +1727,7 @@ async function renderHistoryList(tableFilter) {
     btn.addEventListener('click', () => {
       const ord = history.find(o => o.id === btn.dataset.id);
       if (!ord) return;
-      if (!state.tableNumber) { openTablePicker(true); return; }
+      if (!state.tableNumber && isTableRequired()) { openTablePicker(true); return; }
       ord.items.forEach(hi => {
         const mi = menuItems.find(m => m.id === hi.menuItemId);
         if (mi && mi.isAvailable) addItem(mi, hi.selectedModifiers || [], hi.notes || '');
