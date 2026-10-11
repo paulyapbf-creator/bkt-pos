@@ -965,22 +965,33 @@ function initMaintenance() {
 
     function renderTblMgmt() {
       const tables = loadTables();
-      listEl.innerHTML = tables.map((name, i) => `
+      const modes = loadSettings().tablePaymentModes || {};
+      listEl.innerHTML = tables.map((name, i) => {
+        const m = modes[name] || 'hold';
+        return `
         <div class="cat-mgmt-row" draggable="true" data-tbl-idx="${i}"
              style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--header);border-radius:var(--radius,8px);border:1px solid var(--border);">
           <span class="drag-handle" style="cursor:grab;color:var(--muted);font-size:18px;line-height:1;flex-shrink:0;">⠿</span>
           <input type="text" value="${name}" data-field="tblname"
                  style="flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:14px;font-weight:600;">
+          <select data-field="tblmode" title="Payment mode"
+                  style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 6px;font-size:12px;cursor:pointer;flex-shrink:0;">
+            <option value="hold"    ${m === 'hold'    ? 'selected' : ''}>📋 Hold Bill</option>
+            <option value="express" ${m === 'express' ? 'selected' : ''}>⚡ Express</option>
+            <option value="direct"  ${m === 'direct'  ? 'selected' : ''}>→ Direct</option>
+          </select>
           <button data-del="${i}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 6px;flex-shrink:0;" title="Remove">✕</button>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
       // Delete buttons
       listEl.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', () => {
           const idx = parseInt(btn.dataset.del);
           const tables = gatherTables();
+          const modes  = gatherTableModes();
           tables.splice(idx, 1);
-          rebuildList(tables);
+          rebuildList(tables, modes);
         });
       });
 
@@ -992,10 +1003,23 @@ function initMaintenance() {
         .map(inp => inp.value.trim()).filter(Boolean);
     }
 
-    function rebuildList(tables) {
+    function gatherTableModes() {
+      const result = {};
+      listEl.querySelectorAll('.cat-mgmt-row').forEach(row => {
+        const name = row.querySelector('[data-field="tblname"]')?.value.trim();
+        const mode = row.querySelector('[data-field="tblmode"]')?.value || 'hold';
+        if (name) result[name] = mode;
+      });
+      return result;
+    }
+
+    function rebuildList(tables, preservedModes) {
       listEl.innerHTML = '';
       // Temporarily set in settings so renderTblMgmt picks them up
-      const s = loadSettings(); s.tables = tables; localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      const s = loadSettings();
+      s.tables = tables;
+      if (preservedModes) s.tablePaymentModes = preservedModes;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
       renderTblMgmt();
     }
 
@@ -1058,8 +1082,9 @@ function initMaintenance() {
 
     addBtn?.addEventListener('click', () => {
       const tables = gatherTables();
+      const modes  = gatherTableModes();
       tables.push(`T${tables.length + 1}`);
-      rebuildList(tables);
+      rebuildList(tables, modes);
       // Focus the new input
       const inputs = listEl.querySelectorAll('[data-field="tblname"]');
       if (inputs.length) { const last = inputs[inputs.length - 1]; last.focus(); last.select(); }
@@ -1070,6 +1095,7 @@ function initMaintenance() {
       const s = loadSettings();
       s.tables = tables;
       s.tableRequired = reqChk.checked;
+      s.tablePaymentModes = gatherTableModes();
       saveSettings(s);
       msgEl.textContent = '✓ Saved';
       setTimeout(() => { msgEl.textContent = ''; }, 3000);
