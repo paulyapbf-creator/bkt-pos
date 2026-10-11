@@ -2427,6 +2427,17 @@ async function init() {
   }
   translatePage();
 
+  // Apply saved category order/names before first render
+  {
+    const _initCats = loadSettings().categories;
+    if (_initCats && _initCats.length) {
+      const allCat = CATEGORIES.find(c => c.id === 'all');
+      CATEGORIES.length = 0;
+      if (allCat) CATEGORIES.push(allCat);
+      _initCats.forEach(c => CATEGORIES.push(c));
+    }
+  }
+
   renderCategoryBar();
   renderMenuList();
   renderCartPanel();
@@ -2499,16 +2510,8 @@ async function init() {
       }
     }).catch(() => {});
 
-    // Apply cached settings on load (access control + categories)
-    const _cachedS = loadSettings();
-    applyPosAccess(_cachedS);
-    if (_cachedS.categories && _cachedS.categories.length) {
-      const allCat = CATEGORIES.find(c => c.id === 'all');
-      CATEGORIES.length = 0;
-      if (allCat) CATEGORIES.push(allCat);
-      _cachedS.categories.forEach(c => CATEGORIES.push(c));
-      renderCategoryBar();
-    }
+    // Apply access control from cached settings on load
+    applyPosAccess(loadSettings());
 
     // Connect WebSocket
     connectWS();
