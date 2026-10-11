@@ -1072,12 +1072,12 @@ app.post('/api/bills/:table/items', async (req, res) => {
 
   if (bill && bill.items.length > 0) {
     if (bill.items.every(i => i.status === 'served')) {
+      // All items served — clear and start a fresh bill
       await req.store.deleteBill(table);
       broadcast(ts, ['pos', 'kds'], { type: 'bill:cleared', table });
-    } else {
-      await archiveBill(req.store, ts, table, bill);
+      bill = null;
     }
-    bill = null;
+    // else: bill has active items — keep it and append new items below
   }
 
   if (!bill) bill = { startedAt: Date.now(), items: [] };
