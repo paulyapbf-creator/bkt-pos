@@ -2466,6 +2466,9 @@ async function init() {
   if (editParam) {
     history.replaceState({}, '', location.pathname);
     await loadTableOrderToCart(editParam);
+  } else if (!state.tableNumber && isTableRequired()) {
+    // Auto-prompt table selection at startup when required
+    openTablePicker(true);
   }
 
   // ── Step 2: Background sync from API (non-blocking, updates cache if server available) ──
