@@ -273,6 +273,7 @@ async function fetchBillsFromAPI() {
     const res = await fetch(`${API_BASE}/api/bills`);
     if (res.ok) billsCache = await res.json();
   } catch (e) {
+    if (!navigator.onLine) showToast('📡 Offline — using cached bills');
     console.warn('Failed to fetch bills, using cache');
   }
   return billsCache;
@@ -309,6 +310,7 @@ async function addToActiveBill(table, cartItems) {
     }
   } catch (e) {
     // Network error — save locally as offline fallback
+    if (!navigator.onLine) showToast('📡 Offline — order saved on this device');
     if (!billsCache[table]) billsCache[table] = { startedAt: Date.now(), items: [] };
     items.forEach(i => billsCache[table].items.push(i));
   }
@@ -338,6 +340,7 @@ async function setActiveBill(table, cartItems) {
       else billsCache[table] = { startedAt: Date.now(), items };
     }
   } catch (e) {
+    if (!navigator.onLine) showToast('📡 Offline — order saved on this device');
     if (billsCache[table]) billsCache[table].items = items;
     else billsCache[table] = { startedAt: Date.now(), items };
   }
@@ -401,6 +404,7 @@ async function saveOrderToHistory(table, items, total, method) {
     });
   } catch (e) {
     // Fallback: save locally
+    if (!navigator.onLine) showToast('📡 Offline — payment saved locally');
     let history = [];
     try { const r = localStorage.getItem(HISTORY_KEY); history = r ? JSON.parse(r) : []; } catch (ex) {}
     history.unshift(order);
@@ -2215,6 +2219,10 @@ function applySessionToUI(session) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+
+// ─── Offline / Online detection ──────────────────────────────────────────────
+window.addEventListener('offline', () => showToast('📡 No internet connection'));
+window.addEventListener('online',  () => showToast('✅ Back online'));
 
 async function init() {
   // ── Detect native app and apply phone/tablet layout ──
