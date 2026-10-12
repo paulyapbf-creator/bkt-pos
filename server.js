@@ -26,25 +26,15 @@ app.use(express.json({ limit: '5mb' }));
 app.get('/api/version', (req, res) => res.json({ version: BUILD_VERSION, ts: Date.now() }));
 
 // ─── App Update endpoints (no auth — device must reach server over TCP/IP) ────
-const UPDATES_DIR      = path.join(__dirname, 'updates');
-const APK_FILE_PHONE   = path.join(UPDATES_DIR, 'app-release.apk');
-const APK_FILE_TABLET  = path.join(UPDATES_DIR, 'bkthouse-pos-tablet.apk');
-const APK_INFO         = path.join(UPDATES_DIR, 'version.json');
-
-function getApkFile(type) {
-  const fs = require('fs');
-  const tablet = path.join(UPDATES_DIR, 'bkthouse-pos-tablet.apk');
-  const phone  = path.join(UPDATES_DIR, 'app-release.apk');
-  if (type === 'tablet' && fs.existsSync(tablet)) return { file: tablet, name: 'bkthouse-pos-tablet.apk' };
-  return { file: phone, name: 'app-release.apk' };
-}
+const UPDATES_DIR = path.join(__dirname, 'updates');
+const APK_FILE    = path.join(UPDATES_DIR, 'app-release.apk');
+const APK_INFO    = path.join(UPDATES_DIR, 'version.json');
 
 app.get('/api/app-update/info', (req, res) => {
   const fs = require('fs');
   try {
-    const { file, name } = getApkFile(req.query.type);
-    if (!fs.existsSync(file)) return res.json({ available: false });
-    const stat = fs.statSync(file);
+    if (!fs.existsSync(APK_FILE)) return res.json({ available: false });
+    const stat = fs.statSync(APK_FILE);
     let ver = {};
     try { ver = JSON.parse(fs.readFileSync(APK_INFO, 'utf8')); } catch {}
     res.json({
@@ -52,8 +42,7 @@ app.get('/api/app-update/info', (req, res) => {
       version:    ver.version  || 'unknown',
       notes:      ver.notes    || '',
       size:       stat.size,
-      type:       req.query.type || 'phone',
-      filename:   name,
+      filename:   'bkthouse-pos.apk',
       updatedAt:  stat.mtime,
     });
   } catch (e) {
@@ -63,42 +52,39 @@ app.get('/api/app-update/info', (req, res) => {
 
 app.get('/api/app-update/apk', (req, res) => {
   const fs = require('fs');
-  const { file, name } = getApkFile(req.query.type);
-  if (!fs.existsSync(file)) return res.status(404).json({ error: 'No APK available' });
-  const stat = fs.statSync(file);
+  if (!fs.existsSync(APK_FILE)) return res.status(404).json({ error: 'No APK available' });
+  const stat = fs.statSync(APK_FILE);
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.setHeader('Content-Disposition', 'attachment; filename="bkthouse-pos.apk"');
   res.setHeader('Content-Length', stat.size);
-  fs.createReadStream(file).pipe(res);
+  fs.createReadStream(APK_FILE).pipe(res);
 });
 
 // Simple update page — open in any Android browser to download APK
 app.get('/update', (req, res) => {
   const fs = require('fs');
-  let ver = {}; let phoneMb = '?'; let tabletMb = '?';
+  let ver = {}; let sizeMb = '?';
   try { ver = JSON.parse(fs.readFileSync(APK_INFO, 'utf8')); } catch {}
-  try { phoneMb  = (fs.statSync(APK_FILE_PHONE).size  / 1024 / 1024).toFixed(1); } catch {}
-  try { tabletMb = (fs.statSync(APK_FILE_TABLET).size / 1024 / 1024).toFixed(1); } catch {}
+  try { sizeMb = (fs.statSync(APK_FILE).size / 1024 / 1024).toFixed(1); } catch {}
   res.setHeader('Content-Type', 'text/html');
   res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BKT POS Update</title>
 <style>body{font-family:sans-serif;background:#1a1a2e;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
-.card{background:#16213e;border-radius:16px;padding:32px 24px;max-width:380px;width:90%;text-align:center;}
+.card{background:#16213e;border-radius:16px;padding:32px 24px;max-width:360px;width:90%;text-align:center;}
 h2{margin:0 0 8px;font-size:22px;}
 .ver{color:#aaa;font-size:14px;margin-bottom:8px;}
 .notes{font-size:13px;color:#ccc;margin-bottom:24px;line-height:1.5;}
-a.btn{display:block;color:#fff;text-decoration:none;border-radius:10px;padding:14px 16px;font-size:16px;font-weight:700;margin-bottom:12px;}
-.btn-phone{background:#27ae60;}
-.btn-tablet{background:#2980b9;}
-.size{color:#888;font-size:12px;margin-top:4px;}</style></head>
+a.btn{display:block;background:#27ae60;color:#fff;text-decoration:none;border-radius:10px;padding:16px;font-size:17px;font-weight:700;}
+.sub{color:#aaa;font-size:12px;margin-top:10px;}
+.size{color:#888;font-size:12px;margin-top:6px;}</style></head>
 <body><div class="card">
 <h2>📲 BKT POS Update</h2>
 <div class="ver">v${ver.version || 'unknown'}</div>
 <div class="notes">${ver.notes || ''}</div>
-<a class="btn btn-phone" href="/api/app-update/apk?type=phone">📱 Phone APK (${phoneMb} MB)</a>
-<a class="btn btn-tablet" href="/api/app-update/apk?type=tablet">📟 Tablet APK (${tabletMb} MB)</a>
-<div class="size">Tap to download, then install from notification</div>
+<a class="btn" href="/api/app-update/apk">⬇ Download (${sizeMb} MB)</a>
+<div class="sub">Works on both phone and tablet</div>
+<div class="size">Tap Download, then install from notification</div>
 </div></body></html>`);
 });
 

@@ -1256,15 +1256,13 @@ function initMaintenance() {
     const sizeEl       = document.getElementById('update-size');
     const currentVerEl = document.getElementById('update-current-ver');
 
-    // Detect device type so the correct APK variant is downloaded
-    const deviceType = document.documentElement.classList.contains('native-tablet') ? 'tablet' : 'phone';
-
     if (hostInput) hostInput.value = API_BASE;
 
     // Show installed version; append server version once fetched
+    const isTabletDevice = document.documentElement.classList.contains('native-tablet');
     const updateVerLine = (serverVer) => {
       if (!currentVerEl) return;
-      const typeLabel = deviceType === 'tablet' ? ' (Tablet)' : ' (Phone)';
+      const typeLabel = isTabletDevice ? ' · Tablet' : document.documentElement.classList.contains('native-app') ? ' · Phone' : '';
       currentVerEl.textContent = serverVer
         ? `App: ${APP_VERSION}${typeLabel}  |  Server: ${serverVer}`
         : `App: ${APP_VERSION}${typeLabel}`;
@@ -1298,7 +1296,7 @@ function initMaintenance() {
         try {
           const ctrl = new AbortController();
           const tid = setTimeout(() => ctrl.abort(), 15000);
-          const res  = await fetch(`${API_BASE}/api/app-update/info?type=${deviceType}&t=${Date.now()}`, { signal: ctrl.signal });
+          const res  = await fetch(`${API_BASE}/api/app-update/info?t=${Date.now()}`, { signal: ctrl.signal });
           clearTimeout(tid);
           if (!res.ok) throw new Error('Server error ' + res.status);
           const data = await res.json();
@@ -1307,7 +1305,7 @@ function initMaintenance() {
             return;
           }
           const mb = data.size ? (data.size / 1024 / 1024).toFixed(1) : null;
-          showUpdate(data.version, data.notes, `${API_BASE}/api/app-update/apk?type=${deviceType}`, mb);
+          showUpdate(data.version, data.notes, `${API_BASE}/api/app-update/apk`, mb);
         } catch (err) {
           if (statusEl) {
             statusEl.style.color = '#e74c3c';
@@ -1326,14 +1324,14 @@ function initMaintenance() {
         if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Checking…'; }
         if (downloadWrap) downloadWrap.style.display = 'none';
         try {
-          const res  = await fetch(`${host}/api/app-update/info?type=${deviceType}`);
+          const res  = await fetch(`${host}/api/app-update/info`);
           const data = await res.json();
           if (!data.available) {
             if (statusEl) { statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'No APK available on this host.'; }
             return;
           }
           const mb = (data.size / 1024 / 1024).toFixed(1);
-          showUpdate(data.version, data.notes, `${host}/api/app-update/apk?type=${deviceType}`, mb);
+          showUpdate(data.version, data.notes, `${host}/api/app-update/apk`, mb);
         } catch {
           if (statusEl) { statusEl.style.color = '#e74c3c'; statusEl.textContent = '✗ Could not reach host'; }
         }
