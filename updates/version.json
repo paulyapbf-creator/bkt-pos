@@ -1,1 +1,1 @@
-{"version":"1.2.66-debug","notes":"Offline detection: show toast when no internet, resume when back online"}
+{"version":"1.2.67-debug","notes":"Fix category mismatch: show custom category names, highlight orphaned categories in orange"}
