@@ -104,7 +104,7 @@ function renderSummary() {
   let totalItemQty = 0;
   orders.forEach(o => {
     (o.items || []).forEach(it => {
-      const key = it.id || it.name || it.nameZh || 'Unknown';
+      const key = (it.name || it.nameZh || 'Unknown') + '|' + (it.category || '');
       if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: it.category || '—', qty: 0, revenue: 0 };
       const qty = it.quantity || 1;
       const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
@@ -255,7 +255,7 @@ function renderItems() {
   let totalRev = 0;
   orders.forEach(o => {
     (o.items || []).forEach(it => {
-      const key = it.id || it.name || it.nameZh || 'Unknown';
+      const key = (it.name || it.nameZh || 'Unknown') + '|' + (it.category || '');
       if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: it.category || '—', qty: 0, revenue: 0 };
       const qty = it.quantity || 1;
       const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
