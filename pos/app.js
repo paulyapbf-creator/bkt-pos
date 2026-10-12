@@ -295,7 +295,7 @@ function billRow(oi, existingStatus) {
     id: oi.id, menuItemId: oi.menuItem.id,
     nameZh: oi.menuItem.nameZh, nameTh: oi.menuItem.nameTh, nameVi: oi.menuItem.nameVi,
     nameMs: oi.menuItem.nameMs, nameKm: oi.menuItem.nameKm, nameId: oi.menuItem.nameId,
-    name: oi.menuItem.name,
+    name: oi.menuItem.name, category: oi.menuItem.category || '',
     quantity: oi.quantity, unitPrice: oi.unitPrice, subtotal: oi.subtotal,
     selectedModifiers: oi.selectedModifiers, notes: oi.notes,
     status: existingStatus || 'cooking',
