@@ -1,1 +1,1 @@
-{"version":"1.2.59-debug","notes":"Fix cached JS after update, remove duplicate Check Cloud, fix tablet detection"}
+{"version":"1.2.60-debug","notes":"Fix APP_VERSION sync: APK now correctly reports v1.2.60"}
