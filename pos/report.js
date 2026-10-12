@@ -536,16 +536,28 @@ apiClearBtn.addEventListener('click', () => {
 });
 
 // ─── Dynamic shop name ───────────────────────────────────────────────────────
+function applyShopName(name) {
+  if (!name) return;
+  const el = document.getElementById('shop-name');
+  if (el) el.textContent = name;
+  document.title = `Reports — ${name}`;
+}
+
 async function fetchShopName() {
+  // Show cached name immediately so offline still shows the right store
+  try {
+    const cached = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    if (cached.shopName) applyShopName(cached.shopName);
+  } catch (e) {}
+
+  // Then try server for latest value
   try {
     const res = await fetch(`${API_BASE}/api/settings`);
     if (res.ok) {
       const settings = await res.json();
-      const name = settings.shopName || 'BKT House';
-      document.getElementById('shop-name').textContent = name;
-      document.title = `Reports — ${name}`;
+      applyShopName(settings.shopName || 'BKT House');
     }
-  } catch (e) { /* keep default */ }
+  } catch (e) { /* keep cached value */ }
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
