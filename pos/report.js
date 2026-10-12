@@ -99,17 +99,62 @@ function renderSummary() {
     .map(([date, d]) => `<tr><td>${date}</td><td class="num">${d.count}</td><td class="num">${fmtRM(d.revenue)}</td><td class="num">${fmtRM(d.revenue / d.count)}</td></tr>`)
     .join('');
 
+  // Items sold summary — aggregated totals per item
+  const byItem = {};
+  let totalItemQty = 0;
+  orders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const key = it.id || it.name || it.nameZh || 'Unknown';
+      if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: it.category || '—', qty: 0, revenue: 0 };
+      const qty = it.quantity || 1;
+      const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
+      byItem[key].qty += qty;
+      byItem[key].revenue += rev;
+      totalItemQty += qty;
+    });
+  });
+
+  const itemsSorted = Object.values(byItem).sort((a, b) => b.qty - a.qty);
+  const itemRows = itemsSorted.map((it, i) => {
+    const pct = totalRevenue > 0 ? (it.revenue / totalRevenue) * 100 : 0;
+    return `<tr>
+      <td class="rank">${i + 1}</td>
+      <td>${localName(it)}</td>
+      <td style="color:var(--muted);font-size:12px;">${it.category}</td>
+      <td class="num">${it.qty}</td>
+      <td class="num">${fmtRM(it.revenue)}</td>
+      <td class="num" style="color:var(--muted);font-size:12px;">${pct.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+
   panel.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value">${fmtRM(totalRevenue)}</div></div>
       <div class="kpi-card"><div class="kpi-label">Orders</div><div class="kpi-value">${orderCount}</div></div>
       <div class="kpi-card"><div class="kpi-label">Avg Order</div><div class="kpi-value">${fmtRM(avgOrder)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Items Sold</div><div class="kpi-value">${totalItemQty}</div></div>
     </div>
-    <table class="report-table">
+
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Daily Breakdown</div>
+    <table class="report-table" style="margin-bottom:24px;">
       <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue</th><th class="num">Avg</th></tr></thead>
       <tbody>${dailyRows}</tbody>
       <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${orderCount}</strong></td><td class="num"><strong>${fmtRM(totalRevenue)}</strong></td><td class="num"><strong>${fmtRM(avgOrder)}</strong></td></tr></tfoot>
     </table>
+
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Items Sold Summary</div>
+    <div style="overflow-x:auto;">
+      <table class="report-table">
+        <thead><tr><th>#</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Revenue</th><th class="num">Share</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot><tr>
+          <td colspan="3"><strong>Total</strong></td>
+          <td class="num"><strong>${totalItemQty}</strong></td>
+          <td class="num"><strong>${fmtRM(totalRevenue)}</strong></td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
   `;
 }
 
