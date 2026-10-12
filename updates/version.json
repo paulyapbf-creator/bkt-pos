@@ -1,1 +1,1 @@
-{"version":"1.2.58-debug","notes":"Single APK auto-detects phone or tablet layout"}
+{"version":"1.2.59-debug","notes":"Fix cached JS after update, remove duplicate Check Cloud, fix tablet detection"}
