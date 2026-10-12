@@ -56,6 +56,17 @@ function syncBillsToStorage() {
   localStorage.setItem(ACTIVE_BILLS_KEY, JSON.stringify(billsCache));
 }
 
+// ─── Tenant-aware fetch ───────────────────────────────────────────────────────
+// Automatically injects x-tenant header so SaaS server identifies the store.
+function apiFetch(url, options = {}) {
+  const tenant = typeof getTenantSession === 'function' ? getTenantSession() : null;
+  const slug = tenant?.slug;
+  if (slug) {
+    options = { ...options, headers: { ...(options.headers || {}), 'x-tenant': slug } };
+  }
+  return fetch(url, options);
+}
+
 // Always reload billsCache from localStorage before mutating it, so status
 // changes made by orders.js are never overwritten by a stale in-memory cache.
 function refreshBillsCache() {
@@ -270,7 +281,7 @@ function loadActiveBills() {
 
 async function fetchBillsFromAPI() {
   try {
-    const res = await fetch(`${API_BASE}/api/bills`);
+    const res = await apiFetch(`${API_BASE}/api/bills`);
     if (res.ok) billsCache = await res.json();
   } catch (e) {
     if (!navigator.onLine) showToast('📡 Offline — using cached bills');
@@ -295,7 +306,7 @@ async function addToActiveBill(table, cartItems) {
   refreshBillsCache(); // ensure we have the latest statuses before mutating
   const items = cartItems.map(oi => billRow(oi));
   try {
-    const res = await fetch(`${API_BASE}/api/bills/${table}/items`, {
+    const res = await apiFetch(`${API_BASE}/api/bills/${table}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
@@ -327,7 +338,7 @@ async function setActiveBill(table, cartItems) {
     return billRow(oi, existing?.status);
   });
   try {
-    const res = await fetch(`${API_BASE}/api/bills/${table}`, {
+    const res = await apiFetch(`${API_BASE}/api/bills/${table}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
@@ -350,7 +361,7 @@ async function setActiveBill(table, cartItems) {
 
 async function loadTableOrderToCart(table) {
   try {
-    const res = await fetch(`${API_BASE}/api/bills/${table}`);
+    const res = await apiFetch(`${API_BASE}/api/bills/${table}`);
     if (res.ok) billsCache[table] = await res.json();
   } catch (e) {}
 
@@ -375,7 +386,7 @@ async function loadTableOrderToCart(table) {
 
 async function clearActiveBill(table) {
   try {
-    await fetch(`${API_BASE}/api/bills/${table}`, { method: 'DELETE' });
+    await apiFetch(`${API_BASE}/api/bills/${table}`, { method: 'DELETE' });
   } catch (e) {}
   refreshBillsCache(); // re-read so we don't lose other tables' status changes
   delete billsCache[table];
@@ -396,20 +407,26 @@ function calcBillBreakdown(subtotal, settings) {
 async function saveOrderToHistory(table, items, total, method) {
   const order = { id: `ord_${Date.now()}`, table, timestamp: Date.now(),
                   paymentMethod: method, total, items };
-  try {
-    await fetch(`${API_BASE}/api/history`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order),
-    });
-  } catch (e) {
-    // Fallback: save locally
-    if (!navigator.onLine) showToast('📡 Offline — payment saved locally');
+  const saveLocally = () => {
     let history = [];
     try { const r = localStorage.getItem(HISTORY_KEY); history = r ? JSON.parse(r) : []; } catch (ex) {}
     history.unshift(order);
     if (history.length > 300) history.length = 300;
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  };
+  try {
+    const res = await apiFetch(`${API_BASE}/api/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order),
+    });
+    if (!res.ok) {
+      console.warn('saveOrderToHistory: server returned', res.status);
+      saveLocally();
+    }
+  } catch (e) {
+    if (!navigator.onLine) showToast('📡 Offline — payment saved locally');
+    saveLocally();
   }
 }
 
@@ -1261,7 +1278,7 @@ async function initDuitNowPayment(amount, table, settings) {
     const body = { tenantId: profile, amount: parseFloat(amount.toFixed(2)), referenceNo };
     if (terminalCode) body.terminalCode = terminalCode;
 
-    const res = await fetch(`${API_BASE}/api/wallet/duitnow/create`, {
+    const res = await apiFetch(`${API_BASE}/api/wallet/duitnow/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1300,7 +1317,7 @@ async function initDuitNowPayment(amount, table, settings) {
 async function pollDuitNowStatus(tenantId, referenceNo, signal) {
   const statusEl = document.getElementById('duitnow-status');
   try {
-    const res = await fetch(`${API_BASE}/api/wallet/duitnow/poll`, {
+    const res = await apiFetch(`${API_BASE}/api/wallet/duitnow/poll`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tenantId, referenceNo, intervalMs: 3000, maxAttempts: 120 }),
@@ -1347,7 +1364,7 @@ async function initAirwallexPayment(amount, table, settings, bd) {
 
   try {
     // Create PaymentIntent on server
-    const res = await fetch(`${API_BASE}/api/airwallex/create-intent`, {
+    const res = await apiFetch(`${API_BASE}/api/airwallex/create-intent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount, table }),
@@ -1714,7 +1731,7 @@ function closeHistoryModal() {
 async function renderHistoryList(tableFilter) {
   let history = [];
   try {
-    const res = await fetch(`${API_BASE}/api/history`);
+    const res = await apiFetch(`${API_BASE}/api/history`);
     if (res.ok) history = await res.json();
   } catch (e) {
     // Fallback to localStorage
@@ -1896,7 +1913,7 @@ async function sendToPrinter(job, pTypeOverride) {
     // Get raster data from server first
     let escposB64 = null;
     try {
-      const res = await fetch(`${API_BASE}/api/print`, {
+      const res = await apiFetch(`${API_BASE}/api/print`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(job),
@@ -1920,7 +1937,7 @@ async function sendToPrinter(job, pTypeOverride) {
   // Try 1: server-side build + TCP print
   let escposB64 = null;
   try {
-    const res = await fetch(`${API_BASE}/api/print`, {
+    const res = await apiFetch(`${API_BASE}/api/print`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(job),
@@ -2538,7 +2555,7 @@ async function init() {
   // ── Step 2: Background sync from API (non-blocking, updates cache if server available) ──
   if (location.host) {
     // Refresh menu from API
-    fetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiMenu => {
+    apiFetch(`${API_BASE}/api/menu`).then(r => r.ok ? r.json() : null).then(apiMenu => {
       // Skip override if items.js saved to localStorage within the last 15 seconds
       // (the keepalive PUT may still be in-flight, so the server has stale data)
       const savedAt = parseInt(localStorage.getItem('menu_saved_at') || '0', 10);
@@ -2569,7 +2586,7 @@ async function init() {
         renderMenuList();
       } else if (apiMenu !== null && !isTenantLink) {
         // API has no menu yet — seed it (only in non-tenant mode to avoid cross-tenant contamination)
-        fetch(`${API_BASE}/api/menu`, { method: 'PUT',
+        apiFetch(`${API_BASE}/api/menu`, { method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(menuItems) }).catch(() => {});
       }
@@ -2579,7 +2596,7 @@ async function init() {
     fetchBillsFromAPI().then(() => updateTableBtn()).catch(() => {});
 
     // Sync settings from API
-    fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
+    apiFetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
       if (s && Object.keys(s).length > 0) {
         // Preserve local-only fields (device-specific, not stored on server)
         const local = loadSettings();
@@ -2602,7 +2619,7 @@ async function init() {
     applyPosAccess(loadSettings());
 
     // Show build version in header
-    fetch(`${API_BASE}/api/version`).then(r => r.ok ? r.json() : null).then(d => {
+    apiFetch(`${API_BASE}/api/version`).then(r => r.ok ? r.json() : null).then(d => {
       const el = document.getElementById('header-version');
       if (el && d && d.version) el.textContent = `v${d.version}`;
     }).catch(() => {});
