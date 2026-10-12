@@ -344,8 +344,110 @@ function exportItemMasterCsv(items) {
   URL.revokeObjectURL(url);
 }
 
+// ─── Render: Table Report ────────────────────────────────────────────────────
+function renderTableReport() {
+  const panel = document.getElementById('panel-table');
+  if (orders.length === 0) {
+    panel.innerHTML = '<div class="empty-state">No orders in this period</div>';
+    return;
+  }
+
+  const byTable = {};
+  let grandTotal = 0;
+  orders.forEach(o => {
+    const t = o.table || '—';
+    if (!byTable[t]) byTable[t] = { orders: 0, revenue: 0, items: 0 };
+    byTable[t].orders++;
+    byTable[t].revenue += o.total || 0;
+    byTable[t].items += (o.items || []).reduce((s, it) => s + (it.quantity || 1), 0);
+    grandTotal += o.total || 0;
+  });
+
+  // Natural-sort tables: T1, T2 … T10 before T11, then alphabetical for rest
+  const sorted = Object.entries(byTable).sort(([a], [b]) => {
+    const na = parseInt(a.replace(/\D/g, ''), 10), nb = parseInt(b.replace(/\D/g, ''), 10);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+
+  const rows = sorted.map(([table, d]) => {
+    const avg = d.revenue / d.orders;
+    const pct = grandTotal > 0 ? (d.revenue / grandTotal) * 100 : 0;
+    const barW = Math.max(2, pct);
+    return `<tr>
+      <td><span class="detail-table">${table}</span></td>
+      <td class="num">${d.orders}</td>
+      <td class="num">${d.items}</td>
+      <td class="num">${fmtRM(d.revenue)}</td>
+      <td class="num">${fmtRM(avg)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;background:var(--header);border-radius:3px;height:12px;overflow:hidden;">
+            <div style="width:${barW}%;height:100%;background:var(--red);border-radius:3px;min-width:2px;transition:width 0.3s;"></div>
+          </div>
+          <span style="width:42px;text-align:right;font-size:12px;color:var(--muted);">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value">${fmtRM(grandTotal)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${orders.length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tables Active</div><div class="kpi-value">${sorted.length}</div></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button id="export-table-btn" class="export-btn">⬇ Export CSV</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="report-table">
+        <thead><tr>
+          <th>Table</th>
+          <th class="num">Orders</th>
+          <th class="num">Items Sold</th>
+          <th class="num">Revenue</th>
+          <th class="num">Avg Order</th>
+          <th>Share</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td><strong>Total</strong></td>
+          <td class="num"><strong>${orders.length}</strong></td>
+          <td class="num"><strong>${sorted.reduce((s,[,d])=>s+d.items,0)}</strong></td>
+          <td class="num"><strong>${fmtRM(grandTotal)}</strong></td>
+          <td class="num"><strong>${fmtRM(grandTotal / orders.length)}</strong></td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('export-table-btn').addEventListener('click', () => {
+    const headers = ['Table', 'Orders', 'Items Sold', 'Revenue', 'Avg Order', 'Share %'];
+    const dataRows = sorted.map(([table, d]) => [
+      table,
+      d.orders,
+      d.items,
+      d.revenue.toFixed(2),
+      (d.revenue / d.orders).toFixed(2),
+      grandTotal > 0 ? ((d.revenue / grandTotal) * 100).toFixed(1) : '0.0',
+    ]);
+    const csv = [headers, ...dataRows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `table-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
-const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, itemmaster: renderItemMaster };
+const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, table: renderTableReport, itemmaster: renderItemMaster };
 let activeTab = 'summary';
 
 function renderActiveTab() {
