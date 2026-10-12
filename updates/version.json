@@ -1,1 +1,1 @@
-{"version":"1.2.65-debug","notes":"Remove Item Sales tab; allow closing table picker; fix item grouping in reports"}
+{"version":"1.2.66-debug","notes":"Offline detection: show toast when no internet, resume when back online"}
