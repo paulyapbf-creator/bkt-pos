@@ -1,1 +1,1 @@
-{"version":"1.2.61-debug","notes":"Fix: saving General Settings no longer wipes tables/categories; tables and categories now refresh from cloud on Setup open"}
+{"version":"1.2.62-debug","notes":"Add Table Report tab in Reports; fix settings sync for tables and categories"}
