@@ -242,124 +242,6 @@ function renderCollection() {
   `;
 }
 
-// ─── Render: Item Sales ─────────────────────────────────────────────────────
-function renderItems() {
-  const panel = document.getElementById('panel-items');
-  if (orders.length === 0) {
-    panel.innerHTML = '<div class="empty-state">No orders in this period</div>';
-    return;
-  }
-
-  const byItem = {};
-  let totalQty = 0;
-  let totalRev = 0;
-  orders.forEach(o => {
-    (o.items || []).forEach(it => {
-      const key = (it.name || it.nameZh || 'Unknown') + '|' + (it.category || '');
-      if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: it.category || '—', qty: 0, revenue: 0 };
-      const qty = it.quantity || 1;
-      const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
-      byItem[key].qty += qty;
-      byItem[key].revenue += rev;
-      totalQty += qty;
-      totalRev += rev;
-    });
-  });
-
-  const sorted = Object.values(byItem).sort((a, b) => b.qty - a.qty);
-
-  // Category breakdown
-  const byCat = {};
-  sorted.forEach(it => {
-    const cat = it.category || '—';
-    if (!byCat[cat]) byCat[cat] = { qty: 0, revenue: 0 };
-    byCat[cat].qty += it.qty;
-    byCat[cat].revenue += it.revenue;
-  });
-  const catSorted = Object.entries(byCat).sort(([,a],[,b]) => b.revenue - a.revenue);
-
-  const catBars = catSorted.map(([cat, d]) => {
-    const pct = totalRev > 0 ? (d.revenue / totalRev) * 100 : 0;
-    return `<div class="collection-row">
-      <div class="collection-label">
-        <span style="font-weight:600;font-size:13px;">${cat}</span>
-        <span class="collection-count">${d.qty} items sold</span>
-      </div>
-      <div class="collection-bar-wrap">
-        <div class="collection-bar" style="width:${Math.max(2,pct)}%"></div>
-      </div>
-      <div class="collection-values">
-        <span class="collection-amount">${fmtRM(d.revenue)}</span>
-        <span class="collection-pct">${pct.toFixed(1)}%</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  const rows = sorted.map((it, i) => {
-    const pct = totalRev > 0 ? (it.revenue / totalRev) * 100 : 0;
-    return `<tr>
-      <td class="rank">${i + 1}</td>
-      <td>${localName(it)}</td>
-      <td style="color:var(--muted);font-size:12px;">${it.category || '—'}</td>
-      <td class="num">${it.qty}</td>
-      <td class="num">${fmtRM(it.revenue)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;background:var(--header);border-radius:3px;height:12px;overflow:hidden;">
-            <div style="width:${Math.max(2,pct)}%;height:100%;background:var(--red);border-radius:3px;transition:width 0.3s;"></div>
-          </div>
-          <span style="width:42px;text-align:right;font-size:12px;color:var(--muted);">${pct.toFixed(1)}%</span>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-
-  panel.innerHTML = `
-    <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">Unique Items</div><div class="kpi-value">${sorted.length}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Qty Sold</div><div class="kpi-value">${totalQty}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Item Revenue</div><div class="kpi-value">${fmtRM(totalRev)}</div></div>
-    </div>
-    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">By Category</div>
-    <div class="collection-list" style="margin-bottom:20px;">${catBars}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">By Item</span>
-      <button id="export-items-btn" class="export-btn">⬇ Export CSV</button>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="report-table">
-        <thead><tr><th>#</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Revenue</th><th>Share</th></tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr>
-          <td colspan="3"><strong>Total</strong></td>
-          <td class="num"><strong>${totalQty}</strong></td>
-          <td class="num"><strong>${fmtRM(totalRev)}</strong></td>
-          <td></td>
-        </tr></tfoot>
-      </table>
-    </div>
-  `;
-
-  document.getElementById('export-items-btn').addEventListener('click', () => {
-    const headers = ['#', 'Item', 'Category', 'Qty Sold', 'Revenue', 'Share %'];
-    const dataRows = sorted.map((it, i) => [
-      i + 1, it.name, it.category || '—', it.qty,
-      it.revenue.toFixed(2),
-      totalRev > 0 ? ((it.revenue / totalRev) * 100).toFixed(1) : '0.0',
-    ]);
-    const csv = [headers, ...dataRows]
-      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\r\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `item-sales-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
-}
-
 // ─── Render: Item Master ─────────────────────────────────────────────────────
 async function renderItemMaster() {
   const panel = document.getElementById('panel-itemmaster');
@@ -560,7 +442,7 @@ function renderTableReport() {
 }
 
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
-const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, items: renderItems, table: renderTableReport, itemmaster: renderItemMaster };
+const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, table: renderTableReport, itemmaster: renderItemMaster };
 let activeTab = 'summary';
 
 function renderActiveTab() {
