@@ -97,8 +97,15 @@ function localName(item) {
 }
 
 function catName(id) {
-  if (typeof t === 'function') return t('cat_' + id);
-  return CATEGORIES.find(c => c.id === id)?.name || id;
+  // Prefer user's custom category name over i18n fallback
+  const cat = CATEGORIES.find(c => c.id === id);
+  if (cat) return cat.name;
+  // Not in current categories — show raw id so mismatch is visible
+  return id || '—';
+}
+
+function catExists(id) {
+  return CATEGORIES.some(c => c.id === id && c.id !== 'all');
 }
 
 // Apply saved categories from settings, update CATEGORIES global and #f-category select
@@ -142,7 +149,7 @@ function renderTable() {
   tbody.innerHTML = filtered.map(item => `
     <tr class="${item.isAvailable ? '' : 'row-dim'}" data-item-id="${item.id}" draggable="true">
       <td class="td-drag"><span class="drag-handle">⠿</span></td>
-      <td><span class="cat-chip">${catName(item.category)}</span></td>
+      <td><span class="cat-chip${catExists(item.category) ? '' : ' cat-chip-unknown'}" title="${catExists(item.category) ? '' : 'Category not in list — edit item to fix'}">${catName(item.category)}</span></td>
       <td class="td-name">
         <div class="td-name-zh">${localName(item)}</div>
         <div class="td-name-en">${item.name}</div>
@@ -309,7 +316,17 @@ function openModal(item = null) {
   document.getElementById('im-modal-title').textContent = item ? 'Edit Item' : 'Add Item';
   document.getElementById('f-name').value      = item?.name        || '';
   document.getElementById('f-namezh').value    = item?.nameZh      || '';
-  document.getElementById('f-category').value  = item?.category    || 'mains';
+  const fCat = document.getElementById('f-category');
+  const catVal = item?.category || (CATEGORIES.find(c => c.id !== 'all')?.id || '');
+  // If the item's category isn't in the current list, add a temporary placeholder
+  if (catVal && !catExists(catVal)) {
+    const placeholder = document.createElement('option');
+    placeholder.value = catVal;
+    placeholder.textContent = `⚠ ${catName(catVal)} (not in list — please reassign)`;
+    placeholder.style.color = 'orange';
+    fCat.prepend(placeholder);
+  }
+  fCat.value = catVal;
   document.getElementById('f-price').value          = item?.price         ?? '';
   document.getElementById('f-delivery-price').value = item?.deliveryPrice != null ? item.deliveryPrice : '';
   document.getElementById('f-promo-price').value    = item?.promoPrice    != null ? item.promoPrice    : '';

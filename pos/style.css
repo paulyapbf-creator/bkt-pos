@@ -1137,6 +1137,10 @@ body {
   color: var(--muted);
   white-space: nowrap;
 }
+.cat-chip-unknown {
+  border-color: #e67e22;
+  color: #e67e22;
+}
 
 .td-name-zh { font-weight: 600; color: #fff; }
 .td-name-en { font-size: 11px; color: var(--muted); margin-top: 2px; }
