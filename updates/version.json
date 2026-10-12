@@ -1,1 +1,1 @@
-{"version":"1.2.67-debug","notes":"Fix category mismatch: show custom category names, highlight orphaned categories in orange"}
+{"version":"1.2.68-debug","notes":"Fix cloud sync: inject x-tenant header on all API calls so sales data uploads correctly"}
