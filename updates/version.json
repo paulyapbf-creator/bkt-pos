@@ -1,1 +1,1 @@
-{"version":"1.2.60-debug","notes":"Fix APP_VERSION sync: APK now correctly reports v1.2.60"}
+{"version":"1.2.61-debug","notes":"Fix: saving General Settings no longer wipes tables/categories; tables and categories now refresh from cloud on Setup open"}

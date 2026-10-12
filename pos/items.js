@@ -690,7 +690,9 @@ function initSettings() {
   loadWalletProfiles();
 
   function gatherSettings() {
+    const existing = loadSettings();
     return {
+      ...existing,
       shopName:     shopNameInput.value.trim(),
       shopAddress:  shopAddressInput.value.trim(),
       tngEnabled:   tngEnabledInput.checked,
@@ -1102,6 +1104,14 @@ function initMaintenance() {
     });
 
     renderTblMgmt();
+    // Refresh from cloud in background so a fresh device always gets latest tables
+    fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
+      if (!s) return;
+      const loc = loadSettings();
+      ['serverUrl','storeSlug','relayUrl'].forEach(k => { if (loc[k] && !s[k]) s[k] = loc[k]; });
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      renderTblMgmt();
+    }).catch(() => {});
   }
 
   // ── Category Management ───────────────────────────────────────────────────
@@ -1224,6 +1234,16 @@ function initMaintenance() {
     });
 
     renderCatMgmt();
+    // Refresh from cloud in background so a fresh device always gets latest categories
+    fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
+      if (!s) return;
+      const loc = loadSettings();
+      ['serverUrl','storeSlug','relayUrl'].forEach(k => { if (loc[k] && !s[k]) s[k] = loc[k]; });
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      renderCatMgmt();
+      applyCategories(s.categories);
+      populateCategorySelect();
+    }).catch(() => {});
   }
 
   // ── Sync to Cloud ─────────────────────────────────────────────────────────
@@ -1246,7 +1266,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.60-debug';
+    const APP_VERSION  = '1.2.61-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');
