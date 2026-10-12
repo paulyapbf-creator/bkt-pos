@@ -447,7 +447,7 @@ function openTablePicker(required = false) {
   const closeBtn = document.getElementById('table-picker-close');
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  closeBtn.style.display = required ? 'none' : '';
+  closeBtn.style.display = '';
 }
 
 function closeTablePicker() {
@@ -2296,7 +2296,7 @@ async function init() {
   if (mobileTableBtn) mobileTableBtn.addEventListener('click', () => openTablePicker(false));
   document.getElementById('table-picker-close').addEventListener('click', closeTablePicker);
   document.getElementById('table-picker-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget && state.tableNumber) closeTablePicker();
+    if (e.target === e.currentTarget) closeTablePicker();
   });
 
   // Pax controls
