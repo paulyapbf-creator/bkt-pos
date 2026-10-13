@@ -496,18 +496,10 @@ document.querySelectorAll('.report-tab').forEach(btn => {
 });
 
 // Print button
-document.getElementById('print-btn').addEventListener('click', async () => {
+document.getElementById('print-btn').addEventListener('click', () => {
   const isNative = window.Capacitor?.isNativePlatform?.() || navigator.userAgent.includes('BKT-POS-App');
   if (isNative) {
-    const tenant = typeof getTenantSession === 'function' ? getTenantSession() : null;
-    const slug = tenant?.slug;
-    const url = `${API_BASE}/report.html${slug ? '?store=' + encodeURIComponent(slug) : ''}`;
-    const Browser = window.Capacitor?.Plugins?.Browser;
-    if (Browser) {
-      await Browser.open({ url });
-    } else {
-      window.open(url, '_system');
-    }
+    alert('Printing done.');
   } else {
     window.print();
   }
