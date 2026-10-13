@@ -498,13 +498,16 @@ document.querySelectorAll('.report-tab').forEach(btn => {
 // Print button
 document.getElementById('print-btn').addEventListener('click', async () => {
   const isNative = window.Capacitor?.isNativePlatform?.() || navigator.userAgent.includes('BKT-POS-App');
-  if (isNative && navigator.share) {
+  if (isNative) {
     const tenant = typeof getTenantSession === 'function' ? getTenantSession() : null;
     const slug = tenant?.slug;
     const url = `${API_BASE}/report.html${slug ? '?store=' + encodeURIComponent(slug) : ''}`;
-    try {
-      await navigator.share({ title: 'Sales Report', url });
-    } catch (e) { /* user cancelled share */ }
+    const Browser = window.Capacitor?.Plugins?.Browser;
+    if (Browser) {
+      await Browser.open({ url });
+    } else {
+      window.open(url, '_system');
+    }
   } else {
     window.print();
   }
