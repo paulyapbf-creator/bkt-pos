@@ -247,17 +247,33 @@ async function renderItemMaster() {
   const panel = document.getElementById('panel-itemmaster');
   panel.innerHTML = '<div class="empty-state">Loading…</div>';
 
-  let items = [];
+  let items = [], catMap = {};
   try {
-    const res = await fetch(`${API_BASE}/api/menu`);
-    if (res.ok) items = await res.json();
+    const [menuRes, settingsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/menu`),
+      fetch(`${API_BASE}/api/settings`)
+    ]);
+    if (menuRes.ok) items = await menuRes.json();
+    if (settingsRes.ok) {
+      const s = await settingsRes.json();
+      (s.categories || []).forEach(c => { catMap[c.id] = c.name; });
+    }
   } catch (e) { /* ignore */ }
+
+  // Fallback: read from localStorage cache
+  if (!Object.keys(catMap).length) {
+    try {
+      const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+      (s.categories || []).forEach(c => { catMap[c.id] = c.name; });
+    } catch (e) {}
+  }
 
   if (!items.length) {
     panel.innerHTML = '<div class="empty-state">No menu items found</div>';
     return;
   }
 
+  const catName = id => catMap[id] || id || '—';
   const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
   const categories = [...new Set(items.map(i => i.category).filter(Boolean))];
 
@@ -265,7 +281,7 @@ async function renderItemMaster() {
     <td class="rank">${i + 1}</td>
     <td>${it.name || ''}</td>
     <td>${it.nameZh || ''}</td>
-    <td>${it.category || ''}</td>
+    <td>${catName(it.category)}</td>
     <td class="num">${cur} ${(it.price || 0).toFixed(2)}</td>
     <td class="num">${it.deliveryPrice != null ? cur + ' ' + it.deliveryPrice.toFixed(2) : '—'}</td>
     <td class="num">${it.promoPrice != null ? cur + ' ' + it.promoPrice.toFixed(2) : '—'}</td>
@@ -549,8 +565,16 @@ function applyShopName(name) {
   if (!name) return;
   const el = document.getElementById('shop-name');
   if (el) el.textContent = name;
+  const printEl = document.getElementById('print-shop-name');
+  if (printEl) printEl.textContent = name;
   document.title = `Reports — ${name}`;
 }
+
+// Set print date on load
+(function() {
+  const el = document.getElementById('print-date');
+  if (el) el.textContent = 'Printed: ' + new Date().toLocaleString();
+})();
 
 async function fetchShopName() {
   // Show cached name immediately so offline still shows the right store

@@ -447,10 +447,32 @@ body {
 }
 .export-btn:hover { opacity: 0.85; }
 
+/* ── Print header (hidden on screen, shown on print) ─────────────────────── */
+#print-header {
+  display: none;
+}
+
 /* ── Print media query ────────────────────────────────────────────────────── */
 @media print {
+  @page {
+    margin: 12mm 10mm;
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+  }
   body { background: #fff; color: #000; }
-  #header, #report-filter-bar, #report-tabs, #api-config-bar { display: none; }
+  #header, #report-filter-bar, #report-tabs, #api-config-bar { display: none !important; }
+  #print-header {
+    display: block;
+    text-align: center;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 6px;
+  }
+  #print-header .print-shop { font-size: 14pt; font-weight: 700; color: #000; }
+  #print-header .print-date { font-size: 9pt; color: #555; margin-top: 2px; }
   #report-content { max-width: 100%; padding: 0; }
   .report-panel { display: block !important; page-break-inside: avoid; }
   .kpi-card { border: 1px solid #ccc; background: #f9f9f9; }
@@ -483,6 +505,12 @@ body {
   </style>
 </head>
 <body>
+
+  <!-- ── Print header (shown only when printing) ── -->
+  <div id="print-header">
+    <div class="print-shop" id="print-shop-name">BKT House</div>
+    <div class="print-date" id="print-date"></div>
+  </div>
 
   <!-- ── Header ── -->
   <header id="header">
