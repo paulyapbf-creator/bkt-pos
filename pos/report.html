@@ -560,9 +560,11 @@ body {
       // If ?store=slug is in the URL, auto-select that tenant before login check
       const storeParam = new URLSearchParams(location.search).get('store');
       if (storeParam) {
-        // Hide header bar — report accessed directly via URL param (print view)
-        const hdr = document.getElementById('header');
-        if (hdr) hdr.style.display = 'none';
+        // Hide header/filter bars — report accessed directly via URL param (print view)
+        ['header', 'report-filter-bar', 'api-config-bar'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
         const appTitle = document.getElementById('app-title');
         if (appTitle) appTitle.innerHTML = '<span style="font-size:17px;font-weight:700;">📊 <span id="shop-name">BKT House</span></span>';
 
