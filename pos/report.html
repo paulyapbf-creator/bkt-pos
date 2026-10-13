@@ -560,7 +560,9 @@ body {
       // If ?store=slug is in the URL, auto-select that tenant before login check
       const storeParam = new URLSearchParams(location.search).get('store');
       if (storeParam) {
-        // Hide back-link to POS — report accessed directly via URL param
+        // Hide header bar — report accessed directly via URL param (print view)
+        const hdr = document.getElementById('header');
+        if (hdr) hdr.style.display = 'none';
         const appTitle = document.getElementById('app-title');
         if (appTitle) appTitle.innerHTML = '<span style="font-size:17px;font-weight:700;">📊 <span id="shop-name">BKT House</span></span>';
 
