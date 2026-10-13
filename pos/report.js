@@ -496,10 +496,15 @@ document.querySelectorAll('.report-tab').forEach(btn => {
 });
 
 // Print button
-document.getElementById('print-btn').addEventListener('click', () => {
+document.getElementById('print-btn').addEventListener('click', async () => {
   const isNative = window.Capacitor?.isNativePlatform?.() || navigator.userAgent.includes('BKT-POS-App');
-  if (isNative) {
-    alert('Printing done.');
+  if (isNative && navigator.share) {
+    const tenant = typeof getTenantSession === 'function' ? getTenantSession() : null;
+    const slug = tenant?.slug;
+    const url = `${API_BASE}/report.html${slug ? '?store=' + encodeURIComponent(slug) : ''}`;
+    try {
+      await navigator.share({ title: 'Sales Report', url });
+    } catch (e) { /* user cancelled share */ }
   } else {
     window.print();
   }
