@@ -82,6 +82,7 @@ function renderSummary() {
     return;
   }
 
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
   const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
   const orderCount = orders.length;
   const avgOrder = totalRevenue / orderCount;
@@ -96,7 +97,7 @@ function renderSummary() {
   });
 
   const dailyRows = Object.entries(byDay)
-    .map(([date, d]) => `<tr><td>${date}</td><td class="num">${d.count}</td><td class="num">${fmtRM(d.revenue)}</td><td class="num">${fmtRM(d.revenue / d.count)}</td></tr>`)
+    .map(([date, d]) => `<tr><td>${date}</td><td class="num">${d.count}</td><td class="num">${d.revenue.toFixed(2)}</td><td class="num">${(d.revenue / d.count).toFixed(2)}</td></tr>`)
     .join('');
 
   // Items sold summary — aggregated totals per item
@@ -122,7 +123,7 @@ function renderSummary() {
       <td>${localName(it)}</td>
       <td style="color:var(--muted);font-size:12px;">${it.category}</td>
       <td class="num">${it.qty}</td>
-      <td class="num">${fmtRM(it.revenue)}</td>
+      <td class="num">${it.revenue.toFixed(2)}</td>
       <td class="num" style="color:var(--muted);font-size:12px;">${pct.toFixed(1)}%</td>
     </tr>`;
   }).join('');
@@ -137,20 +138,20 @@ function renderSummary() {
 
     <div style="font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Daily Breakdown</div>
     <table class="report-table" style="margin-bottom:24px;">
-      <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue</th><th class="num">Avg</th></tr></thead>
+      <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (${cur})</th><th class="num">Avg (${cur})</th></tr></thead>
       <tbody>${dailyRows}</tbody>
-      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${orderCount}</strong></td><td class="num"><strong>${fmtRM(totalRevenue)}</strong></td><td class="num"><strong>${fmtRM(avgOrder)}</strong></td></tr></tfoot>
+      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${orderCount}</strong></td><td class="num"><strong>${totalRevenue.toFixed(2)}</strong></td><td class="num"><strong>${avgOrder.toFixed(2)}</strong></td></tr></tfoot>
     </table>
 
     <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Items Sold Summary</div>
     <div style="overflow-x:auto;">
       <table class="report-table">
-        <thead><tr><th>#</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Revenue</th><th class="num">Share</th></tr></thead>
+        <thead><tr><th>#</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Revenue (${cur})</th><th class="num">Share</th></tr></thead>
         <tbody>${itemRows}</tbody>
         <tfoot><tr>
           <td colspan="3"><strong>Total</strong></td>
           <td class="num"><strong>${totalItemQty}</strong></td>
-          <td class="num"><strong>${fmtRM(totalRevenue)}</strong></td>
+          <td class="num"><strong>${totalRevenue.toFixed(2)}</strong></td>
           <td></td>
         </tr></tfoot>
       </table>
@@ -282,9 +283,9 @@ async function renderItemMaster() {
     <td>${it.name || ''}</td>
     <td>${it.nameZh || ''}</td>
     <td>${catName(it.category)}</td>
-    <td class="num">${cur} ${(it.price || 0).toFixed(2)}</td>
-    <td class="num">${it.deliveryPrice != null ? cur + ' ' + it.deliveryPrice.toFixed(2) : '—'}</td>
-    <td class="num">${it.promoPrice != null ? cur + ' ' + it.promoPrice.toFixed(2) : '—'}</td>
+    <td class="num">${(it.price || 0).toFixed(2)}</td>
+    <td class="num">${it.deliveryPrice != null ? it.deliveryPrice.toFixed(2) : '—'}</td>
+    <td class="num">${it.promoPrice != null ? it.promoPrice.toFixed(2) : '—'}</td>
     <td class="num">${it.promoEnabled ? '✓' : '—'}</td>
     <td class="num">${it.isAvailable !== false ? '✓' : '—'}</td>
     <td class="num">${it.isPopular ? '✓' : '—'}</td>
@@ -304,7 +305,7 @@ async function renderItemMaster() {
       <table class="report-table">
         <thead><tr>
           <th>#</th><th>Name (EN)</th><th>Name (ZH)</th><th>Category</th>
-          <th class="num">Price</th><th class="num">Delivery Price</th><th class="num">Promo Price</th>
+          <th class="num">Price (${cur})</th><th class="num">Del. Price (${cur})</th><th class="num">Promo Price (${cur})</th>
           <th class="num">Promo</th><th class="num">Available</th><th class="num">Popular</th><th class="num">Free Addons</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -363,6 +364,7 @@ function renderTableReport() {
     return;
   }
 
+  const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
   const byTable = {};
   let grandTotal = 0;
   orders.forEach(o => {
@@ -389,8 +391,8 @@ function renderTableReport() {
       <td><span class="detail-table">${table}</span></td>
       <td class="num">${d.orders}</td>
       <td class="num">${d.items}</td>
-      <td class="num">${fmtRM(d.revenue)}</td>
-      <td class="num">${fmtRM(avg)}</td>
+      <td class="num">${d.revenue.toFixed(2)}</td>
+      <td class="num">${avg.toFixed(2)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;background:var(--header);border-radius:3px;height:12px;overflow:hidden;">
@@ -417,8 +419,8 @@ function renderTableReport() {
           <th>Table</th>
           <th class="num">Orders</th>
           <th class="num">Items Sold</th>
-          <th class="num">Revenue</th>
-          <th class="num">Avg Order</th>
+          <th class="num">Revenue (${cur})</th>
+          <th class="num">Avg Order (${cur})</th>
           <th>Share</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -426,8 +428,8 @@ function renderTableReport() {
           <td><strong>Total</strong></td>
           <td class="num"><strong>${orders.length}</strong></td>
           <td class="num"><strong>${sorted.reduce((s,[,d])=>s+d.items,0)}</strong></td>
-          <td class="num"><strong>${fmtRM(grandTotal)}</strong></td>
-          <td class="num"><strong>${fmtRM(grandTotal / orders.length)}</strong></td>
+          <td class="num"><strong>${grandTotal.toFixed(2)}</strong></td>
+          <td class="num"><strong>${(grandTotal / orders.length).toFixed(2)}</strong></td>
           <td></td>
         </tr></tfoot>
       </table>
@@ -567,6 +569,8 @@ function applyShopName(name) {
   if (el) el.textContent = name;
   const printEl = document.getElementById('print-shop-name');
   if (printEl) printEl.textContent = name;
+  const hdrEl = document.getElementById('report-shop-header');
+  if (hdrEl) hdrEl.textContent = name;
   document.title = `Reports — ${name}`;
 }
 
