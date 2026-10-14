@@ -1283,7 +1283,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.86-debug';
+    const APP_VERSION  = '1.2.88-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');
@@ -1682,12 +1682,11 @@ function applySessionToItemsUI(session) {
     });
   }
 
-  // Hide Users, Settings & Maintenance tabs for cashiers
+  // Hide restricted tabs for cashiers
   if (session.role !== 'super') {
+    const restricted = new Set(['ai-import', 'store-setup', 'settings', 'promotions', 'maintenance']);
     document.querySelectorAll('.admin-tab').forEach(tab => {
-      if (tab.dataset.tab === 'ai-import' || tab.dataset.tab === 'users' || tab.dataset.tab === 'settings' || tab.dataset.tab === 'maintenance') {
-        tab.style.display = 'none';
-      }
+      if (restricted.has(tab.dataset.tab)) tab.style.display = 'none';
     });
   }
 }

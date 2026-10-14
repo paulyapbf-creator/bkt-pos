@@ -2230,7 +2230,7 @@ function applySessionToUI(session) {
 
   // Hide Maintenance link for cashiers
   if (session.role !== 'super') {
-    const maintLink = document.querySelector('a[href="items.html?tab=maintenance"]');
+    const maintLink = document.getElementById('nav-maintenance-btn');
     if (maintLink) maintLink.style.display = 'none';
   }
 }
