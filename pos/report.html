@@ -474,8 +474,11 @@ body {
   #print-header .print-shop { font-size: 14pt; font-weight: 700; color: #000; }
   #print-header .print-date { font-size: 9pt; color: #555; margin-top: 2px; }
   #report-content { max-width: 100%; padding: 0; }
+  #report-shop-header { display: none !important; }
   .report-panel { display: none !important; }
-  .report-panel.active { display: block !important; page-break-inside: avoid; }
+  .report-panel.active { display: block !important; }
+  .detail-card { page-break-inside: avoid; }
+  .export-btn, #export-itemmaster-btn, #export-table-btn { display: none !important; }
   .kpi-card { border: 1px solid #ccc; background: #f9f9f9; }
   .kpi-value, .kpi-label { color: #000; }
   .report-table th { background: #eee; color: #333; }
