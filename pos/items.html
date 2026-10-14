@@ -33,7 +33,7 @@
   <div id="admin-tabs">
     <button class="admin-tab active" data-tab="items">📋 <span data-i18n="items">Items</span></button>
     <button class="admin-tab" data-tab="ai-import">🤖 AI Import</button>
-    <button class="admin-tab" data-tab="users">👥 <span data-i18n="users">Users</span></button>
+    <button class="admin-tab" data-tab="store-setup">🏪 Store Setup</button>
     <button class="admin-tab" data-tab="settings">⚙️ <span data-i18n="system_settings">System Settings</span></button>
     <button class="admin-tab" data-tab="promotions">🏷️ Promotions</button>
     <button class="admin-tab" data-tab="maintenance">🔧 <span data-i18n="maintenance">Maintenance</span></button>
@@ -125,15 +125,53 @@
     </div>
   </div>
 
-  <!-- ── Users panel ── -->
-  <div id="panel-users" class="hidden">
-    <div id="users-wrap" style="max-width:700px;margin:0 auto;padding:20px 16px;">
-      <h2 class="settings-title" data-i18n="user_management">User Management</h2>
-      <p class="settings-hint" data-i18n="user_management_hint">Manage POS users. Super users have full access; cashiers can only use POS and view items.</p>
-      <div style="margin-bottom:12px;">
-        <button id="add-user-btn" class="add-btn" style="padding:8px 18px;font-size:13px;">+ <span data-i18n="add_user">Add User</span></button>
+  <!-- ── Store Setup panel ── -->
+  <div id="panel-store-setup" class="hidden">
+    <div style="max-width:700px;margin:0 auto;padding:20px 16px;display:flex;flex-direction:column;gap:24px;">
+
+      <!-- Users -->
+      <div>
+        <h2 class="settings-title" data-i18n="user_management">User Management</h2>
+        <p class="settings-hint" data-i18n="user_management_hint">Manage POS users. Super users have full access; cashiers can only use POS and view items.</p>
+        <div style="margin-bottom:12px;">
+          <button id="add-user-btn" class="add-btn" style="padding:8px 18px;font-size:13px;">+ <span data-i18n="add_user">Add User</span></button>
+        </div>
+        <div id="users-list"></div>
       </div>
-      <div id="users-list"></div>
+
+      <hr style="border:none;border-top:1px solid var(--border);">
+
+      <!-- Table Management -->
+      <div>
+        <h2 class="settings-title">🪑 Table Management</h2>
+        <p class="settings-hint">Add, rename, reorder or remove tables. Drag rows to reposition.</p>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius,8px);">
+            <input type="checkbox" id="tbl-required-chk" style="width:18px;height:18px;cursor:pointer;">
+            <span style="font-size:13px;font-weight:600;">Require table selection before adding items</span>
+          </label>
+          <div id="tbl-mgmt-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <button id="tbl-add-btn" class="add-btn" style="padding:8px 16px;font-size:13px;background:var(--header);color:var(--text);border:1px solid var(--border);">+ Add Table</button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button id="tbl-mgmt-save" class="add-btn" style="padding:8px 20px;font-size:13px;">Save</button>
+            <span id="tbl-mgmt-msg" style="font-size:13px;color:#888;"></span>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);">
+
+      <!-- Category Management -->
+      <div>
+        <h2 class="settings-title">📂 Category Management</h2>
+        <p class="settings-hint">Rename or reorder categories. Drag to reposition. Changes apply to the category bar and item form.</p>
+        <div id="cat-mgmt-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+          <button id="cat-mgmt-save" class="add-btn" style="padding:8px 20px;font-size:13px;">Save</button>
+          <span id="cat-mgmt-msg" style="font-size:13px;color:#888;"></span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -414,24 +452,6 @@
       <h2 class="settings-title" data-i18n="maintenance">Maintenance</h2>
       <p class="settings-hint" data-i18n="reset_desc">Use before going live or at the start of a new day to ensure a clean slate.</p>
 
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">🪑 Table Management</div>
-          <div class="maint-card-desc">Add, rename, reorder or remove tables. Drag rows to reposition.</div>
-        </div>
-        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius,8px);">
-            <input type="checkbox" id="tbl-required-chk" style="width:18px;height:18px;cursor:pointer;">
-            <span style="font-size:13px;font-weight:600;">Require table selection before adding items</span>
-          </label>
-          <div id="tbl-mgmt-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-          <button id="tbl-add-btn" class="add-btn" style="padding:8px 16px;font-size:13px;background:var(--header);color:var(--text);border:1px solid var(--border);">+ Add Table</button>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <button id="tbl-mgmt-save" class="add-btn" style="padding:8px 20px;font-size:13px;">Save</button>
-            <span id="tbl-mgmt-msg" style="font-size:13px;color:#888;"></span>
-          </div>
-        </div>
-      </div>
 
       <div class="maint-card">
         <div class="maint-card-info">
@@ -518,17 +538,6 @@
         </div>
       </div>
 
-      <div class="maint-card">
-        <div class="maint-card-info">
-          <div class="maint-card-title">📂 Category Management</div>
-          <div class="maint-card-desc">Rename or reorder categories. Drag to reposition. Changes apply to the category bar and item form.</div>
-        </div>
-        <div id="cat-mgmt-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-          <button id="cat-mgmt-save" class="add-btn" style="padding:8px 20px;font-size:13px;">Save</button>
-          <span id="cat-mgmt-msg" style="font-size:13px;color:#888;"></span>
-        </div>
-      </div>
 
       <div class="maint-card maint-card--reset">
         <div class="maint-card-info">

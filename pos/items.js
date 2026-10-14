@@ -522,18 +522,18 @@ function init() {
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   const panels = {
-    items:       document.getElementById('panel-items'),
-    'ai-import': document.getElementById('panel-ai-import'),
-    users:       document.getElementById('panel-users'),
-    settings:    document.getElementById('panel-settings'),
-    promotions:  document.getElementById('panel-promotions'),
-    maintenance: document.getElementById('panel-maintenance'),
+    items:         document.getElementById('panel-items'),
+    'ai-import':   document.getElementById('panel-ai-import'),
+    'store-setup': document.getElementById('panel-store-setup'),
+    settings:      document.getElementById('panel-settings'),
+    promotions:    document.getElementById('panel-promotions'),
+    maintenance:   document.getElementById('panel-maintenance'),
   };
 
   function switchTab(tabName) {
     // Block restricted tabs for cashiers
     const sess = getSession();
-    if (sess && sess.role !== 'super' && (tabName === 'ai-import' || tabName === 'users' || tabName === 'settings' || tabName === 'promotions' || tabName === 'maintenance')) return;
+    if (sess && sess.role !== 'super' && (tabName === 'ai-import' || tabName === 'store-setup' || tabName === 'settings' || tabName === 'promotions' || tabName === 'maintenance')) return;
 
     document.querySelectorAll('.admin-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === tabName);
@@ -1283,7 +1283,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.84-debug';
+    const APP_VERSION  = '1.2.86-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');
