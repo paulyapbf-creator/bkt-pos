@@ -28,6 +28,24 @@ let API_BASE = getApiBase();
 // ─── State ───────────────────────────────────────────────────────────────────
 let orders = [];
 let currentPreset = 'today';
+let catMap = {};  // category id → name, loaded at startup
+
+async function loadCatMap() {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings`);
+    if (res.ok) {
+      const s = await res.json();
+      (s.categories || []).forEach(c => { catMap[c.id] = c.name; });
+      return;
+    }
+  } catch (e) {}
+  // Fallback: localStorage cache
+  try {
+    const s = JSON.parse(localStorage.getItem('bkt_settings') || '{}');
+    (s.categories || []).forEach(c => { catMap[c.id] = c.name; });
+  } catch (e) {}
+}
+loadCatMap();
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 function startOfDay(d) { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; }
@@ -106,7 +124,7 @@ function renderSummary() {
   orders.forEach(o => {
     (o.items || []).forEach(it => {
       const key = (it.name || it.nameZh || 'Unknown') + '|' + (it.category || '');
-      if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: it.category || '—', qty: 0, revenue: 0 };
+      if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: catMap[it.category] || it.category || '—', qty: 0, revenue: 0 };
       const qty = it.quantity || 1;
       const rev = it.subtotal || (it.unitPrice || it.price || 0) * qty;
       byItem[key].qty += qty;
@@ -468,6 +486,7 @@ function renderActiveTab() {
 }
 
 async function loadData(from, to) {
+  if (!Object.keys(catMap).length) await loadCatMap();
   orders = await fetchOrders(from, to);
   renderActiveTab();
 }
