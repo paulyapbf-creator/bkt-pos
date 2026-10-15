@@ -1,1 +1,1 @@
-{"version":"1.2.88-debug","notes":"Hide Setup/Maintenance nav link from cashiers in POS"}
+{"version":"1.2.89-debug","notes":"Fix cache busting, ensure maintenance tab hidden for cashiers"}
