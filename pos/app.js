@@ -2374,7 +2374,7 @@ async function init() {
 
   document.getElementById('send-btn').addEventListener('click', async () => {
     if (state.items.length === 0) return;
-    if (!state.tableNumber) { openTablePicker(true); return; }
+    if (!state.tableNumber && isTableRequired()) { openTablePicker(true); return; }
     const sentTable   = state.tableNumber;
     const wasEditing  = state.editingActiveBill === sentTable;
     const sentMode    = state.paymentMode;

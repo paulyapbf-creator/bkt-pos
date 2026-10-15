@@ -1,1 +1,1 @@
-{"version":"1.2.90-debug","notes":"Fix tableRequired setting preserved across cloud sync"}
+{"version":"1.2.91-debug","notes":"Fix Send button always requiring table regardless of tableRequired setting"}
