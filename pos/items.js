@@ -1125,7 +1125,10 @@ function initMaintenance() {
     fetch(`${API_BASE}/api/settings`).then(r => r.ok ? r.json() : null).then(s => {
       if (!s) return;
       const loc = loadSettings();
-      ['serverUrl','storeSlug','relayUrl'].forEach(k => { if (loc[k] && !s[k]) s[k] = loc[k]; });
+      // Preserve local-only and locally-edited fields
+      ['serverUrl','storeSlug','relayUrl','tableRequired','tables','tablePaymentModes'].forEach(k => {
+        if (loc[k] !== undefined) s[k] = loc[k];
+      });
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
       renderTblMgmt();
     }).catch(() => {});
@@ -1283,7 +1286,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.89-debug';
+    const APP_VERSION  = '1.2.90-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');

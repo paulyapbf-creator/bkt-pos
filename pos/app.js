@@ -2597,7 +2597,7 @@ async function init() {
       if (s && Object.keys(s).length > 0) {
         // Preserve local-only fields (device-specific, not stored on server)
         const local = loadSettings();
-        ['serverUrl', 'storeSlug', 'relayUrl'].forEach(k => { if (local[k] && !s[k]) s[k] = local[k]; });
+        ['serverUrl', 'storeSlug', 'relayUrl', 'tableRequired', 'tables', 'tablePaymentModes'].forEach(k => { if (local[k] !== undefined) s[k] = local[k]; });
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
         const headerName = document.getElementById('header-shop-name');
         if (headerName && s.shopName) headerName.textContent = s.shopName;
