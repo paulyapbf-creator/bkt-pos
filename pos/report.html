@@ -501,6 +501,22 @@ body {
 .kpi-net { border-color: var(--red) !important; }
 .kpi-net .kpi-label { color: var(--red); }
 .kpi-net .kpi-value { color: var(--red); }
+.handover-print-opts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.handover-print-opts-label { font-weight: 700; color: var(--dim); white-space: nowrap; }
+.handover-chk-label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+.handover-chk-label input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+.no-print { opacity: 0.35; }
 
 /* ── Export button ────────────────────────────────────────────────────────── */
 .export-btn {
@@ -559,6 +575,8 @@ body {
   .collection-row { border: 1px solid #ccc; background: #f9f9f9; }
   .collection-bar { background: #333; }
   .collection-amount, .collection-pct { color: #000; }
+  #handover-print-opts { display: none !important; }
+  .no-print { display: none !important; }
 }
 
 /* ── Mobile responsive ────────────────────────────────────────────────────── */
@@ -651,6 +669,12 @@ body {
         <label class="handover-label">Cash Deduction (RM)</label>
         <input type="number" id="handover-deduct-input" class="handover-input" min="0" step="0.01" placeholder="0.00">
         <span class="handover-hint">Amount to deduct from cash sales (e.g. float, refunds)</span>
+      </div>
+      <div id="handover-print-opts" class="handover-print-opts hidden">
+        <span class="handover-print-opts-label">Print options:</span>
+        <label class="handover-chk-label"><input type="checkbox" id="chk-deduct-kpis" checked> Deduction KPI cards</label>
+        <label class="handover-chk-label"><input type="checkbox" id="chk-inline-note" checked> Cash deduction note</label>
+        <label class="handover-chk-label"><input type="checkbox" id="chk-summary" checked> Cash breakdown summary</label>
       </div>
       <div id="handover-result"></div>
     </div>

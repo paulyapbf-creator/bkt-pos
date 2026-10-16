@@ -575,13 +575,14 @@ function renderHandover() {
     return `<div class="collection-row${isCash && deduction > 0 ? ' handover-net-row' : ''}">
       <div class="collection-label">
         <span class="badge-${d.key}">${m}</span>
-        <span class="collection-count">${d.count} orders${isCash && deduction > 0 ? ` · deducted ${fmtRM(deduction)}` : ''}</span>
+        <span class="collection-count">${d.count} orders</span>
+        ${isCash && deduction > 0 ? `<span id="handover-inline-note" class="collection-count">· deducted ${fmtRM(deduction)} (was ${fmtRM(cashTotal)})</span>` : ''}
       </div>
       <div class="collection-bar-wrap">
         <div class="collection-bar" style="width:${Math.min(100, pct)}%"></div>
       </div>
       <div class="collection-values">
-        <span class="collection-amount">${fmtRM(displayTotal)}${isCash && deduction > 0 ? `<span style="font-size:11px;color:var(--muted);margin-left:6px;">(was ${fmtRM(cashTotal)})</span>` : ''}</span>
+        <span class="collection-amount">${fmtRM(displayTotal)}</span>
         <span class="collection-pct">${fmtPct(Math.min(100, pct))}</span>
       </div>
     </div>`;
@@ -591,17 +592,43 @@ function renderHandover() {
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Net Collected</div><div class="kpi-value">${fmtRM(netTotal)}</div></div>
       <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
-      ${deduction > 0 ? `<div class="kpi-card kpi-net"><div class="kpi-label">Cash Deduction</div><div class="kpi-value">- ${fmtRM(deduction)}</div></div>` : ''}
-      ${deduction > 0 ? `<div class="kpi-card kpi-net"><div class="kpi-label">Net Cash</div><div class="kpi-value">${fmtRM(netCash)}</div></div>` : ''}
+      ${deduction > 0 ? `<div id="handover-kpi-deduction" class="kpi-card kpi-net"><div class="kpi-label">Cash Deduction</div><div class="kpi-value">- ${fmtRM(deduction)}</div></div>` : ''}
+      ${deduction > 0 ? `<div id="handover-kpi-net" class="kpi-card kpi-net"><div class="kpi-label">Net Cash</div><div class="kpi-value">${fmtRM(netCash)}</div></div>` : ''}
       ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
     </div>
     <div class="collection-list">${bars}</div>
-    <div style="margin-top:16px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;">
+    ${deduction > 0 ? `
+    <div id="handover-summary" style="margin-top:16px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Gross Cash Sales</span><span style="font-weight:600;">${fmtRM(cashTotal)}</span></div>
-      ${deduction > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--muted);"><span>Less: Deduction</span><span>- ${fmtRM(deduction)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;color:var(--red);"><span>Net Cash to Hand Over</span><span>${fmtRM(netCash)}</span></div>` : ''}
-    </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--muted);"><span>Less: Deduction</span><span>- ${fmtRM(deduction)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;color:var(--red);"><span>Net Cash to Hand Over</span><span>${fmtRM(netCash)}</span></div>
+    </div>` : ''}
   `;
+
+  // Show/hide print options row
+  const optsRow = document.getElementById('handover-print-opts');
+  if (optsRow) optsRow.classList.toggle('hidden', deduction <= 0);
+
+  // Re-apply current checkbox states to newly rendered elements
+  applyHandoverPrintOpts();
+}
+
+function applyHandoverPrintOpts() {
+  const chkDeductKpis  = document.getElementById('chk-deduct-kpis');
+  const chkInlineNote  = document.getElementById('chk-inline-note');
+  const chkSummary     = document.getElementById('chk-summary');
+
+  const targets = {
+    'handover-kpi-deduction': chkDeductKpis,
+    'handover-kpi-net':       chkDeductKpis,
+    'handover-inline-note':   chkInlineNote,
+    'handover-summary':       chkSummary,
+  };
+
+  Object.entries(targets).forEach(([id, chk]) => {
+    const el = document.getElementById(id);
+    if (el && chk) el.classList.toggle('no-print', !chk.checked);
+  });
 }
 
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
@@ -666,6 +693,11 @@ if (handoverInput) {
     if (activeTab === 'handover') renderHandover();
   });
 }
+// Cash Handover: toggle no-print when print option checkboxes change
+['chk-deduct-kpis', 'chk-inline-note', 'chk-summary'].forEach(id => {
+  const chk = document.getElementById(id);
+  if (chk) chk.addEventListener('change', applyHandoverPrintOpts);
+});
 
 // Print button
 document.getElementById('print-btn').addEventListener('click', () => {
