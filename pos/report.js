@@ -356,11 +356,12 @@ async function renderItemMaster() {
     </div>
   `;
 
-  document.getElementById('export-itemmaster-btn').addEventListener('click', () => exportItemMasterCsv(items));
+  document.getElementById('export-itemmaster-btn').addEventListener('click', () => exportItemMasterCsv(items, catMap));
 }
 
-function exportItemMasterCsv(items) {
+function exportItemMasterCsv(items, resolvedCatMap) {
   const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
+  const catName = id => (resolvedCatMap && resolvedCatMap[id]) || id || '';
   const headers = [
     '#', 'Name (EN)', 'Name (ZH)', 'Category',
     `Price (${cur})`, `Delivery Price (${cur})`, `Promo Price (${cur})`,
@@ -371,7 +372,7 @@ function exportItemMasterCsv(items) {
     i + 1,
     it.name || '',
     it.nameZh || '',
-    it.category || '',
+    catName(it.category),
     (it.price || 0).toFixed(2),
     it.deliveryPrice != null ? it.deliveryPrice.toFixed(2) : '',
     it.promoPrice != null ? it.promoPrice.toFixed(2) : '',
