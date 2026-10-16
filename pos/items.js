@@ -968,7 +968,14 @@ function initMaintenance() {
     const saveBtn  = document.getElementById('tbl-mgmt-save');
     const addBtn   = document.getElementById('tbl-add-btn');
     const msgEl    = document.getElementById('tbl-mgmt-msg');
-    const reqChk   = document.getElementById('tbl-required-chk');
+    const reqChk          = document.getElementById('tbl-required-chk');
+    const cashierModeRow  = document.getElementById('tbl-cashier-mode-row');
+    const cashierModeEl   = document.getElementById('tbl-cashier-mode');
+
+    function syncCashierModeRow() {
+      if (cashierModeRow) cashierModeRow.style.display = reqChk.checked ? 'none' : 'flex';
+    }
+    reqChk.addEventListener('change', syncCashierModeRow);
 
     function defaultTables() {
       return Array.from({ length: 20 }, (_, i) => `T${i + 1}`);
@@ -979,8 +986,10 @@ function initMaintenance() {
       return (s.tables && s.tables.length) ? s.tables : defaultTables();
     }
 
-    // Populate checkbox from settings
+    // Populate checkbox and cashier mode from settings
     reqChk.checked = loadSettings().tableRequired !== false; // default true
+    if (cashierModeEl) cashierModeEl.value = (loadSettings().tablePaymentModes || {})['T0 - Cashier'] || 'hold';
+    syncCashierModeRow();
 
     function renderTblMgmt() {
       const tables = loadTables();
@@ -1114,7 +1123,9 @@ function initMaintenance() {
       const s = loadSettings();
       s.tables = tables;
       s.tableRequired = reqChk.checked;
-      s.tablePaymentModes = gatherTableModes();
+      const modes = gatherTableModes();
+      if (!reqChk.checked && cashierModeEl) modes['T0 - Cashier'] = cashierModeEl.value;
+      s.tablePaymentModes = modes;
       saveSettings(s);
       msgEl.textContent = '✓ Saved';
       setTimeout(() => { msgEl.textContent = ''; }, 3000);
@@ -1286,7 +1297,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.97-debug';
+    const APP_VERSION  = '1.2.98-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');

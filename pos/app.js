@@ -493,13 +493,13 @@ function getTablePaymentMode(table) {
 
 function applyCashierMode() {
   state.tableNumber = 'T0 - Cashier';
-  state.paymentMode = 'hold';
+  state.paymentMode = getTablePaymentMode('T0 - Cashier');
   updateTableBtn();
   const modeRow = document.getElementById('cp-mode-row');
   if (modeRow) {
     modeRow.classList.remove('hidden');
     modeRow.querySelectorAll('.cp-mode-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.mode === 'hold');
+      b.classList.toggle('active', b.dataset.mode === state.paymentMode);
     });
   }
 }
@@ -2378,14 +2378,6 @@ async function init() {
   const mPaxPlus  = document.getElementById('mobile-pax-plus');
   if (mPaxMinus) mPaxMinus.addEventListener('click', () => { if (state.pax > 1) state.pax--; updatePaxDisplay(); });
   if (mPaxPlus)  mPaxPlus.addEventListener('click',  () => { state.pax++; updatePaxDisplay(); });
-
-  // Cashier mode row (hold/express/direct) — shown when table selection not required
-  document.querySelectorAll('.cp-mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.paymentMode = btn.dataset.mode;
-      document.querySelectorAll('.cp-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
-    });
-  });
 
   // Inline checkout button — opens cart drawer
   const checkoutBtn = document.getElementById('checkout-btn');

@@ -219,6 +219,29 @@ body {
 }
 .cp-clear-btn:hover { color: var(--red); }
 
+.cp-mode-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cp-mode-btn {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--dim);
+  cursor: default;
+  pointer-events: none;
+}
+.cp-mode-btn.active {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
 #cp-body { flex: 1; overflow-y: auto; }
 #cp-body::-webkit-scrollbar { width: 3px; }
 #cp-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
