@@ -1737,78 +1737,38 @@ async function renderHistoryList(tableFilter) {
     try { const r = localStorage.getItem(HISTORY_KEY); history = r ? JSON.parse(r) : []; } catch (ex) {}
   }
 
-  const body = document.getElementById('history-body');
-  let html = '';
-
-  // ── Active (unpaid) bills ──────────────────────────────────────────────────
-  await fetchBillsFromAPI().catch(() => {});
-  const activeBills = loadActiveBills();
-  const activeTables = Object.keys(activeBills).filter(tbl => tableFilter === 'all' || tbl === tableFilter);
-  if (activeTables.length > 0) {
-    const billSettings = loadSettings();
-    html += `<div class="hist-section-label">Active Bills</div>`;
-    html += activeTables.map(tbl => {
-      const bill = activeBills[tbl];
-      const bd = calcBillBreakdown(getActiveBillTotal(bill.items), billSettings);
-      const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
-      const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-      return `<div class="hist-card hist-card-active">
-        <div class="hist-card-head">
-          <div class="hist-left">
-            <span class="hist-table-badge">${tbl}</span>
-            <div class="hist-meta"><span class="hist-date">Since ${timeStr}</span><span class="hist-pay" style="color:#e67e22;">Unpaid</span></div>
-          </div>
-          <div class="hist-right">
-            <span class="hist-total">${getCurrency()} ${bd.total.toFixed(2)}</span>
-            <button class="hist-toggle-btn" data-id="active-${tbl}">Details ▾</button>
-          </div>
-        </div>
-        <div class="hist-detail hidden" id="hd-active-${tbl}">
-          <table class="hist-items-table">
-            ${bill.items.map(bi => `<tr>
-              <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span></td>
-              <td class="hi-qty">×${bi.quantity}</td>
-              <td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
-          </table>
-          <button class="cancel-bill-btn danger-btn" data-table="${tbl}" style="width:100%;margin-top:8px;">🗑 Cancel Bill</button>
-        </div></div>`;
-    }).join('');
-  }
-
-  // ── Completed orders ───────────────────────────────────────────────────────
   const list = tableFilter === 'all' ? history : history.filter(o => o.table === tableFilter);
-  if (list.length > 0) {
-    if (activeTables.length > 0) html += `<div class="hist-section-label">Completed Orders</div>`;
-    const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
-    html += list.map(ord => {
-      const d = new Date(ord.timestamp);
-      const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
-      const timeStr = d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-      return `<div class="hist-card">
-        <div class="hist-card-head">
-          <div class="hist-left">
-            <span class="hist-table-badge">${ord.table}</span>
-            <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
-          </div>
-          <div class="hist-right">
-            <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
-            <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
-          </div>
+  const body = document.getElementById('history-body');
+  if (list.length === 0) { body.innerHTML = `<div class="empty-state">${t('no_orders_found')}</div>`; return; }
+  const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
+  body.innerHTML = list.map(ord => {
+    const d = new Date(ord.timestamp);
+    const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="hist-card">
+      <div class="hist-card-head">
+        <div class="hist-left">
+          <span class="hist-table-badge">${ord.table}</span>
+          <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
         </div>
-        <div class="hist-detail hidden" id="hd-${ord.id}">
-          <table class="hist-items-table">
-            ${ord.items.map(oi => `<tr>
-              <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
-              <td class="hi-qty">×${oi.quantity}</td>
-              <td class="hi-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
-          </table>
-          <button class="reorder-btn" data-id="${ord.id}">↺ Re-order</button>
-        </div></div>`;
-    }).join('');
-  }
-
-  if (!html) { body.innerHTML = `<div class="empty-state">${t('no_orders_found')}</div>`; return; }
-  body.innerHTML = html;
+        <div class="hist-right">
+          <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
+          <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
+        </div>
+      </div>
+      <div class="hist-detail hidden" id="hd-${ord.id}">
+        <table class="hist-items-table">
+          ${ord.items.map(oi => `<tr>
+            <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
+            <td class="hi-qty">×${oi.quantity}</td>
+            <td class="hi-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
+        </table>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="reorder-btn" data-id="${ord.id}" style="flex:1;">↺ Re-order</button>
+          <button class="cancel-order-btn danger-btn" data-id="${ord.id}" style="flex:1;">🗑 Cancel Bill</button>
+        </div>
+      </div></div>`;
+  }).join('');
 
   body.querySelectorAll('.hist-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1818,13 +1778,12 @@ async function renderHistoryList(tableFilter) {
     });
   });
 
-  body.querySelectorAll('.cancel-bill-btn').forEach(btn => {
+  body.querySelectorAll('.cancel-order-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const tbl = btn.dataset.table;
-      if (!confirm(`Cancel bill for ${tbl}? This will remove all items and cannot be undone.`)) return;
-      await clearActiveBill(tbl);
-      updateTableBtn();
-      renderCartPanel();
+      const ord = history.find(o => o.id === btn.dataset.id);
+      if (!ord) return;
+      if (!confirm(`Cancel bill for ${ord.table || 'this order'} (${getCurrency()} ${ord.total.toFixed(2)})? This will remove it from history.`)) return;
+      await apiFetch(`${API_BASE}/api/history/${encodeURIComponent(ord.id)}`, { method: 'DELETE' });
       await renderHistoryList(tableFilter);
     });
   });
