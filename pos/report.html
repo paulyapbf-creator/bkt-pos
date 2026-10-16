@@ -458,6 +458,50 @@ body {
 .collection-amount { font-weight: 700; }
 .collection-pct { color: var(--muted); }
 
+/* ── Cash Handover report ─────────────────────────────────────────────────── */
+.handover-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.handover-label { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.handover-input {
+  width: 130px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.handover-input:focus { outline: none; border-color: var(--red); }
+.handover-hint { font-size: 12px; color: var(--muted); }
+.handover-deduct-row {
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  opacity: 0.85;
+}
+.handover-deduct-label { color: var(--muted); font-size: 13px; }
+.handover-net-row {
+  background: var(--panel);
+  border: 2px solid var(--red);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.handover-net-label { font-weight: 700; font-size: 14px; }
+.kpi-net { border-color: var(--red) !important; }
+.kpi-net .kpi-label { color: var(--red); }
+.kpi-net .kpi-value { color: var(--red); }
+
 /* ── Export button ────────────────────────────────────────────────────────── */
 .export-btn {
   background: var(--green);
@@ -584,6 +628,7 @@ body {
     <button class="report-tab" data-tab="detail" data-i18n="sales_detail">Sales Detail</button>
     <button class="report-tab" data-tab="collection" data-i18n="collection">Collection</button>
 <button class="report-tab" data-tab="table">Table Report</button>
+    <button class="report-tab" data-tab="handover">Cash Handover</button>
     <button class="report-tab" data-tab="itemmaster">Item Master</button>
   </div>
 
@@ -601,6 +646,14 @@ body {
     <div id="panel-detail" class="report-panel"></div>
     <div id="panel-collection" class="report-panel"></div>
 <div id="panel-table" class="report-panel"></div>
+    <div id="panel-handover" class="report-panel">
+      <div class="handover-input-row">
+        <label class="handover-label">Cash Deduction (RM)</label>
+        <input type="number" id="handover-deduct-input" class="handover-input" min="0" step="0.01" placeholder="0.00">
+        <span class="handover-hint">Amount to deduct from cash sales (e.g. float, refunds)</span>
+      </div>
+      <div id="handover-result"></div>
+    </div>
     <div id="panel-itemmaster" class="report-panel"></div>
   </div>
 

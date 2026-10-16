@@ -529,8 +529,83 @@ function renderTableReport() {
   });
 }
 
+// ─── Render: Cash Handover Report ───────────────────────────────────────────
+function renderHandover() {
+  const result = document.getElementById('handover-result');
+  if (!result) return;
+
+  if (orders.length === 0) {
+    result.innerHTML = '<div class="empty-state">No orders in this period</div>';
+    return;
+  }
+
+  const deductInput = document.getElementById('handover-deduct-input');
+  const deduction = Math.max(0, parseFloat(deductInput?.value) || 0);
+
+  const activeOrders    = orders.filter(o => !o.cancelled);
+  const cancelledOrders = orders.filter(o => o.cancelled);
+  const cancelledTotal  = cancelledOrders.reduce((s, o) => s + (o.total || 0), 0);
+
+  const methodLabels = { cash: 'Cash', tng: 'TNG', duitnow: 'DuitNow' };
+  const byMethod = {};
+  let grandTotal = 0;
+  activeOrders.forEach(o => {
+    const raw = (o.paymentMethod || 'cash').toLowerCase();
+    const m = methodLabels[raw] || raw;
+    if (!byMethod[m]) byMethod[m] = { total: 0, count: 0, key: raw };
+    byMethod[m].total += o.total || 0;
+    byMethod[m].count++;
+    grandTotal += o.total || 0;
+  });
+
+  const cashKey = Object.keys(byMethod).find(m => byMethod[m].key === 'cash') || 'Cash';
+  const cashTotal = byMethod[cashKey]?.total || 0;
+  const cashCount = byMethod[cashKey]?.count || 0;
+  const netCash = Math.max(0, cashTotal - deduction);
+  const netTotal = grandTotal - deduction;
+
+  const methodOrder = ['Cash', 'TNG', 'DuitNow'];
+  const allMethods = [...new Set([...methodOrder.filter(m => byMethod[m]), ...Object.keys(byMethod)])];
+
+  const bars = allMethods.map(m => {
+    const d = byMethod[m];
+    const isCash = d.key === 'cash';
+    const displayTotal = isCash ? netCash : d.total;
+    const pct = netTotal > 0 ? (displayTotal / netTotal) * 100 : 0;
+    return `<div class="collection-row${isCash && deduction > 0 ? ' handover-net-row' : ''}">
+      <div class="collection-label">
+        <span class="badge-${d.key}">${m}</span>
+        <span class="collection-count">${d.count} orders${isCash && deduction > 0 ? ` · deducted ${fmtRM(deduction)}` : ''}</span>
+      </div>
+      <div class="collection-bar-wrap">
+        <div class="collection-bar" style="width:${Math.min(100, pct)}%"></div>
+      </div>
+      <div class="collection-values">
+        <span class="collection-amount">${fmtRM(displayTotal)}${isCash && deduction > 0 ? `<span style="font-size:11px;color:var(--muted);margin-left:6px;">(was ${fmtRM(cashTotal)})</span>` : ''}</span>
+        <span class="collection-pct">${fmtPct(Math.min(100, pct))}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  result.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Net Collected</div><div class="kpi-value">${fmtRM(netTotal)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
+      ${deduction > 0 ? `<div class="kpi-card kpi-net"><div class="kpi-label">Cash Deduction</div><div class="kpi-value">- ${fmtRM(deduction)}</div></div>` : ''}
+      ${deduction > 0 ? `<div class="kpi-card kpi-net"><div class="kpi-label">Net Cash</div><div class="kpi-value">${fmtRM(netCash)}</div></div>` : ''}
+      ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
+    </div>
+    <div class="collection-list">${bars}</div>
+    <div style="margin-top:16px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Gross Cash Sales</span><span style="font-weight:600;">${fmtRM(cashTotal)}</span></div>
+      ${deduction > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--muted);"><span>Less: Deduction</span><span>- ${fmtRM(deduction)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;color:var(--red);"><span>Net Cash to Hand Over</span><span>${fmtRM(netCash)}</span></div>` : ''}
+    </div>
+  `;
+}
+
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
-const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, table: renderTableReport, itemmaster: renderItemMaster };
+const renderers = { summary: renderSummary, detail: renderDetail, collection: renderCollection, table: renderTableReport, handover: renderHandover, itemmaster: renderItemMaster };
 let activeTab = 'summary';
 
 function renderActiveTab() {
@@ -583,6 +658,14 @@ document.querySelectorAll('.report-tab').forEach(btn => {
     renderActiveTab();
   });
 });
+
+// Cash Handover: re-render when deduction amount changes
+const handoverInput = document.getElementById('handover-deduct-input');
+if (handoverInput) {
+  handoverInput.addEventListener('input', () => {
+    if (activeTab === 'handover') renderHandover();
+  });
+}
 
 // Print button
 document.getElementById('print-btn').addEventListener('click', () => {
