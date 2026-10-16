@@ -563,6 +563,9 @@ function renderHandover() {
   const cashCount = byMethod[cashKey]?.count || 0;
   const netCash = Math.max(0, cashTotal - deduction);
   const netTotal = grandTotal - deduction;
+  const avgCashOrder = cashCount > 0 ? cashTotal / cashCount : 0;
+  const deductedOrders = deduction > 0 && avgCashOrder > 0 ? Math.min(cashCount, Math.round(deduction / avgCashOrder)) : 0;
+  const netOrders = activeOrders.length - deductedOrders;
 
   const methodOrder = ['Cash', 'TNG', 'DuitNow'];
   const allMethods = [...new Set([...methodOrder.filter(m => byMethod[m]), ...Object.keys(byMethod)])];
@@ -592,7 +595,7 @@ function renderHandover() {
     ${deduction > 0 ? `<div id="handover-print-amount" class="handover-print-amount">Cash Deduction: <strong>${fmtRM(deduction)}</strong></div>` : ''}
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Net Collected</div><div class="kpi-value">${fmtRM(netTotal)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${netOrders}${deductedOrders > 0 ? `<span style="font-size:12px;color:var(--muted);margin-left:6px;">(- ${deductedOrders})</span>` : ''}</div></div>
       ${deduction > 0 ? `<div id="handover-kpi-deduction" class="kpi-card kpi-net"><div class="kpi-label">Cash Deduction</div><div class="kpi-value">- ${fmtRM(deduction)}</div></div>` : ''}
       ${deduction > 0 ? `<div id="handover-kpi-net" class="kpi-card kpi-net"><div class="kpi-label">Net Cash</div><div class="kpi-value">${fmtRM(netCash)}</div></div>` : ''}
       ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
@@ -600,9 +603,9 @@ function renderHandover() {
     <div class="collection-list">${bars}</div>
     ${deduction > 0 ? `
     <div id="handover-summary" style="margin-top:16px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Gross Cash Sales</span><span style="font-weight:600;">${fmtRM(cashTotal)}</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--muted);"><span>Less: Deduction</span><span>- ${fmtRM(deduction)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;color:var(--red);"><span>Net Cash to Hand Over</span><span>${fmtRM(netCash)}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Gross Cash Sales</span><span style="font-weight:600;">${fmtRM(cashTotal)} (${cashCount} orders)</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--muted);"><span>Less: Deduction</span><span>- ${fmtRM(deduction)} (≈ ${deductedOrders} orders)</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--border);padding-top:6px;color:var(--red);"><span>Net Cash to Hand Over</span><span>${fmtRM(netCash)} (${cashCount - deductedOrders} orders)</span></div>
     </div>` : ''}
   `;
 
