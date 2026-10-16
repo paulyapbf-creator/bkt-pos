@@ -620,8 +620,14 @@ function applyHandoverPrintOpts() {
   const chkInlineNote   = document.getElementById('chk-inline-note');
   const chkSummary      = document.getElementById('chk-summary');
 
+  // Deduction amount: hidden in print by default, shown only when checkbox is checked
+  const amountEl = document.getElementById('handover-print-amount');
+  if (amountEl && chkDeductAmount) {
+    amountEl.classList.toggle('print-show', chkDeductAmount.checked);
+    amountEl.classList.toggle('no-print', !chkDeductAmount.checked);
+  }
+
   const targets = {
-    'handover-print-amount':  chkDeductAmount,
     'handover-kpi-deduction': chkDeductKpis,
     'handover-kpi-net':       chkDeductKpis,
     'handover-inline-note':   chkInlineNote,
