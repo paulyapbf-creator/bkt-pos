@@ -589,6 +589,7 @@ function renderHandover() {
   }).join('');
 
   result.innerHTML = `
+    ${deduction > 0 ? `<div id="handover-print-amount" class="handover-print-amount">Cash Deduction: <strong>${fmtRM(deduction)}</strong></div>` : ''}
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Net Collected</div><div class="kpi-value">${fmtRM(netTotal)}</div></div>
       <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
@@ -614,11 +615,13 @@ function renderHandover() {
 }
 
 function applyHandoverPrintOpts() {
-  const chkDeductKpis  = document.getElementById('chk-deduct-kpis');
-  const chkInlineNote  = document.getElementById('chk-inline-note');
-  const chkSummary     = document.getElementById('chk-summary');
+  const chkDeductAmount = document.getElementById('chk-deduct-amount');
+  const chkDeductKpis   = document.getElementById('chk-deduct-kpis');
+  const chkInlineNote   = document.getElementById('chk-inline-note');
+  const chkSummary      = document.getElementById('chk-summary');
 
   const targets = {
+    'handover-print-amount':  chkDeductAmount,
     'handover-kpi-deduction': chkDeductKpis,
     'handover-kpi-net':       chkDeductKpis,
     'handover-inline-note':   chkInlineNote,
@@ -694,7 +697,7 @@ if (handoverInput) {
   });
 }
 // Cash Handover: toggle no-print when print option checkboxes change
-['chk-deduct-kpis', 'chk-inline-note', 'chk-summary'].forEach(id => {
+['chk-deduct-amount', 'chk-deduct-kpis', 'chk-inline-note', 'chk-summary'].forEach(id => {
   const chk = document.getElementById(id);
   if (chk) chk.addEventListener('change', applyHandoverPrintOpts);
 });
