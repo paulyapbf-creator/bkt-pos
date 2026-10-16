@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>POS — BKT House</title>
-  <link rel="stylesheet" href="style.css?v=1.2.96">
+  <link rel="stylesheet" href="style.css?v=1.2.97">
   <script>
     // Detect native app mode early (before CSS loads) to prevent flash of desktop layout
     (function() {
@@ -64,6 +64,11 @@
             <span id="cp-item-count" class="cp-item-count"></span>
           </div>
           <button id="cp-clear-btn" class="cp-clear-btn" data-i18n="clear">Clear</button>
+        </div>
+        <div id="cp-mode-row" class="cp-mode-row hidden">
+          <button class="cp-mode-btn active" data-mode="hold">Hold</button>
+          <button class="cp-mode-btn" data-mode="express">Express</button>
+          <button class="cp-mode-btn" data-mode="direct">Direct</button>
         </div>
       </div>
 
@@ -209,9 +214,9 @@
   <script src="https://checkout.airwallex.com/assets/elements.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="i18n.js?v=1.2.96"></script>
-  <script src="menuDefaults.js?v=1.2.96"></script>
-  <script src="auth.js?v=1.2.96"></script>
-  <script src="app.js?v=1.2.96"></script>
+  <script src="i18n.js?v=1.2.97"></script>
+  <script src="menuDefaults.js?v=1.2.97"></script>
+  <script src="auth.js?v=1.2.97"></script>
+  <script src="app.js?v=1.2.97"></script>
 </body>
 </html>

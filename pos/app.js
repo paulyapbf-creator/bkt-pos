@@ -491,6 +491,18 @@ function getTablePaymentMode(table) {
   return (s.tablePaymentModes && s.tablePaymentModes[table]) || 'hold';
 }
 
+function applyCashierMode() {
+  state.tableNumber = 'T0 - Cashier';
+  state.paymentMode = 'hold';
+  updateTableBtn();
+  const modeRow = document.getElementById('cp-mode-row');
+  if (modeRow) {
+    modeRow.classList.remove('hidden');
+    modeRow.querySelectorAll('.cp-mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === 'hold');
+    });
+  }
+}
 
 function renderTablePickerBody() {
   // Always read fresh from localStorage so maintenance changes are reflected immediately
@@ -1561,7 +1573,7 @@ async function confirmTablePayment(cardResult) {
   await clearActiveBill(table);
   closeBillingModal();
   setPricingMode('base');
-  updateTableBtn();
+  if (!isTableRequired()) applyCashierMode(); else updateTableBtn();
   const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   // Prompt table for next order
@@ -2311,6 +2323,9 @@ async function init() {
   }
   applySessionToUI(session);
 
+  // Apply cashier (no-table) mode if table selection is not required
+  if (!isTableRequired()) applyCashierMode();
+
   // ── Step 1: Load menu — always from localStorage first (items.js writes there synchronously),
   //    then background API fetch will override with fresh server data.
   const isTenantLink = !!urlParams.get('store') || !!getTenantSession();
@@ -2364,6 +2379,14 @@ async function init() {
   if (mPaxMinus) mPaxMinus.addEventListener('click', () => { if (state.pax > 1) state.pax--; updatePaxDisplay(); });
   if (mPaxPlus)  mPaxPlus.addEventListener('click',  () => { state.pax++; updatePaxDisplay(); });
 
+  // Cashier mode row (hold/express/direct) — shown when table selection not required
+  document.querySelectorAll('.cp-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.paymentMode = btn.dataset.mode;
+      document.querySelectorAll('.cp-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
   // Inline checkout button — opens cart drawer
   const checkoutBtn = document.getElementById('checkout-btn');
   if (checkoutBtn) {
@@ -2407,11 +2430,15 @@ async function init() {
       }
       clearOrder();
       setPricingMode('base');
-      state.tableNumber       = null;
       state.pax               = 1;
-      state.paymentMode       = 'hold';
-      document.getElementById('pax-display').textContent = state.pax;
       state.editingActiveBill = null;
+      if (!isTableRequired()) {
+        applyCashierMode();
+      } else {
+        state.tableNumber = null;
+        state.paymentMode = 'hold';
+      }
+      document.getElementById('pax-display').textContent = state.pax;
       renderCartPanel();
       renderMenuList();
       updateTableBtn();
