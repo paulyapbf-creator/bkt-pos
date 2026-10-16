@@ -1499,7 +1499,16 @@ tr.dragging { opacity: 0.3; }
   color: #999;
   padding: 4px 2px 6px;
 }
-.hist-card-active { border-color: #f0a500; }
+.hist-card-cancelled { border-color: #e57373; opacity: 0.8; }
+.hist-cancelled-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: #e57373;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
 
 .hist-card {
   border: 1px solid #e8e8ee;

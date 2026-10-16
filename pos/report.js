@@ -101,13 +101,16 @@ function renderSummary() {
   }
 
   const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
-  const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
-  const orderCount = orders.length;
-  const avgOrder = totalRevenue / orderCount;
+  const activeOrders    = orders.filter(o => !o.cancelled);
+  const cancelledOrders = orders.filter(o => o.cancelled);
+  const totalRevenue = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
+  const orderCount = activeOrders.length;
+  const avgOrder = orderCount > 0 ? totalRevenue / orderCount : 0;
+  const cancelledTotal = cancelledOrders.reduce((s, o) => s + (o.total || 0), 0);
 
-  // Daily breakdown
+  // Daily breakdown (active only)
   const byDay = {};
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     const key = fmtDate(o.timestamp);
     if (!byDay[key]) byDay[key] = { revenue: 0, count: 0 };
     byDay[key].revenue += o.total || 0;
@@ -118,10 +121,10 @@ function renderSummary() {
     .map(([date, d]) => `<tr><td>${date}</td><td class="num">${d.count}</td><td class="num">${d.revenue.toFixed(2)}</td><td class="num">${(d.revenue / d.count).toFixed(2)}</td></tr>`)
     .join('');
 
-  // Items sold summary — aggregated totals per item
+  // Items sold summary (active only)
   const byItem = {};
   let totalItemQty = 0;
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     (o.items || []).forEach(it => {
       const key = (it.name || it.nameZh || 'Unknown') + '|' + (it.category || '');
       if (!byItem[key]) byItem[key] = { name: it.name || it.nameZh || 'Unknown', nameZh: it.nameZh || '', category: catMap[it.category] || it.category || '—', qty: 0, revenue: 0 };
@@ -146,24 +149,38 @@ function renderSummary() {
     </tr>`;
   }).join('');
 
+  // Cancelled bills section
+  const cancelledSection = cancelledOrders.length === 0 ? '' : `
+    <div class="report-section-label cancelled-label">Cancelled Bills (${cancelledOrders.length})</div>
+    <table class="report-table" style="margin-bottom:24px;">
+      <thead><tr><th>Date &amp; Time</th><th>Table</th><th class="num">Amount (${cur})</th></tr></thead>
+      <tbody>${cancelledOrders.map(o => `<tr class="cancelled-row">
+        <td>${fmtDateTime(o.timestamp)}</td>
+        <td>${o.table || '—'}</td>
+        <td class="num" style="text-decoration:line-through;">${(o.total||0).toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="2"><strong>Total Voided</strong></td><td class="num"><strong>${cancelledTotal.toFixed(2)}</strong></td></tr></tfoot>
+    </table>`;
+
   panel.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value">${fmtRM(totalRevenue)}</div></div>
       <div class="kpi-card"><div class="kpi-label">Orders</div><div class="kpi-value">${orderCount}</div></div>
       <div class="kpi-card"><div class="kpi-label">Avg Order</div><div class="kpi-value">${fmtRM(avgOrder)}</div></div>
       <div class="kpi-card"><div class="kpi-label">Items Sold</div><div class="kpi-value">${totalItemQty}</div></div>
+      ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
     </div>
 
-    <div style="font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Daily Breakdown</div>
+    <div class="report-section-label">Daily Breakdown</div>
     <table class="report-table" style="margin-bottom:24px;">
       <thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (${cur})</th><th class="num">Avg (${cur})</th></tr></thead>
       <tbody>${dailyRows}</tbody>
-      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${orderCount}</strong></td><td class="num"><strong>${totalRevenue.toFixed(2)}</strong></td><td class="num"><strong>${avgOrder.toFixed(2)}</strong></td></tr></tfoot>
+      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${orderCount}</strong></td><td class="num"><strong>${totalRevenue.toFixed(2)}</strong></td><td class="num"><strong>${orderCount > 0 ? avgOrder.toFixed(2) : '0.00'}</strong></td></tr></tfoot>
     </table>
 
-    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Items Sold Summary</div>
+    <div class="report-section-label">Items Sold Summary</div>
     <div style="overflow-x:auto;">
-      <table class="report-table">
+      <table class="report-table" style="margin-bottom:24px;">
         <thead><tr><th>#</th><th>Item</th><th>Category</th><th class="num">Qty</th><th class="num">Revenue (${cur})</th><th class="num">Share</th></tr></thead>
         <tbody>${itemRows}</tbody>
         <tfoot><tr>
@@ -174,6 +191,7 @@ function renderSummary() {
         </tr></tfoot>
       </table>
     </div>
+    ${cancelledSection}
   `;
 }
 
@@ -187,6 +205,7 @@ function renderDetail() {
 
   const sorted = [...orders].sort((a, b) => b.timestamp - a.timestamp);
   const cards = sorted.map(o => {
+    const isCancelled = !!o.cancelled;
     const itemRows = (o.items || []).map(it => {
       const mods = it.modifiers && it.modifiers.length
         ? `<span class="detail-mods">(${it.modifiers.map(m => m.name || m).join(', ')})</span>` : '';
@@ -196,12 +215,14 @@ function renderDetail() {
       </div>`;
     }).join('');
 
-    return `<div class="detail-card">
+    return `<div class="detail-card${isCancelled ? ' detail-card-cancelled' : ''}">
       <div class="detail-header">
         <span class="detail-table">${o.table || '—'}</span>
         <span class="detail-time">${fmtDateTime(o.timestamp)}</span>
-        <span class="detail-method badge-${(o.paymentMethod || 'cash').toLowerCase()}">${({cash:'Cash',tng:'TNG',duitnow:'DuitNow'})[( o.paymentMethod||'cash').toLowerCase()] || o.paymentMethod}</span>
-        <span class="detail-total">${fmtRM(o.total || 0)}</span>
+        ${isCancelled
+          ? `<span class="badge-cancelled">CANCELLED</span>`
+          : `<span class="detail-method badge-${(o.paymentMethod || 'cash').toLowerCase()}">${({cash:'Cash',tng:'TNG',duitnow:'DuitNow'})[(o.paymentMethod||'cash').toLowerCase()] || o.paymentMethod}</span>`}
+        <span class="detail-total" style="${isCancelled ? 'text-decoration:line-through;color:var(--muted);' : ''}">${fmtRM(o.total || 0)}</span>
       </div>
       <div class="detail-items">${itemRows}</div>
     </div>`;
@@ -218,10 +239,13 @@ function renderCollection() {
     return;
   }
 
+  const activeOrders    = orders.filter(o => !o.cancelled);
+  const cancelledOrders = orders.filter(o => o.cancelled);
+  const cancelledTotal  = cancelledOrders.reduce((s, o) => s + (o.total || 0), 0);
   const methodLabels = { cash: 'Cash', tng: 'TNG', duitnow: 'DuitNow' };
   const byMethod = {};
   let grandTotal = 0;
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     const raw = (o.paymentMethod || 'cash').toLowerCase();
     const m = methodLabels[raw] || raw;
     if (!byMethod[m]) byMethod[m] = { total: 0, count: 0, key: raw };
@@ -254,8 +278,9 @@ function renderCollection() {
   panel.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Total Collected</div><div class="kpi-value">${fmtRM(grandTotal)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${orders.length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
       <div class="kpi-card"><div class="kpi-label">Payment Methods</div><div class="kpi-value">${allMethods.length}</div></div>
+      ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
     </div>
     <div class="collection-list">${bars}</div>
   `;
@@ -383,9 +408,12 @@ function renderTableReport() {
   }
 
   const cur = typeof getCurrency === 'function' ? getCurrency() : 'RM';
+  const activeOrders    = orders.filter(o => !o.cancelled);
+  const cancelledOrders = orders.filter(o => o.cancelled);
+  const cancelledTotal  = cancelledOrders.reduce((s, o) => s + (o.total || 0), 0);
   const byTable = {};
   let grandTotal = 0;
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     const t = o.table || '—';
     if (!byTable[t]) byTable[t] = { orders: 0, revenue: 0, items: 0 };
     byTable[t].orders++;
@@ -422,11 +450,23 @@ function renderTableReport() {
     </tr>`;
   }).join('');
 
+  const cancelledByTable = {};
+  cancelledOrders.forEach(o => {
+    const t = o.table || '—';
+    if (!cancelledByTable[t]) cancelledByTable[t] = { count: 0, total: 0 };
+    cancelledByTable[t].count++;
+    cancelledByTable[t].total += o.total || 0;
+  });
+  const cancelledTableRows = Object.entries(cancelledByTable)
+    .map(([t, d]) => `<tr class="cancelled-row"><td><span class="detail-table">${t}</span></td><td class="num">${d.count}</td><td class="num" style="text-decoration:line-through;">${d.total.toFixed(2)}</td></tr>`)
+    .join('');
+
   panel.innerHTML = `
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value">${fmtRM(grandTotal)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${orders.length}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${activeOrders.length}</div></div>
       <div class="kpi-card"><div class="kpi-label">Tables Active</div><div class="kpi-value">${sorted.length}</div></div>
+      ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
       <button id="export-table-btn" class="export-btn">⬇ Export CSV</button>
@@ -444,14 +484,21 @@ function renderTableReport() {
         <tbody>${rows}</tbody>
         <tfoot><tr>
           <td><strong>Total</strong></td>
-          <td class="num"><strong>${orders.length}</strong></td>
+          <td class="num"><strong>${activeOrders.length}</strong></td>
           <td class="num"><strong>${sorted.reduce((s,[,d])=>s+d.items,0)}</strong></td>
           <td class="num"><strong>${grandTotal.toFixed(2)}</strong></td>
-          <td class="num"><strong>${(grandTotal / orders.length).toFixed(2)}</strong></td>
+          <td class="num"><strong>${activeOrders.length > 0 ? (grandTotal / activeOrders.length).toFixed(2) : '0.00'}</strong></td>
           <td></td>
         </tr></tfoot>
       </table>
     </div>
+    ${cancelledOrders.length > 0 ? `
+      <div class="report-section-label cancelled-label" style="margin-top:20px;">Cancelled Bills (${cancelledOrders.length})</div>
+      <table class="report-table">
+        <thead><tr><th>Table</th><th class="num">Count</th><th class="num">Voided (${cur})</th></tr></thead>
+        <tbody>${cancelledTableRows}</tbody>
+        <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${cancelledOrders.length}</strong></td><td class="num" style="text-decoration:line-through;"><strong>${cancelledTotal.toFixed(2)}</strong></td></tr></tfoot>
+      </table>` : ''}
   `;
 
   document.getElementById('export-table-btn').addEventListener('click', () => {

@@ -1745,14 +1745,18 @@ async function renderHistoryList(tableFilter) {
     const d = new Date(ord.timestamp);
     const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
     const timeStr = d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-    return `<div class="hist-card">
+    const isCancelled = !!ord.cancelled;
+    return `<div class="hist-card${isCancelled ? ' hist-card-cancelled' : ''}">
       <div class="hist-card-head">
         <div class="hist-left">
           <span class="hist-table-badge">${ord.table}</span>
-          <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
+          <div class="hist-meta">
+            <span class="hist-date">${dateStr}, ${timeStr}</span>
+            ${isCancelled ? '<span class="hist-cancelled-badge">CANCELLED</span>' : `<span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span>`}
+          </div>
         </div>
         <div class="hist-right">
-          <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
+          <span class="hist-total" style="${isCancelled ? 'text-decoration:line-through;color:var(--muted);' : ''}">${getCurrency()} ${ord.total.toFixed(2)}</span>
           <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
         </div>
       </div>
@@ -1765,7 +1769,7 @@ async function renderHistoryList(tableFilter) {
         </table>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button class="reorder-btn" data-id="${ord.id}" style="flex:1;">↺ Re-order</button>
-          <button class="cancel-order-btn danger-btn" data-id="${ord.id}" style="flex:1;">🗑 Cancel Bill</button>
+          ${!isCancelled ? `<button class="cancel-order-btn danger-btn" data-id="${ord.id}" style="flex:1;">🗑 Cancel Bill</button>` : ''}
         </div>
       </div></div>`;
   }).join('');
@@ -1782,8 +1786,12 @@ async function renderHistoryList(tableFilter) {
     btn.addEventListener('click', async () => {
       const ord = history.find(o => o.id === btn.dataset.id);
       if (!ord) return;
-      if (!confirm(`Cancel bill for ${ord.table || 'this order'} (${getCurrency()} ${ord.total.toFixed(2)})? This will remove it from history.`)) return;
-      await apiFetch(`${API_BASE}/api/history/${encodeURIComponent(ord.id)}`, { method: 'DELETE' });
+      if (!confirm(`Cancel bill for ${ord.table || 'this order'} (${getCurrency()} ${ord.total.toFixed(2)})? The bill will be marked as cancelled.`)) return;
+      await apiFetch(`${API_BASE}/api/history/${encodeURIComponent(ord.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelled: true, cancelledAt: Date.now() })
+      });
       await renderHistoryList(tableFilter);
     });
   });

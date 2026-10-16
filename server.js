@@ -271,6 +271,7 @@ function createFileStore() {
     },
     async deleteOrderHistory() { const d = load(); d.orderHistory = []; save(d); },
     async deleteOrderById(id)  { const d = load(); d.orderHistory = (d.orderHistory || []).filter(o => o.id !== id); save(d); },
+    async updateOrderById(id, updates) { const d = load(); const i = (d.orderHistory || []).findIndex(o => o.id === id); if (i >= 0) { d.orderHistory[i] = { ...d.orderHistory[i], ...updates }; save(d); } },
     async addKdsHistory(e)     {
       const d = load();
       if (!d.kdsHistory) d.kdsHistory = [];
@@ -344,6 +345,7 @@ function createMongoStore() {
     },
     async deleteOrderHistory()  { await col('orderHistory').deleteMany({}); },
     async deleteOrderById(id)   { await col('orderHistory').deleteOne({ id }); },
+    async updateOrderById(id, updates) { await col('orderHistory').updateOne({ id }, { $set: updates }); },
 
     async addKdsHistory(e)      { await col('kdsHistory').insertOne({ ...e }); },
     async getKdsHistory() {
@@ -393,6 +395,7 @@ function createTenantStore(dbName) {
     },
     async deleteOrderHistory() { await col('orderHistory').deleteMany({}); },
     async deleteOrderById(id)  { await col('orderHistory').deleteOne({ id }); },
+    async updateOrderById(id, updates) { await col('orderHistory').updateOne({ id }, { $set: updates }); },
     async addKdsHistory(e)     { await col('kdsHistory').insertOne({ ...e }); },
     async getKdsHistory()      { return (await col('kdsHistory').find({}).sort({ servedAt: -1 }).limit(200).toArray()).map(strip); },
     async deleteKdsHistory()   { await col('kdsHistory').deleteMany({}); },
@@ -1195,6 +1198,7 @@ app.post('/api/history', async (req, res) => {
   if (cloudSync) await cloudSync.syncOrder(req.body);
   res.json({ ok: true });
 });
+app.patch('/api/history/:id',  async (req, res) => { await req.store.updateOrderById(req.params.id, req.body); res.json({ ok: true }); });
 app.delete('/api/history/:id', async (req, res) => { await req.store.deleteOrderById(req.params.id); res.json({ ok: true }); });
 app.delete('/api/history', async (req, res) => { await req.store.deleteOrderHistory(); res.json({ ok: true }); });
 
