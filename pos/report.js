@@ -429,27 +429,7 @@ function renderTableReport() {
     return a.localeCompare(b);
   });
 
-  const rows = sorted.map(([table, d]) => {
-    const avg = d.revenue / d.orders;
-    const pct = grandTotal > 0 ? (d.revenue / grandTotal) * 100 : 0;
-    const barW = Math.max(2, pct);
-    return `<tr>
-      <td><span class="detail-table">${table}</span></td>
-      <td class="num">${d.orders}</td>
-      <td class="num">${d.items}</td>
-      <td class="num">${d.revenue.toFixed(2)}</td>
-      <td class="num">${avg.toFixed(2)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;background:var(--header);border-radius:3px;height:12px;overflow:hidden;">
-            <div style="width:${barW}%;height:100%;background:var(--red);border-radius:3px;min-width:2px;transition:width 0.3s;"></div>
-          </div>
-          <span style="width:42px;text-align:right;font-size:12px;color:var(--muted);">${pct.toFixed(1)}%</span>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-
+  // Build per-table cancelled map
   const cancelledByTable = {};
   cancelledOrders.forEach(o => {
     const t = o.table || '—';
@@ -457,9 +437,39 @@ function renderTableReport() {
     cancelledByTable[t].count++;
     cancelledByTable[t].total += o.total || 0;
   });
-  const cancelledTableRows = Object.entries(cancelledByTable)
-    .map(([t, d]) => `<tr class="cancelled-row"><td><span class="detail-table">${t}</span></td><td class="num">${d.count}</td><td class="num" style="text-decoration:line-through;">${d.total.toFixed(2)}</td></tr>`)
-    .join('');
+
+  // Merge all tables (active + cancelled-only tables)
+  const allTables = new Set([...Object.keys(byTable), ...Object.keys(cancelledByTable)]);
+  const allSorted = [...allTables].sort((a, b) => {
+    const na = parseInt(a.replace(/\D/g, ''), 10), nb = parseInt(b.replace(/\D/g, ''), 10);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+
+  const hasCancelled = cancelledOrders.length > 0;
+  const rows = allSorted.map(table => {
+    const d  = byTable[table]  || { orders: 0, revenue: 0, items: 0 };
+    const cd = cancelledByTable[table] || null;
+    const avg  = d.orders > 0 ? d.revenue / d.orders : 0;
+    const pct  = grandTotal > 0 ? (d.revenue / grandTotal) * 100 : 0;
+    const barW = Math.max(2, pct);
+    return `<tr>
+      <td><span class="detail-table">${table}</span></td>
+      <td class="num">${d.orders || '—'}</td>
+      <td class="num">${d.items || '—'}</td>
+      <td class="num">${d.orders > 0 ? d.revenue.toFixed(2) : '—'}</td>
+      <td class="num">${d.orders > 0 ? avg.toFixed(2) : '—'}</td>
+      <td>
+        ${d.orders > 0 ? `<div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;background:var(--header);border-radius:3px;height:12px;overflow:hidden;">
+            <div style="width:${barW}%;height:100%;background:var(--red);border-radius:3px;min-width:2px;transition:width 0.3s;"></div>
+          </div>
+          <span style="width:42px;text-align:right;font-size:12px;color:var(--muted);">${pct.toFixed(1)}%</span>
+        </div>` : ''}
+      </td>
+      ${hasCancelled ? `<td class="num" style="color:#e57373;">${cd ? `${cd.count} (<span style="text-decoration:line-through">${cd.total.toFixed(2)}</span>)` : '—'}</td>` : ''}
+    </tr>`;
+  }).join('');
 
   panel.innerHTML = `
     <div class="kpi-grid">
@@ -480,25 +490,20 @@ function renderTableReport() {
           <th class="num">Revenue (${cur})</th>
           <th class="num">Avg Order (${cur})</th>
           <th>Share</th>
+          ${hasCancelled ? `<th class="num" style="color:#e57373;">Cancelled (Voided ${cur})</th>` : ''}
         </tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr>
           <td><strong>Total</strong></td>
           <td class="num"><strong>${activeOrders.length}</strong></td>
-          <td class="num"><strong>${sorted.reduce((s,[,d])=>s+d.items,0)}</strong></td>
+          <td class="num"><strong>${Object.values(byTable).reduce((s,d)=>s+d.items,0)}</strong></td>
           <td class="num"><strong>${grandTotal.toFixed(2)}</strong></td>
           <td class="num"><strong>${activeOrders.length > 0 ? (grandTotal / activeOrders.length).toFixed(2) : '0.00'}</strong></td>
           <td></td>
+          ${hasCancelled ? `<td class="num" style="color:#e57373;"><strong>${cancelledOrders.length} (<span style="text-decoration:line-through">${cancelledTotal.toFixed(2)}</span>)</strong></td>` : ''}
         </tr></tfoot>
       </table>
     </div>
-    ${cancelledOrders.length > 0 ? `
-      <div class="report-section-label cancelled-label" style="margin-top:20px;">Cancelled Bills (${cancelledOrders.length})</div>
-      <table class="report-table">
-        <thead><tr><th>Table</th><th class="num">Count</th><th class="num">Voided (${cur})</th></tr></thead>
-        <tbody>${cancelledTableRows}</tbody>
-        <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>${cancelledOrders.length}</strong></td><td class="num" style="text-decoration:line-through;"><strong>${cancelledTotal.toFixed(2)}</strong></td></tr></tfoot>
-      </table>` : ''}
   `;
 
   document.getElementById('export-table-btn').addEventListener('click', () => {
