@@ -595,7 +595,7 @@ function renderHandover() {
     ${deduction > 0 ? `<div id="handover-print-amount" class="handover-print-amount">Cash Deduction: <strong>${fmtRM(deduction)}</strong></div>` : ''}
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-label">Net Collected</div><div class="kpi-value">${fmtRM(netTotal)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${netOrders}${deductedOrders > 0 ? `<span style="font-size:12px;color:var(--muted);margin-left:6px;">(- ${deductedOrders})</span>` : ''}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value">${netOrders}${deductedOrders > 0 ? `<span id="handover-deducted-orders-note" style="font-size:12px;color:var(--muted);margin-left:6px;">(- ${deductedOrders})</span>` : ''}</div></div>
       ${deduction > 0 ? `<div id="handover-kpi-deduction" class="kpi-card kpi-net"><div class="kpi-label">Cash Deduction</div><div class="kpi-value">- ${fmtRM(deduction)}</div></div>` : ''}
       ${deduction > 0 ? `<div id="handover-kpi-net" class="kpi-card kpi-net"><div class="kpi-label">Net Cash</div><div class="kpi-value">${fmtRM(netCash)}</div></div>` : ''}
       ${cancelledOrders.length > 0 ? `<div class="kpi-card kpi-cancelled"><div class="kpi-label">Cancelled</div><div class="kpi-value">${cancelledOrders.length} (${fmtRM(cancelledTotal)})</div></div>` : ''}
@@ -617,11 +617,14 @@ function renderHandover() {
   applyHandoverPrintOpts();
 }
 
+const HANDOVER_INDIVIDUAL_CHKS = ['chk-deduct-amount', 'chk-deduct-kpis', 'chk-deducted-orders', 'chk-inline-note', 'chk-summary'];
+
 function applyHandoverPrintOpts() {
-  const chkDeductAmount = document.getElementById('chk-deduct-amount');
-  const chkDeductKpis   = document.getElementById('chk-deduct-kpis');
-  const chkInlineNote   = document.getElementById('chk-inline-note');
-  const chkSummary      = document.getElementById('chk-summary');
+  const chkDeductAmount    = document.getElementById('chk-deduct-amount');
+  const chkDeductKpis      = document.getElementById('chk-deduct-kpis');
+  const chkDeductedOrders  = document.getElementById('chk-deducted-orders');
+  const chkInlineNote      = document.getElementById('chk-inline-note');
+  const chkSummary         = document.getElementById('chk-summary');
 
   // Deduction amount: hidden in print by default, shown only when checkbox is checked
   const amountEl = document.getElementById('handover-print-amount');
@@ -631,16 +634,26 @@ function applyHandoverPrintOpts() {
   }
 
   const targets = {
-    'handover-kpi-deduction': chkDeductKpis,
-    'handover-kpi-net':       chkDeductKpis,
-    'handover-inline-note':   chkInlineNote,
-    'handover-summary':       chkSummary,
+    'handover-kpi-deduction':      chkDeductKpis,
+    'handover-kpi-net':            chkDeductKpis,
+    'handover-deducted-orders-note': chkDeductedOrders,
+    'handover-inline-note':        chkInlineNote,
+    'handover-summary':            chkSummary,
   };
 
   Object.entries(targets).forEach(([id, chk]) => {
     const el = document.getElementById(id);
     if (el && chk) el.classList.toggle('no-print', !chk.checked);
   });
+
+  // Sync the All checkbox state
+  const chkAll = document.getElementById('chk-handover-all');
+  if (chkAll) {
+    const allChecked = HANDOVER_INDIVIDUAL_CHKS.every(id => document.getElementById(id)?.checked);
+    const noneChecked = HANDOVER_INDIVIDUAL_CHKS.every(id => !document.getElementById(id)?.checked);
+    chkAll.checked = allChecked;
+    chkAll.indeterminate = !allChecked && !noneChecked;
+  }
 }
 
 // ─── Tab & filter wiring ────────────────────────────────────────────────────
@@ -706,10 +719,20 @@ if (handoverInput) {
   });
 }
 // Cash Handover: toggle no-print when print option checkboxes change
-['chk-deduct-amount', 'chk-deduct-kpis', 'chk-inline-note', 'chk-summary'].forEach(id => {
+HANDOVER_INDIVIDUAL_CHKS.forEach(id => {
   const chk = document.getElementById(id);
   if (chk) chk.addEventListener('change', applyHandoverPrintOpts);
 });
+const chkAll = document.getElementById('chk-handover-all');
+if (chkAll) {
+  chkAll.addEventListener('change', () => {
+    HANDOVER_INDIVIDUAL_CHKS.forEach(id => {
+      const chk = document.getElementById(id);
+      if (chk) chk.checked = chkAll.checked;
+    });
+    applyHandoverPrintOpts();
+  });
+}
 
 // Print button
 document.getElementById('print-btn').addEventListener('click', () => {

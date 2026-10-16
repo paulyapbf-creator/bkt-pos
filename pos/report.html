@@ -516,6 +516,8 @@ body {
 .handover-print-opts-label { font-weight: 700; color: var(--dim); white-space: nowrap; }
 .handover-chk-label { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
 .handover-chk-label input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+.handover-chk-all { font-weight: 700; color: var(--text); }
+.handover-chk-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
 .no-print { opacity: 0.35; }
 .handover-print-amount {
   display: block;
@@ -685,8 +687,11 @@ body {
       </div>
       <div id="handover-print-opts" class="handover-print-opts hidden">
         <span class="handover-print-opts-label">Print options:</span>
+        <label class="handover-chk-label handover-chk-all"><input type="checkbox" id="chk-handover-all" checked> All</label>
+        <span class="handover-chk-divider"></span>
         <label class="handover-chk-label"><input type="checkbox" id="chk-deduct-amount" checked> Deduction amount</label>
         <label class="handover-chk-label"><input type="checkbox" id="chk-deduct-kpis" checked> Deduction KPI cards</label>
+        <label class="handover-chk-label"><input type="checkbox" id="chk-deducted-orders" checked> Deducted orders</label>
         <label class="handover-chk-label"><input type="checkbox" id="chk-inline-note" checked> Cash deduction note</label>
         <label class="handover-chk-label"><input type="checkbox" id="chk-summary" checked> Cash breakdown summary</label>
       </div>
