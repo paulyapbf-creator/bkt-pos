@@ -1,1 +1,1 @@
-{"version":"1.2.91-debug","notes":"Fix Send button always requiring table regardless of tableRequired setting"}
+{"version":"1.2.92-debug","notes":"Add Cancel Bill button in payment modal"}

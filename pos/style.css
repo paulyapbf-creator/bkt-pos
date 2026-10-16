@@ -910,6 +910,20 @@ body {
 
 .send-btn:hover { background: var(--red-dim); }
 
+.danger-btn {
+  flex: 1;
+  padding: 13px 0;
+  border-radius: var(--radius-md);
+  border: 1.5px solid #e57373;
+  background: transparent;
+  color: #e57373;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.danger-btn:hover { background: #e57373; color: #fff; }
+
 /* ── Order rows ─────────────────────────────────────────────────────────────  */
 .order-row {
   display: flex;

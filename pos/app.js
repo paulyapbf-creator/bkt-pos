@@ -868,11 +868,13 @@ function renderBillingStep() {
   const titleEl   = document.getElementById('pay-modal-title');
   const subEl     = document.getElementById('pay-subtitle');
   const bodyEl    = document.getElementById('pay-body');
-  const backBtn   = document.getElementById('pay-back-btn');
-  const checkBtn  = document.getElementById('pay-check-btn');
-  const confirmBtn = document.getElementById('pay-confirm-btn');
+  const backBtn       = document.getElementById('pay-back-btn');
+  const checkBtn      = document.getElementById('pay-check-btn');
+  const confirmBtn    = document.getElementById('pay-confirm-btn');
+  const cancelBillBtn = document.getElementById('pay-cancel-bill-btn');
 
   backBtn.classList.toggle('hidden', state.payStep === 'list');
+  cancelBillBtn.classList.toggle('hidden', state.payStep !== 'bill');
   checkBtn.classList.add('hidden');
   confirmBtn.classList.add('hidden');
 
@@ -2481,6 +2483,18 @@ async function init() {
     if (e.target === e.currentTarget) closeBillingModal();
   });
   document.getElementById('pay-back-btn').addEventListener('click', handleBillingBack);
+  document.getElementById('pay-cancel-bill-btn').addEventListener('click', async () => {
+    const table = state.payingTable;
+    if (!table) return;
+    if (!confirm(`Cancel bill for ${table}? This will remove all items and cannot be undone.`)) return;
+    await clearActiveBill(table);
+    updateTableBtn();
+    renderCartPanel();
+    state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
+    const bills = loadActiveBills();
+    if (Object.keys(bills).length === 0) { closeBillingModal(); return; }
+    renderBillingStep();
+  });
   document.getElementById('pay-check-btn').addEventListener('click', handleOrderCheck);
   document.getElementById('pay-confirm-btn').addEventListener('click', handleBillingConfirm);
 
