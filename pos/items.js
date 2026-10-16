@@ -610,10 +610,14 @@ function initSettings() {
   const terminalClassInput   = document.getElementById('s-terminal-class');
   const terminalIndexMInput  = document.getElementById('s-terminal-index-m');
   const terminalIndexTInput  = document.getElementById('s-terminal-index-t');
-  const cewalletEnabledInput = document.getElementById('s-cewallet-enabled');
-  const cewalletPkgInput     = document.getElementById('s-cewallet-pkg');
-  const cewalletClsInput     = document.getElementById('s-cewallet-cls');
-  const cewalletIdInput      = document.getElementById('s-cewallet-id');
+  const cewalletEnabledInput  = document.getElementById('s-cewallet-enabled');
+  const cewalletPkgInput      = document.getElementById('s-cewallet-pkg');
+  const cewalletClsInput      = document.getElementById('s-cewallet-cls');
+  const cewalletIdInput       = document.getElementById('s-cewallet-id');
+  const jncwalletEnabledInput = document.getElementById('s-jncwallet-enabled');
+  const jncwalletPkgInput     = document.getElementById('s-jncwallet-pkg');
+  const jncwalletClsInput     = document.getElementById('s-jncwallet-cls');
+  const jncwalletIdInput      = document.getElementById('s-jncwallet-id');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -655,10 +659,14 @@ function initSettings() {
   terminalClassInput.value     = settings.terminalClass  || '';
   terminalIndexMInput.value    = settings.terminalIndexM ?? 1;
   terminalIndexTInput.value    = settings.terminalIndexT ?? 1;
-  cewalletEnabledInput.checked = !!settings.cewalletEnabled;
-  cewalletPkgInput.value       = settings.cewalletPkg    || '';
-  cewalletClsInput.value       = settings.cewalletCls    || '';
-  cewalletIdInput.value        = settings.cewalletId     || '';
+  cewalletEnabledInput.checked  = !!settings.cewalletEnabled;
+  cewalletPkgInput.value        = settings.cewalletPkg    || '';
+  cewalletClsInput.value        = settings.cewalletCls    || '';
+  cewalletIdInput.value         = settings.cewalletId     || '';
+  jncwalletEnabledInput.checked = !!settings.jncwalletEnabled;
+  jncwalletPkgInput.value       = settings.jncwalletPkg   || '';
+  jncwalletClsInput.value       = settings.jncwalletCls   || '';
+  jncwalletIdInput.value        = settings.jncwalletId    || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -749,10 +757,14 @@ function initSettings() {
       terminalClass:   terminalClassInput.value.trim() || '.BroadcastTransactionActivity',
       terminalIndexM:  parseInt(terminalIndexMInput.value, 10) || 1,
       terminalIndexT:  parseInt(terminalIndexTInput.value, 10) || 1,
-      cewalletEnabled: cewalletEnabledInput.checked,
-      cewalletPkg:     cewalletPkgInput.value.trim(),
-      cewalletCls:     cewalletClsInput.value.trim(),
-      cewalletId:      cewalletIdInput.value.trim(),
+      cewalletEnabled:  cewalletEnabledInput.checked,
+      cewalletPkg:      cewalletPkgInput.value.trim(),
+      cewalletCls:      cewalletClsInput.value.trim(),
+      cewalletId:       cewalletIdInput.value.trim(),
+      jncwalletEnabled: jncwalletEnabledInput.checked,
+      jncwalletPkg:     jncwalletPkgInput.value.trim(),
+      jncwalletCls:     jncwalletClsInput.value.trim(),
+      jncwalletId:      jncwalletIdInput.value.trim(),
     };
   }
 
@@ -1297,7 +1309,7 @@ function initMaintenance() {
 
   // ── App Update ────────────────────────────────────────────────────────────
   {
-    const APP_VERSION  = '1.2.99-debug';
+    const APP_VERSION  = '1.3.00-debug';
     const hostInput    = document.getElementById('update-host-input');
     const checkBtn     = document.getElementById('update-check-btn');
     const cloudBtn     = document.getElementById('update-cloud-btn');

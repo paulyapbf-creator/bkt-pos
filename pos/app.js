@@ -934,7 +934,8 @@ function renderBillingStep() {
     const grabEnabled     = !!billSettings.grabEnabled   && !!billSettings.grabLink;
     const maeEnabled      = !!billSettings.maeEnabled    && !!billSettings.maeLink;
     const terminalEnabled = !!billSettings.terminalEnabled;
-    const cewalletEnabled = !!billSettings.cewalletEnabled;
+    const cewalletEnabled  = !!billSettings.cewalletEnabled;
+    const jncwalletEnabled = !!billSettings.jncwalletEnabled;
 
     bodyEl.innerHTML = `
       <div class="bill-pay-combined">
@@ -959,6 +960,7 @@ function renderBillingStep() {
             ${maeEnabled     ? `<button class="pay-method-btn" data-method="mae"><span class="pay-icon">🏧</span><span class="pay-name">MAE</span></button>` : ''}
             ${terminalEnabled  ? `<button class="pay-method-btn" data-method="terminal"><span class="pay-icon">💳</span><span class="pay-name">Credit Card</span></button>` : ''}
             ${cewalletEnabled  ? `<button class="pay-method-btn" data-method="cewallet"><span class="pay-icon">📱</span><span class="pay-name">Wallet</span></button>` : ''}
+            ${jncwalletEnabled ? `<button class="pay-method-btn" data-method="jncwallet"><span class="pay-icon">💜</span><span class="pay-name">J&amp;C Wallet</span></button>` : ''}
             ${cardConfigured ? `<button class="pay-method-btn" data-method="card"><span class="pay-icon">💳</span><span class="pay-name">${t('credit_card')}</span></button>` : ''}
             <button class="pay-method-btn" data-method="cash"><span class="pay-icon">💵</span><span class="pay-name">${t('cash')}</span></button>
           </div>
@@ -969,10 +971,11 @@ function renderBillingStep() {
       btn.addEventListener('click', () => {
         const m = btn.dataset.method;
         state.payMethod = m;
-        if (m === 'cewallet' || m === 'terminal') {
+        if (m === 'cewallet' || m === 'jncwallet' || m === 'terminal') {
           const subtotal2 = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
           const bd2 = calcBillBreakdown(subtotal2, loadSettings());
-          if (m === 'cewallet') launchCoherentEwallet(bd2.total);
+          if (m === 'cewallet')   launchCoherentEwallet(bd2.total);
+          else if (m === 'jncwallet') launchJncWallet(bd2.total);
           else launchTerminalSale(bd2.total, 'WAVE');
         } else {
           state.payStep = 'qr';
@@ -987,7 +990,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
+    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C Wallet', cash: t('cash'), card: t('credit_card') };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -1033,6 +1036,17 @@ function renderBillingStep() {
           </button>
         </div>
         <div id="cewallet-status" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);padding:0 16px;">Tap above to open eWallet on terminal</div>
+      </div>`;
+    } else if (method === 'jncwallet') {
+      body = `<div class="cash-pay-display">
+        <div class="cash-pay-label">J&C Wallet Payment</div>
+        <div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div>
+        <div style="margin-top:20px;text-align:center;">
+          <button id="btn-launch-jncwallet" style="display:inline-flex;flex-direction:column;align-items:center;gap:8px;padding:18px 32px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;">
+            <span style="font-size:36px;">💜</span><span style="font-weight:600;">Launch J&C Wallet</span>
+          </button>
+        </div>
+        <div id="jncwallet-status" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);padding:0 16px;">Tap above to open J&C eWallet on terminal</div>
       </div>`;
     } else if (method === 'terminal') {
       body = `<div class="cash-pay-display">
@@ -1083,6 +1097,9 @@ function renderBillingStep() {
     } else if (method === 'cewallet') {
       confirmBtn.classList.add('hidden');
       document.getElementById('btn-launch-ewallet')?.addEventListener('click', () => launchCoherentEwallet(bd.total));
+    } else if (method === 'jncwallet') {
+      confirmBtn.classList.add('hidden');
+      document.getElementById('btn-launch-jncwallet')?.addEventListener('click', () => launchJncWallet(bd.total));
     } else if (method === 'terminal') {
       confirmBtn.classList.add('hidden');
       document.getElementById('btn-wave')?.addEventListener('click',   () => launchTerminalSale(bd.total, 'WAVE'));
@@ -1487,7 +1504,7 @@ function launchTerminalSale(amount, cardType) {
 
 // Called by PaymentCallbackActivity when Coherent terminal returns a result
 window.onCoherentResult = function(result) {
-  const statusEl  = document.getElementById('terminal-status') || document.getElementById('cewallet-status');
+  const statusEl  = document.getElementById('terminal-status') || document.getElementById('cewallet-status') || document.getElementById('jncwallet-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');
   // Value_1 = "00" means approved
   const approved = result && (result.Value_1 === '00' || result.Value_1 === 0);
@@ -1496,7 +1513,7 @@ window.onCoherentResult = function(result) {
       statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#155724;background:#d4edda;padding:10px 14px;border-radius:8px;';
       statusEl.textContent = 'Payment approved!';
     }
-    if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
+    if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet' || state.payMethod === 'jncwallet')) {
       setTimeout(() => confirmTablePayment(result), 300);
     }
   } else {
@@ -1561,6 +1578,51 @@ function launchCoherentEwallet(amount) {
   showManualConfirm(`Process eWallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
 }
 
+function launchJncWallet(amount) {
+  const settings  = loadSettings();
+  const pkg       = settings.jncwalletPkg || settings.terminalPkg  || 'com.coherent.centerm.cptpaterminal';
+  const cls       = settings.jncwalletCls || settings.terminalClass || '.BroadcastTransactionActivity';
+  const indexM    = settings.terminalIndexM ?? 1;
+  const indexT    = settings.terminalIndexT ?? 1;
+  const eWalletId = settings.jncwalletId  || '';
+  const amtStr    = amount.toFixed(2);
+  const statusEl  = document.getElementById('jncwallet-status');
+  const confirmBtn = document.getElementById('pay-confirm-btn');
+
+  function showManualConfirm(msg) {
+    if (statusEl) {
+      statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#fff3cd;padding:10px 14px;border-radius:8px;';
+      statusEl.textContent = msg;
+    }
+    if (confirmBtn) { confirmBtn.textContent = 'Payment Received ✓'; confirmBtn.classList.remove('hidden'); }
+  }
+
+  if (window.AndroidPay && typeof window.AndroidPay.launchEwallet === 'function') {
+    if (statusEl) statusEl.textContent = `Launching J&C Wallet for ${getCurrency()} ${amtStr}…`;
+    try {
+      const result = window.AndroidPay.launchEwallet(pkg, pkg + cls, amtStr, eWalletId, indexM, indexT);
+      if (result === 'ok') {
+        if (statusEl) {
+          statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#e8f4fd;padding:10px 14px;border-radius:8px;';
+          statusEl.textContent = `Waiting for customer to scan QR on terminal… (${getCurrency()} ${amtStr})`;
+        }
+        setTimeout(() => {
+          if (confirmBtn && confirmBtn.classList.contains('hidden')) {
+            showManualConfirm(`Payment timed out. If customer completed payment, tap below.`);
+          }
+        }, 180000);
+      } else {
+        showManualConfirm(`${result}. Process J&C Wallet payment of ${getCurrency()} ${amtStr} on terminal manually, then tap below.`);
+      }
+    } catch (e) {
+      console.warn('AndroidPay.launchEwallet error:', e);
+      showManualConfirm(`Process J&C Wallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap below.`);
+    }
+    return;
+  }
+  showManualConfirm(`Process J&C Wallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
+}
+
 async function confirmTablePayment(cardResult) {
   const table = state.payingTable; const method = state.payMethod;
   const bills = loadActiveBills(); const bill = bills[table];
@@ -1574,12 +1636,12 @@ async function confirmTablePayment(cardResult) {
   closeBillingModal();
   setPricingMode('base');
   if (!isTableRequired()) applyCashierMode(); else updateTableBtn();
-  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', cash: t('cash'), card: t('credit_card') };
+  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C Wallet', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   // Prompt table for next order
   if (isTableRequired()) setTimeout(() => openTablePicker(true), 800);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
-  if ((method === 'terminal' || method === 'cewallet') && cardResult) {
+  if ((method === 'terminal' || method === 'cewallet' || method === 'jncwallet') && cardResult) {
     printCardSlip(cardResult, bd, 'MERCHANT COPY').then(() => {
       showCustomerCopyPrompt(cardResult, bd);
     });
@@ -1648,7 +1710,7 @@ function buildCardSlipJob(result, bd, copyType) {
   const settings = loadSettings();
   const now = new Date();
   const cur = getCurrency();
-  const isEwallet = state.payMethod === 'cewallet';
+  const isEwallet = state.payMethod === 'cewallet' || state.payMethod === 'jncwallet';
   return {
     type: 'card_slip',
     data: {
