@@ -1491,6 +1491,16 @@ tr.dragging { opacity: 0.3; }
   padding: 3px 8px; font-size: 13px; cursor: pointer;
 }
 
+.hist-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  padding: 4px 2px 6px;
+}
+.hist-card-active { border-color: #f0a500; }
+
 .hist-card {
   border: 1px solid #e8e8ee;
   border-radius: var(--radius-md);

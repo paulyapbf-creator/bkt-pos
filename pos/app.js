@@ -868,13 +868,11 @@ function renderBillingStep() {
   const titleEl   = document.getElementById('pay-modal-title');
   const subEl     = document.getElementById('pay-subtitle');
   const bodyEl    = document.getElementById('pay-body');
-  const backBtn       = document.getElementById('pay-back-btn');
-  const checkBtn      = document.getElementById('pay-check-btn');
-  const confirmBtn    = document.getElementById('pay-confirm-btn');
-  const cancelBillBtn = document.getElementById('pay-cancel-bill-btn');
+  const backBtn    = document.getElementById('pay-back-btn');
+  const checkBtn   = document.getElementById('pay-check-btn');
+  const confirmBtn = document.getElementById('pay-confirm-btn');
 
   backBtn.classList.toggle('hidden', state.payStep === 'list');
-  cancelBillBtn.classList.toggle('hidden', state.payStep !== 'bill');
   checkBtn.classList.add('hidden');
   confirmBtn.classList.add('hidden');
 
@@ -1736,45 +1734,98 @@ async function renderHistoryList(tableFilter) {
     const res = await apiFetch(`${API_BASE}/api/history`);
     if (res.ok) history = await res.json();
   } catch (e) {
-    // Fallback to localStorage
     try { const r = localStorage.getItem(HISTORY_KEY); history = r ? JSON.parse(r) : []; } catch (ex) {}
   }
 
-  const list = tableFilter === 'all' ? history : history.filter(o => o.table === tableFilter);
   const body = document.getElementById('history-body');
-  if (list.length === 0) { body.innerHTML = `<div class="empty-state">${t('no_orders_found')}</div>`; return; }
-  const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
-  body.innerHTML = list.map(ord => {
-    const d = new Date(ord.timestamp);
-    const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
-    const timeStr = d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-    return `<div class="hist-card">
-      <div class="hist-card-head">
-        <div class="hist-left">
-          <span class="hist-table-badge">${ord.table}</span>
-          <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
+  let html = '';
+
+  // ── Active (unpaid) bills ──────────────────────────────────────────────────
+  await fetchBillsFromAPI().catch(() => {});
+  const activeBills = loadActiveBills();
+  const activeTables = Object.keys(activeBills).filter(tbl => tableFilter === 'all' || tbl === tableFilter);
+  if (activeTables.length > 0) {
+    const billSettings = loadSettings();
+    html += `<div class="hist-section-label">Active Bills</div>`;
+    html += activeTables.map(tbl => {
+      const bill = activeBills[tbl];
+      const bd = calcBillBreakdown(getActiveBillTotal(bill.items), billSettings);
+      const itemQty = bill.items.reduce((s, i) => s + i.quantity, 0);
+      const timeStr = new Date(bill.startedAt).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="hist-card hist-card-active">
+        <div class="hist-card-head">
+          <div class="hist-left">
+            <span class="hist-table-badge">${tbl}</span>
+            <div class="hist-meta"><span class="hist-date">Since ${timeStr}</span><span class="hist-pay" style="color:#e67e22;">Unpaid</span></div>
+          </div>
+          <div class="hist-right">
+            <span class="hist-total">${getCurrency()} ${bd.total.toFixed(2)}</span>
+            <button class="hist-toggle-btn" data-id="active-${tbl}">Details ▾</button>
+          </div>
         </div>
-        <div class="hist-right">
-          <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
-          <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
+        <div class="hist-detail hidden" id="hd-active-${tbl}">
+          <table class="hist-items-table">
+            ${bill.items.map(bi => `<tr>
+              <td class="hi-name">${localName(bi)} <span class="hi-en">${bi.name}</span></td>
+              <td class="hi-qty">×${bi.quantity}</td>
+              <td class="hi-price">${getCurrency()} ${bi.subtotal.toFixed(2)}</td></tr>`).join('')}
+          </table>
+          <button class="cancel-bill-btn danger-btn" data-table="${tbl}" style="width:100%;margin-top:8px;">🗑 Cancel Bill</button>
+        </div></div>`;
+    }).join('');
+  }
+
+  // ── Completed orders ───────────────────────────────────────────────────────
+  const list = tableFilter === 'all' ? history : history.filter(o => o.table === tableFilter);
+  if (list.length > 0) {
+    if (activeTables.length > 0) html += `<div class="hist-section-label">Completed Orders</div>`;
+    const payLabel = { tng: '💳 T&G', duitnow: '🏦 DuitNow', cash: '💵 Cash', card: '💳 Card' };
+    html += list.map(ord => {
+      const d = new Date(ord.timestamp);
+      const dateStr = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+      const timeStr = d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="hist-card">
+        <div class="hist-card-head">
+          <div class="hist-left">
+            <span class="hist-table-badge">${ord.table}</span>
+            <div class="hist-meta"><span class="hist-date">${dateStr}, ${timeStr}</span><span class="hist-pay">${payLabel[ord.paymentMethod] || ord.paymentMethod}</span></div>
+          </div>
+          <div class="hist-right">
+            <span class="hist-total">${getCurrency()} ${ord.total.toFixed(2)}</span>
+            <button class="hist-toggle-btn" data-id="${ord.id}">Details ▾</button>
+          </div>
         </div>
-      </div>
-      <div class="hist-detail hidden" id="hd-${ord.id}">
-        <table class="hist-items-table">
-          ${ord.items.map(oi => `<tr>
-            <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
-            <td class="hi-qty">×${oi.quantity}</td>
-            <td class="hi-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
-        </table>
-        <button class="reorder-btn" data-id="${ord.id}">↺ Re-order</button>
-      </div></div>`;
-  }).join('');
+        <div class="hist-detail hidden" id="hd-${ord.id}">
+          <table class="hist-items-table">
+            ${ord.items.map(oi => `<tr>
+              <td class="hi-name">${localName(oi)} <span class="hi-en">${oi.name}</span></td>
+              <td class="hi-qty">×${oi.quantity}</td>
+              <td class="hi-price">${getCurrency()} ${oi.subtotal.toFixed(2)}</td></tr>`).join('')}
+          </table>
+          <button class="reorder-btn" data-id="${ord.id}">↺ Re-order</button>
+        </div></div>`;
+    }).join('');
+  }
+
+  if (!html) { body.innerHTML = `<div class="empty-state">${t('no_orders_found')}</div>`; return; }
+  body.innerHTML = html;
 
   body.querySelectorAll('.hist-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const detail = document.getElementById(`hd-${btn.dataset.id}`);
       const open = detail.classList.toggle('hidden') === false;
       btn.textContent = open ? 'Details ▴' : 'Details ▾';
+    });
+  });
+
+  body.querySelectorAll('.cancel-bill-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tbl = btn.dataset.table;
+      if (!confirm(`Cancel bill for ${tbl}? This will remove all items and cannot be undone.`)) return;
+      await clearActiveBill(tbl);
+      updateTableBtn();
+      renderCartPanel();
+      await renderHistoryList(tableFilter);
     });
   });
 
@@ -2483,18 +2534,6 @@ async function init() {
     if (e.target === e.currentTarget) closeBillingModal();
   });
   document.getElementById('pay-back-btn').addEventListener('click', handleBillingBack);
-  document.getElementById('pay-cancel-bill-btn').addEventListener('click', async () => {
-    const table = state.payingTable;
-    if (!table) return;
-    if (!confirm(`Cancel bill for ${table}? This will remove all items and cannot be undone.`)) return;
-    await clearActiveBill(table);
-    updateTableBtn();
-    renderCartPanel();
-    state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
-    const bills = loadActiveBills();
-    if (Object.keys(bills).length === 0) { closeBillingModal(); return; }
-    renderBillingStep();
-  });
   document.getElementById('pay-check-btn').addEventListener('click', handleOrderCheck);
   document.getElementById('pay-confirm-btn').addEventListener('click', handleBillingConfirm);
 
