@@ -1,1 +1,1 @@
-{"version":"1.3.00-debug","notes":"Add J&C eWallet App2App payment method with settings"}
+{"version":"1.3.01-debug","notes":"Add J&C DuitNow QR payment via REST API (replaces App2App)"}

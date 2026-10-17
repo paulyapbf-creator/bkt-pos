@@ -1447,6 +1447,138 @@ app.get('/api/wallet-test/tenants', async (req, res) => {
   }
 });
 
+// ─── REST API: J&C Pacific DuitNow QR ─────────────────────────────────────────
+
+const crypto = require('crypto');
+
+function jncHmac(secret, message) {
+  return crypto.createHmac('sha256', secret).update(message, 'utf8').digest('hex');
+}
+
+async function getJncConfig(req) {
+  try {
+    if (!req.store) return null;
+    const s = await req.store.getSettings();
+    if (!s || !s.jncEnabled) return null;
+    const prod = s.jncEnv === 'production';
+    return {
+      baseUrl: prod
+        ? 'https://walletzpayment.jcpacific.com.my/duitnow/api/API_Party_V1.asmx'
+        : 'https://walletzpayment-uat.jcpacific.com.my/duitnow/MobileAPI-V1.asmx',
+      appCode:      s.jncAppCode      || '',
+      merchantCode: s.jncMerchantCode || '',
+      terminalCode: s.jncTerminalCode || '',
+      secretKey:    s.jncSecretKey    || '',
+    };
+  } catch { return null; }
+}
+
+function jncTimestamp() {
+  // YYYYMMDDHHmmss in UTC
+  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+}
+
+app.post('/api/jnc/transaction', async (req, res) => {
+  const cfg = await getJncConfig(req);
+  if (!cfg) return res.status(400).json({ error: 'J&C DuitNow QR not configured or disabled' });
+  const { amount, referenceNo } = req.body;
+  if (!amount || !referenceNo) return res.status(400).json({ error: 'amount and referenceNo required' });
+
+  const timestamp = jncTimestamp();
+  const amtStr = parseFloat(amount).toFixed(2);
+  // Signature combo: Amount + ApplicationCode + MerchantCode + ReferenceNo + TerminalCode + Timestamp
+  const combo = `${amtStr}${cfg.appCode}${cfg.merchantCode}${referenceNo}${cfg.terminalCode}${timestamp}`;
+  const signature = jncHmac(cfg.secretKey, combo);
+
+  const payload = {
+    Amount: amtStr,
+    ApplicationCode: cfg.appCode,
+    MerchantCode: cfg.merchantCode,
+    ReferenceNo: referenceNo,
+    TerminalCode: cfg.terminalCode,
+    Timestamp: timestamp,
+    Signature: signature,
+  };
+
+  try {
+    const r = await fetch(`${cfg.baseUrl}/Transaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `J&C unreachable: ${e.message}` });
+  }
+});
+
+app.post('/api/jnc/check', async (req, res) => {
+  const cfg = await getJncConfig(req);
+  if (!cfg) return res.status(400).json({ error: 'J&C DuitNow QR not configured or disabled' });
+  const { referenceNo } = req.body;
+  if (!referenceNo) return res.status(400).json({ error: 'referenceNo required' });
+
+  const timestamp = jncTimestamp();
+  // Signature combo: ApplicationCode + MerchantCode + ReferenceNo + TerminalCode + Timestamp
+  const combo = `${cfg.appCode}${cfg.merchantCode}${referenceNo}${cfg.terminalCode}${timestamp}`;
+  const signature = jncHmac(cfg.secretKey, combo);
+
+  const payload = {
+    ApplicationCode: cfg.appCode,
+    MerchantCode: cfg.merchantCode,
+    ReferenceNo: referenceNo,
+    TerminalCode: cfg.terminalCode,
+    Timestamp: timestamp,
+    Signature: signature,
+  };
+
+  try {
+    const r = await fetch(`${cfg.baseUrl}/CheckQRTransaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `J&C unreachable: ${e.message}` });
+  }
+});
+
+app.post('/api/jnc/cancel', async (req, res) => {
+  const cfg = await getJncConfig(req);
+  if (!cfg) return res.status(400).json({ error: 'J&C DuitNow QR not configured or disabled' });
+  const { transactionNo } = req.body;
+  if (!transactionNo) return res.status(400).json({ error: 'transactionNo required' });
+
+  const timestamp = jncTimestamp();
+  // Signature combo: ApplicationCode + MerchantCode + TerminalCode + Timestamp + TransactionNo
+  const combo = `${cfg.appCode}${cfg.merchantCode}${cfg.terminalCode}${timestamp}${transactionNo}`;
+  const signature = jncHmac(cfg.secretKey, combo);
+
+  const payload = {
+    ApplicationCode: cfg.appCode,
+    MerchantCode: cfg.merchantCode,
+    TerminalCode: cfg.terminalCode,
+    Timestamp: timestamp,
+    TransactionNo: transactionNo,
+    Signature: signature,
+  };
+
+  try {
+    const r = await fetch(`${cfg.baseUrl}/Cancellation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: `J&C unreachable: ${e.message}` });
+  }
+});
+
 // ─── REST API: Network Info ───────────────────────────────────────────────────
 
 app.get('/api/network', (req, res) => {

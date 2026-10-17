@@ -871,6 +871,7 @@ async function openBillingModal() {
 function closeBillingModal() {
   destroyAirwallexElement();
   if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; }
+  if (_jncPollController) { try { _jncPollController.abort(); } catch {} _jncPollController = null; }
   document.getElementById('payment-modal').classList.add('hidden');
   document.body.style.overflow = '';
   state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
@@ -935,7 +936,7 @@ function renderBillingStep() {
     const maeEnabled      = !!billSettings.maeEnabled    && !!billSettings.maeLink;
     const terminalEnabled = !!billSettings.terminalEnabled;
     const cewalletEnabled  = !!billSettings.cewalletEnabled;
-    const jncwalletEnabled = !!billSettings.jncwalletEnabled;
+    const jncwalletEnabled = !!billSettings.jncEnabled;
 
     bodyEl.innerHTML = `
       <div class="bill-pay-combined">
@@ -971,11 +972,10 @@ function renderBillingStep() {
       btn.addEventListener('click', () => {
         const m = btn.dataset.method;
         state.payMethod = m;
-        if (m === 'cewallet' || m === 'jncwallet' || m === 'terminal') {
+        if (m === 'cewallet' || m === 'terminal') {
           const subtotal2 = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
           const bd2 = calcBillBreakdown(subtotal2, loadSettings());
-          if (m === 'cewallet')   launchCoherentEwallet(bd2.total);
-          else if (m === 'jncwallet') launchJncWallet(bd2.total);
+          if (m === 'cewallet') launchCoherentEwallet(bd2.total);
           else launchTerminalSale(bd2.total, 'WAVE');
         } else {
           state.payStep = 'qr';
@@ -990,7 +990,7 @@ function renderBillingStep() {
     const bills = loadActiveBills(); const subtotal = bills[state.payingTable] ? getActiveBillTotal(bills[state.payingTable].items) : 0;
     const method = state.payMethod; const settings = loadSettings();
     const bd = calcBillBreakdown(subtotal, settings);
-    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C Wallet', cash: t('cash'), card: t('credit_card') };
+    const titles = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C DuitNow QR', cash: t('cash'), card: t('credit_card') };
     titleEl.textContent = titles[method] || method; subEl.textContent = `${state.payingTable} · ${getCurrency()} ${bd.total.toFixed(2)}`;
     let body = '';
     const payLink = method === 'tng' ? (settings.tngPayLink || '') : '';
@@ -1038,16 +1038,9 @@ function renderBillingStep() {
         <div id="cewallet-status" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);padding:0 16px;">Tap above to open eWallet on terminal</div>
       </div>`;
     } else if (method === 'jncwallet') {
-      body = `<div class="cash-pay-display">
-        <div class="cash-pay-label">J&C Wallet Payment</div>
-        <div class="cash-pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</div>
-        <div style="margin-top:20px;text-align:center;">
-          <button id="btn-launch-jncwallet" style="display:inline-flex;flex-direction:column;align-items:center;gap:8px;padding:18px 32px;background:var(--header);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;cursor:pointer;">
-            <span style="font-size:36px;">💜</span><span style="font-weight:600;">Launch J&C Wallet</span>
-          </button>
-        </div>
-        <div id="jncwallet-status" style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);padding:0 16px;">Tap above to open J&C eWallet on terminal</div>
-      </div>`;
+      body = `<div class="qr-container"><div id="pay-qr-el" style="display:inline-block;"><div class="card-spinner"></div><div style="color:var(--muted);font-size:13px;margin-top:8px;">Creating J&amp;C DuitNow QR…</div></div></div>`;
+      body += `<div class="pay-amount-row"><span class="pay-amount-label">Amount to Pay</span><span class="pay-amount">${getCurrency()} ${bd.total.toFixed(2)}</span></div>`;
+      body += `<div id="jnc-status" style="text-align:center;margin:8px 0 4px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:13px;color:#856404;">Waiting for customer to scan QR…</div>`;
     } else if (method === 'terminal') {
       body = `<div class="cash-pay-display">
         <div class="cash-pay-label">Credit Card Payment</div>
@@ -1098,8 +1091,9 @@ function renderBillingStep() {
       confirmBtn.classList.add('hidden');
       document.getElementById('btn-launch-ewallet')?.addEventListener('click', () => launchCoherentEwallet(bd.total));
     } else if (method === 'jncwallet') {
-      confirmBtn.classList.add('hidden');
-      document.getElementById('btn-launch-jncwallet')?.addEventListener('click', () => launchJncWallet(bd.total));
+      confirmBtn.textContent = t('payment_received');
+      confirmBtn.classList.remove('hidden');
+      initJncPayment(bd.total, state.payingTable, settings);
     } else if (method === 'terminal') {
       confirmBtn.classList.add('hidden');
       document.getElementById('btn-wave')?.addEventListener('click',   () => launchTerminalSale(bd.total, 'WAVE'));
@@ -1244,7 +1238,7 @@ async function processReceiptImage(file, expectedTotal, confirmBtn) {
 
 function handleBillingBack() {
   if (state.payStep === 'bill')        { state.payStep = 'list';   state.payingTable = null; }
-  else if (state.payStep === 'qr')     { destroyAirwallexElement(); if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; } state.payStep = 'bill'; state.payMethod = null; }
+  else if (state.payStep === 'qr')     { destroyAirwallexElement(); if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; } if (_jncPollController) { try { _jncPollController.abort(); } catch {} _jncPollController = null; } if (_jncTransactionNo) { const _tn = _jncTransactionNo; _jncTransactionNo = null; apiFetch(`${API_BASE}/api/jnc/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactionNo: _tn }) }).catch(() => {}); } state.payStep = 'bill'; state.payMethod = null; }
   else if (state.payStep === 'verify') { state.payStep = 'qr'; }
   renderBillingStep();
 }
@@ -1279,6 +1273,8 @@ let airwallexElement = null;
 
 let _duitnowPollController = null;
 let _duitnowRefNo = null;
+let _jncPollController = null;
+let _jncTransactionNo = null;
 
 async function initDuitNowPayment(amount, table, settings) {
   const qrEl = document.getElementById('pay-qr-el');
@@ -1504,7 +1500,7 @@ function launchTerminalSale(amount, cardType) {
 
 // Called by PaymentCallbackActivity when Coherent terminal returns a result
 window.onCoherentResult = function(result) {
-  const statusEl  = document.getElementById('terminal-status') || document.getElementById('cewallet-status') || document.getElementById('jncwallet-status');
+  const statusEl  = document.getElementById('terminal-status') || document.getElementById('cewallet-status');
   const confirmBtn = document.getElementById('pay-confirm-btn');
   // Value_1 = "00" means approved
   const approved = result && (result.Value_1 === '00' || result.Value_1 === 0);
@@ -1513,7 +1509,7 @@ window.onCoherentResult = function(result) {
       statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:#155724;background:#d4edda;padding:10px 14px;border-radius:8px;';
       statusEl.textContent = 'Payment approved!';
     }
-    if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet' || state.payMethod === 'jncwallet')) {
+    if (state.payingTable && (state.payMethod === 'terminal' || state.payMethod === 'cewallet')) {
       setTimeout(() => confirmTablePayment(result), 300);
     }
   } else {
@@ -1578,49 +1574,115 @@ function launchCoherentEwallet(amount) {
   showManualConfirm(`Process eWallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
 }
 
-function launchJncWallet(amount) {
-  const settings  = loadSettings();
-  const pkg       = settings.jncwalletPkg || settings.terminalPkg  || 'com.coherent.centerm.cptpaterminal';
-  const cls       = settings.jncwalletCls || settings.terminalClass || '.BroadcastTransactionActivity';
-  const indexM    = settings.terminalIndexM ?? 1;
-  const indexT    = settings.terminalIndexT ?? 1;
-  const eWalletId = settings.jncwalletId  || '';
-  const amtStr    = amount.toFixed(2);
-  const statusEl  = document.getElementById('jncwallet-status');
-  const confirmBtn = document.getElementById('pay-confirm-btn');
+// ─── J&C PACIFIC DUITNOW QR ───────────────────────────────────────────────────
 
-  function showManualConfirm(msg) {
-    if (statusEl) {
-      statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#fff3cd;padding:10px 14px;border-radius:8px;';
-      statusEl.textContent = msg;
-    }
-    if (confirmBtn) { confirmBtn.textContent = 'Payment Received ✓'; confirmBtn.classList.remove('hidden'); }
+async function initJncPayment(amount, table, settings) {
+  const qrEl = document.getElementById('pay-qr-el');
+  const statusEl = document.getElementById('jnc-status');
+  if (!qrEl) return;
+
+  if (!settings.jncEnabled || !settings.jncAppCode || !settings.jncMerchantCode || !settings.jncTerminalCode || !settings.jncSecretKey) {
+    qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">J&amp;C DuitNow QR not configured.<br>Go to Setup → System Settings.</div>`;
+    if (statusEl) statusEl.style.display = 'none';
+    return;
   }
 
-  if (window.AndroidPay && typeof window.AndroidPay.launchEwallet === 'function') {
-    if (statusEl) statusEl.textContent = `Launching J&C Wallet for ${getCurrency()} ${amtStr}…`;
-    try {
-      const result = window.AndroidPay.launchEwallet(pkg, pkg + cls, amtStr, eWalletId, indexM, indexT);
-      if (result === 'ok') {
-        if (statusEl) {
-          statusEl.style.cssText = 'text-align:center;margin-top:14px;font-size:13px;color:var(--text);background:#e8f4fd;padding:10px 14px;border-radius:8px;';
-          statusEl.textContent = `Waiting for customer to scan QR on terminal… (${getCurrency()} ${amtStr})`;
-        }
-        setTimeout(() => {
-          if (confirmBtn && confirmBtn.classList.contains('hidden')) {
-            showManualConfirm(`Payment timed out. If customer completed payment, tap below.`);
-          }
-        }, 180000);
-      } else {
-        showManualConfirm(`${result}. Process J&C Wallet payment of ${getCurrency()} ${amtStr} on terminal manually, then tap below.`);
+  if (_jncPollController) { try { _jncPollController.abort(); } catch {} _jncPollController = null; }
+  _jncTransactionNo = null;
+
+  const referenceNo = `${table.replace(/\s+/g, '')}-${Date.now()}`;
+
+  try {
+    const res = await apiFetch(`${API_BASE}/api/jnc/transaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: parseFloat(amount.toFixed(2)), referenceNo }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.ResponseCode === '05' || data.ResponseCode === '99') {
+      qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Failed: ${data.ResponseDescription || data.error || 'Unknown error'}</div>`;
+      if (statusEl) statusEl.style.display = 'none';
+      return;
+    }
+
+    // Store transaction no for cancellation
+    if (data.TransactionNo) _jncTransactionNo = data.TransactionNo;
+
+    // Render QR code from returned QRCode string
+    const qrData = data.QRCode || '';
+    if (qrData && typeof qrcode === 'function') {
+      try {
+        const qr = qrcode(0, 'M'); qr.addData(qrData); qr.make();
+        qrEl.innerHTML = qr.createSvgTag(6, 0);
+        const svg = qrEl.querySelector('svg');
+        if (svg) svg.style.cssText = 'width:260px;height:260px;border-radius:12px;background:#fff;padding:8px;';
+      } catch (e) {
+        qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Could not render QR code.</div>`;
+        if (statusEl) statusEl.style.display = 'none';
+        return;
       }
-    } catch (e) {
-      console.warn('AndroidPay.launchEwallet error:', e);
-      showManualConfirm(`Process J&C Wallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap below.`);
+    } else {
+      qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">No QR data returned from J&amp;C.</div>`;
+      if (statusEl) statusEl.style.display = 'none';
+      return;
+    }
+
+    // Poll for payment status
+    _jncPollController = new AbortController();
+    pollJncStatus(referenceNo, _jncPollController.signal);
+  } catch (e) {
+    qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Error: ${e.message}</div>`;
+    if (statusEl) statusEl.style.display = 'none';
+  }
+}
+
+async function pollJncStatus(referenceNo, signal, attempt = 0) {
+  const statusEl = document.getElementById('jnc-status');
+  const MAX = 120; // 6 minutes at 3s intervals
+  if (attempt >= MAX) {
+    if (statusEl) {
+      statusEl.textContent = 'QR expired. Go back and try again.';
+      statusEl.style.background = '#f8d7da'; statusEl.style.color = '#721c24';
     }
     return;
   }
-  showManualConfirm(`Process J&C Wallet payment of ${getCurrency()} ${amtStr} on the terminal, then tap "Payment Received" below.`);
+  try {
+    await new Promise(r => setTimeout(r, 3000));
+    if (signal.aborted) return;
+
+    const res = await apiFetch(`${API_BASE}/api/jnc/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referenceNo }),
+      signal,
+    });
+    const data = await res.json();
+
+    if (signal.aborted) return;
+
+    if (data.ResponseCode === '00') {
+      // Payment successful
+      if (statusEl) {
+        statusEl.textContent = '✅ Payment received! Confirming…';
+        statusEl.style.background = '#d4edda'; statusEl.style.color = '#155724';
+      }
+      _jncTransactionNo = null;
+      setTimeout(() => { if (state.payStep === 'qr' && state.payMethod === 'jncwallet') confirmTablePayment(); }, 800);
+    } else if (data.ResponseCode === '01') {
+      // Still pending — keep polling
+      pollJncStatus(referenceNo, signal, attempt + 1);
+    } else {
+      // Failed / refunded / error
+      if (statusEl) {
+        statusEl.textContent = `${data.ResponseDescription || 'Payment failed'}. Go back and try again.`;
+        statusEl.style.background = '#f8d7da'; statusEl.style.color = '#721c24';
+      }
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    if (statusEl) statusEl.textContent = `Polling error: ${e.message}`;
+  }
 }
 
 async function confirmTablePayment(cardResult) {
@@ -1636,12 +1698,12 @@ async function confirmTablePayment(cardResult) {
   closeBillingModal();
   setPricingMode('base');
   if (!isTableRequired()) applyCashierMode(); else updateTableBtn();
-  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C Wallet', cash: t('cash'), card: t('credit_card') };
+  const labels = { tng: 'Touch & Go', duitnow: t('duitnow'), boost: 'Boost', shopeepay: 'ShopeePay', grabpay: 'GrabPay', mae: 'MAE', terminal: 'Credit Card', cewallet: 'Wallet', jncwallet: 'J&C DuitNow QR', cash: t('cash'), card: t('credit_card') };
   showToast(`${t('payment_confirmed')} · ${table} · ${labels[method] || method}`);
   // Prompt table for next order
   if (isTableRequired()) setTimeout(() => openTablePicker(true), 800);
   if (settings.printReceipt !== false) printPaymentReceipt(table, bill.items, bd, method, orderId);
-  if ((method === 'terminal' || method === 'cewallet' || method === 'jncwallet') && cardResult) {
+  if ((method === 'terminal' || method === 'cewallet') && cardResult) {
     printCardSlip(cardResult, bd, 'MERCHANT COPY').then(() => {
       showCustomerCopyPrompt(cardResult, bd);
     });
@@ -1710,7 +1772,7 @@ function buildCardSlipJob(result, bd, copyType) {
   const settings = loadSettings();
   const now = new Date();
   const cur = getCurrency();
-  const isEwallet = state.payMethod === 'cewallet' || state.payMethod === 'jncwallet';
+  const isEwallet = state.payMethod === 'cewallet';
   return {
     type: 'card_slip',
     data: {

@@ -614,10 +614,12 @@ function initSettings() {
   const cewalletPkgInput      = document.getElementById('s-cewallet-pkg');
   const cewalletClsInput      = document.getElementById('s-cewallet-cls');
   const cewalletIdInput       = document.getElementById('s-cewallet-id');
-  const jncwalletEnabledInput = document.getElementById('s-jncwallet-enabled');
-  const jncwalletPkgInput     = document.getElementById('s-jncwallet-pkg');
-  const jncwalletClsInput     = document.getElementById('s-jncwallet-cls');
-  const jncwalletIdInput      = document.getElementById('s-jncwallet-id');
+  const jncEnabledInput       = document.getElementById('s-jnc-enabled');
+  const jncEnvInput           = document.getElementById('s-jnc-env');
+  const jncAppCodeInput       = document.getElementById('s-jnc-appcode');
+  const jncMerchantCodeInput  = document.getElementById('s-jnc-merchantcode');
+  const jncTerminalCodeInput  = document.getElementById('s-jnc-terminalcode');
+  const jncSecretKeyInput     = document.getElementById('s-jnc-secretkey');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -663,10 +665,12 @@ function initSettings() {
   cewalletPkgInput.value        = settings.cewalletPkg    || '';
   cewalletClsInput.value        = settings.cewalletCls    || '';
   cewalletIdInput.value         = settings.cewalletId     || '';
-  jncwalletEnabledInput.checked = !!settings.jncwalletEnabled;
-  jncwalletPkgInput.value       = settings.jncwalletPkg   || '';
-  jncwalletClsInput.value       = settings.jncwalletCls   || '';
-  jncwalletIdInput.value        = settings.jncwalletId    || '';
+  jncEnabledInput.checked        = !!settings.jncEnabled;
+  jncEnvInput.value              = settings.jncEnv          || 'staging';
+  jncAppCodeInput.value          = settings.jncAppCode       || '';
+  jncMerchantCodeInput.value     = settings.jncMerchantCode  || '';
+  jncTerminalCodeInput.value     = settings.jncTerminalCode  || '';
+  jncSecretKeyInput.value        = settings.jncSecretKey     || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -761,10 +765,12 @@ function initSettings() {
       cewalletPkg:      cewalletPkgInput.value.trim(),
       cewalletCls:      cewalletClsInput.value.trim(),
       cewalletId:       cewalletIdInput.value.trim(),
-      jncwalletEnabled: jncwalletEnabledInput.checked,
-      jncwalletPkg:     jncwalletPkgInput.value.trim(),
-      jncwalletCls:     jncwalletClsInput.value.trim(),
-      jncwalletId:      jncwalletIdInput.value.trim(),
+      jncEnabled:       jncEnabledInput.checked,
+      jncEnv:           jncEnvInput.value,
+      jncAppCode:       jncAppCodeInput.value.trim(),
+      jncMerchantCode:  jncMerchantCodeInput.value.trim(),
+      jncTerminalCode:  jncTerminalCodeInput.value.trim(),
+      jncSecretKey:     jncSecretKeyInput.value.trim(),
     };
   }
 
