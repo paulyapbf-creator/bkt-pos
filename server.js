@@ -1470,6 +1470,7 @@ async function getJncConfig(req) {
       merchantCode: s.jncMerchantCode || '',
       terminalCode: s.jncTerminalCode || '',
       secretKey:    s.jncSecretKey    || '',
+      callbackUrl:  s.jncCallbackUrl  || '',
     };
   } catch { return null; }
 }
@@ -1515,6 +1516,7 @@ app.post('/api/jnc/transaction', async (req, res) => {
     Timestamp: timestamp,
     Signature: signature,
   };
+  if (cfg.callbackUrl) payload.CallbackUrl = cfg.callbackUrl;
 
   try {
     const r = await fetch(`${cfg.baseUrl}/Transaction`, {

@@ -403,6 +403,11 @@
         <input type="text" id="s-jnc-baseurl" placeholder="e.g. https://walletzpayment-uat.jcpacific.com.my/duitnow/MobileAPI-V1.asmx">
         <p class="settings-hint" style="margin-top:4px;">Full base URL provided by J&amp;C. Overrides the Environment selection above if set.</p>
       </div>
+      <div class="settings-field">
+        <label>Callback URL</label>
+        <input type="text" id="s-jnc-callbackurl" placeholder="e.g. https://yourdomain.com/api/jnc/callback">
+        <p class="settings-hint" style="margin-top:4px;">URL J&amp;C will notify when payment status changes. Leave empty if not required.</p>
+      </div>
 
       <h2 class="settings-title" style="margin-top:24px;" data-i18n="tax_service">Tax &amp; Service Charge</h2>
       <p class="settings-hint" data-i18n="tax_service_hint">Configure SST and service charge. These appear as a breakdown on bills and receipts.</p>
