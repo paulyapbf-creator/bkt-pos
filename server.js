@@ -1521,7 +1521,7 @@ app.post('/api/jnc/transaction', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/Transaction`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
     });
     const { status, data } = await jncParseResponse(r);
@@ -1554,7 +1554,7 @@ app.post('/api/jnc/check', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/CheckQRTransaction`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
     });
     const { status, data } = await jncParseResponse(r);
@@ -1587,7 +1587,7 @@ app.post('/api/jnc/cancel', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/Cancellation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
     });
     const { status, data } = await jncParseResponse(r);
