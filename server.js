@@ -1461,10 +1461,11 @@ async function getJncConfig(req) {
     const s = await req.store.getSettings();
     if (!s || !s.jncEnabled) return null;
     const prod = s.jncEnv === 'production';
+    const defaultUrl = prod
+      ? 'https://walletzpayment.jcpacific.com.my/duitnow/api/API_Party_V1.asmx'
+      : 'https://walletzpayment-uat.jcpacific.com.my/duitnow/MobileAPI-V1.asmx';
     return {
-      baseUrl: prod
-        ? 'https://walletzpayment.jcpacific.com.my/duitnow/api/API_Party_V1.asmx'
-        : 'https://walletzpayment-uat.jcpacific.com.my/duitnow/MobileAPI-V1.asmx',
+      baseUrl: (s.jncBaseUrl || '').replace(/\/+$/, '') || defaultUrl,
       appCode:      s.jncAppCode      || '',
       merchantCode: s.jncMerchantCode || '',
       terminalCode: s.jncTerminalCode || '',

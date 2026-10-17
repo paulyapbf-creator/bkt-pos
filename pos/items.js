@@ -620,6 +620,7 @@ function initSettings() {
   const jncMerchantCodeInput  = document.getElementById('s-jnc-merchantcode');
   const jncTerminalCodeInput  = document.getElementById('s-jnc-terminalcode');
   const jncSecretKeyInput     = document.getElementById('s-jnc-secretkey');
+  const jncBaseUrlInput       = document.getElementById('s-jnc-baseurl');
 
   shopNameInput.value    = settings.shopName      || '';
   shopAddressInput.value = settings.shopAddress   || '';
@@ -671,6 +672,7 @@ function initSettings() {
   jncMerchantCodeInput.value     = settings.jncMerchantCode  || '';
   jncTerminalCodeInput.value     = settings.jncTerminalCode  || '';
   jncSecretKeyInput.value        = settings.jncSecretKey     || '';
+  jncBaseUrlInput.value          = settings.jncBaseUrl       || '';
 
   function updatePreview(input, preview) {
     const url = input.value.trim();
@@ -771,6 +773,7 @@ function initSettings() {
       jncMerchantCode:  jncMerchantCodeInput.value.trim(),
       jncTerminalCode:  jncTerminalCodeInput.value.trim(),
       jncSecretKey:     jncSecretKeyInput.value.trim(),
+      jncBaseUrl:       jncBaseUrlInput.value.trim(),
     };
   }
 
