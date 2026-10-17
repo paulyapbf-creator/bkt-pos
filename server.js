@@ -1478,6 +1478,19 @@ function jncTimestamp() {
   return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 }
 
+// Parse J&C response — ASMX may return HTML on error; surface raw body in that case
+async function jncParseResponse(r) {
+  const ct = r.headers.get('content-type') || '';
+  const text = await r.text();
+  if (ct.includes('json')) {
+    try { return { status: r.status, data: JSON.parse(text) }; }
+    catch { return { status: r.status, data: { error: `JSON parse error: ${text.slice(0, 200)}` } }; }
+  }
+  // HTML or unexpected content — extract visible text if short enough
+  const plain = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+  return { status: r.status, data: { error: `Unexpected response (HTTP ${r.status}): ${plain || text.slice(0, 200)}` } };
+}
+
 app.post('/api/jnc/transaction', async (req, res) => {
   const cfg = await getJncConfig(req);
   if (!cfg) return res.status(400).json({ error: 'J&C DuitNow QR not configured or disabled' });
@@ -1503,11 +1516,11 @@ app.post('/api/jnc/transaction', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/Transaction`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    const data = await r.json();
-    res.status(r.status).json(data);
+    const { status, data } = await jncParseResponse(r);
+    res.status(status).json(data);
   } catch (e) {
     res.status(502).json({ error: `J&C unreachable: ${e.message}` });
   }
@@ -1536,11 +1549,11 @@ app.post('/api/jnc/check', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/CheckQRTransaction`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    const data = await r.json();
-    res.status(r.status).json(data);
+    const { status, data } = await jncParseResponse(r);
+    res.status(status).json(data);
   } catch (e) {
     res.status(502).json({ error: `J&C unreachable: ${e.message}` });
   }
@@ -1569,11 +1582,11 @@ app.post('/api/jnc/cancel', async (req, res) => {
   try {
     const r = await fetch(`${cfg.baseUrl}/Cancellation`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    const data = await r.json();
-    res.status(r.status).json(data);
+    const { status, data } = await jncParseResponse(r);
+    res.status(status).json(data);
   } catch (e) {
     res.status(502).json({ error: `J&C unreachable: ${e.message}` });
   }
