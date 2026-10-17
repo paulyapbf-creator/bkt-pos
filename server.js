@@ -1474,8 +1474,10 @@ async function getJncConfig(req) {
 }
 
 function jncTimestamp() {
-  // YYYYMMDDHHmmss in UTC
-  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  // Format: yyyy-MM-dd HH:mm:ss (local server time)
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
 // Parse J&C response — ASMX may return HTML on error; surface raw body in that case
@@ -1504,7 +1506,7 @@ app.post('/api/jnc/transaction', async (req, res) => {
   const signature = jncHmac(cfg.secretKey, combo);
 
   const payload = {
-    Amount: amtStr,
+    Amount: parseFloat(amtStr),
     ApplicationCode: cfg.appCode,
     MerchantCode: cfg.merchantCode,
     ReferenceNo: referenceNo,
