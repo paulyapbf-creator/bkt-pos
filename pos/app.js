@@ -1600,14 +1600,16 @@ async function initJncPayment(amount, table, settings) {
     });
     const data = await res.json();
 
-    if (!res.ok || data.ResponseCode === '05' || data.ResponseCode === '99') {
-      qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">Failed: ${data.ResponseDescription || data.error || 'Unknown error'}</div>`;
+    if (!res.ok || (data.ResponseCode && data.ResponseCode !== '00')) {
+      const code = data.ResponseCode || '';
+      const msg  = data.ResponseMessage || data.ResponseDescription || data.error || 'Unknown error';
+      qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">${code ? `[${code}] ` : ''}${msg}</div>`;
       if (statusEl) statusEl.style.display = 'none';
       return;
     }
 
-    // Store transaction no for cancellation
-    if (data.TransactionNo) _jncTransactionNo = data.TransactionNo;
+    // Store ExternalRefNo for cancellation
+    if (data.ExternalRefNo) _jncTransactionNo = data.ExternalRefNo;
 
     // Render QR code from returned QRCode string
     const qrData = data.QRCode || '';
