@@ -1611,8 +1611,8 @@ async function initJncPayment(amount, table, settings) {
     // Store ExternalRefNo for cancellation
     if (data.ExternalRefNo) _jncTransactionNo = data.ExternalRefNo;
 
-    // Render QR code from returned QRCode string
-    const qrData = data.QRCode || '';
+    // Render QR code — J&C may return field as QRCode (staging) or Data (production)
+    const qrData = data.QRCode || data.Data || '';
     if (qrData && typeof qrcode === 'function') {
       try {
         const qr = qrcode(0, 'M'); qr.addData(qrData); qr.make();

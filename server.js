@@ -1476,10 +1476,16 @@ async function getJncConfig(req) {
 }
 
 function jncTimestamp() {
-  // Format: yyyy-MM-dd HH:mm:ss (local server time)
-  const now = new Date();
+  // J&C requires Malaysia time (UTC+8)
+  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const pad = n => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())} ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
+}
+
+function jncUrl(base, method) {
+  // Strip trailing slash and any existing method suffix, then append fresh
+  const clean = base.replace(/\/+$/, '').replace(/\/(Transaction|CheckQRTransaction|Cancellation)$/i, '');
+  return clean + '/' + method;
 }
 
 // Parse J&C response — ASMX may return HTML on error; surface raw body in that case
@@ -1519,7 +1525,7 @@ app.post('/api/jnc/transaction', async (req, res) => {
   if (cfg.callbackUrl) payload.CallbackUrl = cfg.callbackUrl;
 
   try {
-    const r = await fetch(`${cfg.baseUrl}/Transaction`, {
+    const r = await fetch(jncUrl(cfg.baseUrl, 'Transaction'), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
@@ -1552,7 +1558,7 @@ app.post('/api/jnc/check', async (req, res) => {
   };
 
   try {
-    const r = await fetch(`${cfg.baseUrl}/CheckQRTransaction`, {
+    const r = await fetch(jncUrl(cfg.baseUrl, 'CheckQRTransaction'), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
@@ -1585,7 +1591,7 @@ app.post('/api/jnc/cancel', async (req, res) => {
   };
 
   try {
-    const r = await fetch(`${cfg.baseUrl}/Cancellation`, {
+    const r = await fetch(jncUrl(cfg.baseUrl, 'Cancellation'), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
