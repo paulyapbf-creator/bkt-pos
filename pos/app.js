@@ -872,6 +872,7 @@ function closeBillingModal() {
   destroyAirwallexElement();
   if (_duitnowPollController) { try { _duitnowPollController.abort(); } catch {} _duitnowPollController = null; }
   if (_jncPollController) { try { _jncPollController.abort(); } catch {} _jncPollController = null; }
+  _jncConfirmed = false;
   document.getElementById('payment-modal').classList.add('hidden');
   document.body.style.overflow = '';
   state.payStep = 'list'; state.payingTable = null; state.payMethod = null;
@@ -1275,6 +1276,7 @@ let _duitnowPollController = null;
 let _duitnowRefNo = null;
 let _jncPollController = null;
 let _jncTransactionNo = null;
+let _jncConfirmed = false;
 
 async function initDuitNowPayment(amount, table, settings) {
   const qrEl = document.getElementById('pay-qr-el');
@@ -1581,6 +1583,10 @@ async function initJncPayment(amount, table, settings) {
   const statusEl = document.getElementById('jnc-status');
   if (!qrEl) return;
 
+  // Guard: don't create a new transaction if one is already polling
+  if (_jncPollController) return;
+  _jncConfirmed = false;
+
   if (!settings.jncEnabled || !settings.jncAppCode || !settings.jncMerchantCode || !settings.jncTerminalCode || !settings.jncSecretKey) {
     qrEl.innerHTML = `<div style="color:var(--red);padding:40px;">J&amp;C DuitNow QR not configured.<br>Go to Setup → System Settings.</div>`;
     if (statusEl) statusEl.style.display = 'none';
@@ -1664,12 +1670,17 @@ async function pollJncStatus(referenceNo, signal, attempt = 0) {
     if (signal.aborted) return;
 
     if (data.ResponseCode === '00') {
-      // Payment successful
+      // Payment successful — guard against double-confirm
+      if (_jncConfirmed) return;
+      _jncConfirmed = true;
       if (statusEl) {
         statusEl.textContent = '✅ Payment received! Confirming…';
         statusEl.style.background = '#d4edda'; statusEl.style.color = '#155724';
       }
       _jncTransactionNo = null;
+      // Hide manual confirm button to prevent user also clicking it
+      const confirmBtn = document.getElementById('pay-confirm-btn');
+      if (confirmBtn) confirmBtn.classList.add('hidden');
       setTimeout(() => { if (state.payStep === 'qr' && state.payMethod === 'jncwallet') confirmTablePayment(); }, 800);
     } else if (data.ResponseCode === '01') {
       // Still pending — keep polling
