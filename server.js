@@ -1488,17 +1488,23 @@ function jncUrl(base, method) {
   return clean + '/' + method;
 }
 
-// Parse J&C response — ASMX may return HTML on error; surface raw body in that case
+// Parse J&C response — always try JSON first (J&C replies text/plain with JSON body),
+// unwrap ASMX {"d": ...} wrapper, fall back to surfacing raw text on failure.
 async function jncParseResponse(r) {
-  const ct = r.headers.get('content-type') || '';
   const text = await r.text();
-  if (ct.includes('json')) {
-    try { return { status: r.status, data: JSON.parse(text) }; }
-    catch { return { status: r.status, data: { error: `JSON parse error: ${text.slice(0, 200)}` } }; }
+  console.log(`[J&C] HTTP ${r.status} raw: ${text.slice(0, 500)}`);
+  try {
+    let parsed = JSON.parse(text);
+    // ASMX ScriptService wraps response in {"d": "..."}
+    if (parsed && parsed.d !== undefined) {
+      parsed = typeof parsed.d === 'string' ? JSON.parse(parsed.d) : parsed.d;
+    }
+    return { status: r.status, data: parsed };
+  } catch {
+    // Not JSON — likely HTML error page
+    const plain = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+    return { status: r.status, data: { error: `Unexpected response (HTTP ${r.status}): ${plain || text.slice(0, 200)}` } };
   }
-  // HTML or unexpected content — extract visible text if short enough
-  const plain = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
-  return { status: r.status, data: { error: `Unexpected response (HTTP ${r.status}): ${plain || text.slice(0, 200)}` } };
 }
 
 app.post('/api/jnc/transaction', async (req, res) => {
